@@ -31,3 +31,14 @@ class PacketProtocolActiveTrees():
         active_trees = PacketProtocolActiveTrees()
         active_trees.trees = data
         return active_trees
+
+class PacketProtocolActiveTreesAck(PacketProtocolActiveTrees):
+    PIM_TYPE = "ACTIVE_TREES_ACK"
+
+    def __init__(self, ack_trees):
+        super().__init__()
+        self.trees = ack_trees
+
+    @abstractmethod
+    def parse_bytes(data: bytes):
+        return PacketProtocolActiveTreesAck(data)

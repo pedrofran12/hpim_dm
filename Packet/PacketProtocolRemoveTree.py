@@ -1,4 +1,4 @@
-from Packet.PacketProtocolJoin import PacketProtocolJoin
+from Packet.PacketProtocolJoinTree import PacketProtocolJoinTree
 '''
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -8,8 +8,14 @@ from Packet.PacketProtocolJoin import PacketProtocolJoin
 |   Reserved    |  Num Groups   |          Hold Time            |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 '''
-class PacketProtocolRemoveTree(PacketProtocolJoin):
+class PacketProtocolRemoveTree(PacketProtocolJoinTree):
     PIM_TYPE = "REMOVE_TREE"
 
-    def __init__(self, source, group, id_reliable):
+    def __init__(self, source, group):
+        super().__init__(source, group)
+
+class PacketProtocolRemoveTreeAck(PacketProtocolRemoveTree):
+    PIM_TYPE = "REMOVE_TREE_ACK"
+
+    def __init__(self, source, group):
         super().__init__(source, group)

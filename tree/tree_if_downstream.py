@@ -6,18 +6,18 @@ Created on Jul 16, 2015
 from threading import Timer
 from CustomTimer.RemainingTimer import RemainingTimer
 from .assert_ import AssertState, SFMRAssertABC, SFMRAssertWinner
-from .prune import SFMRPruneState, SFMRPruneStateABC, SFMRDownstreamInterested, SFMRDownstreamInterestedPending
+from .downstream_state import SFMRPruneState, SFMRDownstreamStateABC, SFMRDownstreamInterested, SFMRDownstreamInterestedPending
 from .tree_interface import TreeInterface
-from Packet.PacketPimStateRefresh import PacketPimStateRefresh
+from Packet.PacketProtocolRemoveTree import PacketProtocolRemoveTree
+from Packet.PacketProtocolHeader import PacketProtocolHeader
 from Packet.Packet import Packet
-from Packet.PacketPimHeader import PacketPimHeader
 import traceback
 from .metric import AssertMetric, Metric
 import logging
 import Main
 
 class TreeInterfaceDownstream(TreeInterface):
-    LOGGER = logging.getLogger('pim.KernelEntry.DownstreamInterface')
+    LOGGER = logging.getLogger('protocol.KernelEntry.NonRootInterface')
 
     def __init__(self, kernel_entry, interface_id, rpc: Metric):
         extra_dict_logger = kernel_entry.kernel_entry_logger.extra.copy()
@@ -25,16 +25,18 @@ class TreeInterfaceDownstream(TreeInterface):
         extra_dict_logger['interfacename'] = Main.kernel.vif_index_to_name_dic[interface_id]
         logger = logging.LoggerAdapter(TreeInterfaceDownstream.LOGGER, extra_dict_logger)
         TreeInterface.__init__(self, kernel_entry, interface_id, logger)
+        self.assert_logger = logging.LoggerAdapter(logger.logger.getChild('Assert'), logger.extra)
+        self.downstream_logger = logging.LoggerAdapter(logger.logger.getChild('Downstream'), logger.extra)
 
         # Assert Winner State
         self._assert_state = AssertState.Winner
         self._assert_winner_metric = AssertMetric(rpc.metric_preference, rpc.route_metric, self.get_ip())
-        self.assert_logger.debug("LOGGER ASSERT ... msg")
+        self.assert_logger.debug(str(self._assert_state))
 
         # Downstream Node Interest State
         self._downstream_node_interest_state = SFMRPruneState.DIP
         self._downstream_interest_pending_timer = None
-        self.join_prune_logger.debug(str(self._downstream_node_interest_state))
+        self.downstream_logger.debug(str(self._downstream_node_interest_state))
         self._downstream_node_interest_state.is_now_non_root(self)
 
         self.logger.debug('Created DownstreamInterface')
@@ -49,7 +51,7 @@ class TreeInterfaceDownstream(TreeInterface):
                 self.assert_logger.debug(str(new_state))
 
                 self.change_tree()
-                self.evaluate_ingroup()
+                self.evaluate_in_tree()
 
     def set_assert_winner_metric(self, new_assert_metric: AssertMetric):
         with self.get_state_lock():
@@ -69,14 +71,14 @@ class TreeInterfaceDownstream(TreeInterface):
     ##########################################
     # Set Downstream Node Interest state
     ##########################################
-    def set_downstream_node_interest_state(self, new_state: SFMRPruneStateABC):
+    def set_downstream_node_interest_state(self, new_state: SFMRDownstreamStateABC):
         with self.get_state_lock():
             if new_state != self._downstream_node_interest_state:
                 self._downstream_node_interest_state = new_state
-                self.join_prune_logger.debug(str(new_state))
+                self.downstream_logger.debug(str(new_state))
 
                 self.change_tree()
-                self.evaluate_ingroup()
+                self.evaluate_in_tree()
 
     ##########################################
     # Check timers
@@ -118,16 +120,8 @@ class TreeInterfaceDownstream(TreeInterface):
     def recv_assert_msg(self, received_metric: AssertMetric):
         if received_metric.is_better_than(self._assert_winner_metric):
             self._assert_state.recv_better_metric(self, received_metric)
-        else:
+        elif self._assert_winner_metric.is_better_than(received_metric):
             self._assert_state.recv_worse_metric(self, received_metric)
-        # TODO falta considerar protected assert
-
-    # Override
-    '''
-    def recv_prune_msg(self, upstream_neighbor_address, holdtime):
-        # todo
-        return
-    '''
 
     # Override
     def recv_join_msg(self):
@@ -141,6 +135,22 @@ class TreeInterfaceDownstream(TreeInterface):
         elif number_of_neighbors > 1:
             self._downstream_node_interest_state.recv_tree_interest_query(self)
 
+
+    ###########################################
+    # Send packets
+    ###########################################
+    def send_remove_tree(self):
+        print("send remove tree")
+
+        try:
+            (source, group) = self.get_tree_id()
+            ph = PacketProtocolRemoveTree(source, group)
+            pckt = Packet(payload=PacketProtocolHeader(ph))
+
+            self.get_interface().send_reliably(pckt)
+        except:
+            traceback.print_exc()
+            return
 
     ##########################################################
 
@@ -156,7 +166,6 @@ class TreeInterfaceDownstream(TreeInterface):
 
 
     # Override
-    # When new neighbor connects, send last state refresh msg
     def neighbor_removal(self, other_neighbors_remain):
         if other_neighbors_remain:
             self._downstream_node_interest_state.lost_nbr(self)
@@ -166,7 +175,19 @@ class TreeInterfaceDownstream(TreeInterface):
     # Override
     def delete(self, change_type_interface=False):
         super().delete(change_type_interface)
+
+        # Downstream state
         self.clear_downstream_interest_pending_timer()
+        self._downstream_node_interest_state = None
+
+        # Assert State
+        if change_type_interface:
+            self._assert_state.is_now_root(self)
+
+        self._assert_state = None
+        self.set_assert_winner_metric(AssertMetric.infinite_assert_metric())  # unsubscribe from current AssertWinner NeighborLivenessTimer
+        self._assert_winner_metric = None
+
 
     def is_downstream(self):
         return True

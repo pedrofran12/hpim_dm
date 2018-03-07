@@ -11,8 +11,8 @@ from Packet.PacketPimJoinPruneMulticastGroup import PacketPimJoinPruneMulticastG
 |   Reserved    |  Num Groups   |          Hold Time            |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 '''
-class PacketProtocolJoin:
-    PIM_TYPE = "JOIN"
+class PacketProtocolJoinTree:
+    PIM_TYPE = "JOIN_TREE"
 
     def __init__(self, source, group):
         self.source = source
@@ -33,3 +33,10 @@ class PacketProtocolJoin:
         source = data["SOURCE"]
         group = data["GROUP"]
         return cls(source, group)
+
+
+class PacketProtocolJoinTreeAck(PacketProtocolJoinTree):
+    PIM_TYPE = "JOIN_TREE_ACK"
+
+    def __init__(self, source, group):
+        super().__init__(source, group)

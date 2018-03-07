@@ -42,6 +42,9 @@ class AssertMetric(Metric):
 
     def is_better_than(self, other):
         return super().is_better_than(other) or (super().__eq__(other) and self.ip_address > other.ip_address)
+        #is_better = super().is_better_than(other) or (super().__eq__(other) and self.ip_address > other.ip_address)
+        #print("MP1:", self.metric_preference, "M1:", self.route_metric, "IP1", self.get_ip(), "MP2:", other.metric_preference, "M2", other.route_metric, "IP2", other.get_ip(), "RESULT:", is_better)
+        #return is_better
 
     '''
         if self.metric_preference != other.metric_preference:
@@ -52,6 +55,10 @@ class AssertMetric(Metric):
             return self.ip_address > other.ip_address
     '''
 
+    '''
+    def __eq__(self, other):
+        return super().__eq__(other) and self.ip_address == other.ip_address
+    '''
 
     def is_worse(self, other):
         return not self.is_better_than(other)

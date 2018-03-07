@@ -1,6 +1,5 @@
 from pyroute2 import IPDB, IPRoute
 import socket
-import RWLock
 import Main
 import ipaddress
 

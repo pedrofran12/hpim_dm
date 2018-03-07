@@ -1,5 +1,4 @@
-from Packet.PacketProtocolJoin import PacketProtocolJoin
-import random
+from Packet.PacketProtocolJoinTree import PacketProtocolJoinTree
 '''
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -9,8 +8,14 @@ import random
 |   Reserved    |  Num Groups   |          Hold Time            |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 '''
-class PacketProtocolSetTree(PacketProtocolJoin):
+class PacketProtocolSetTree(PacketProtocolJoinTree):
     PIM_TYPE = "SET_TREE"
+
+    def __init__(self, source, group):
+        super().__init__(source, group)
+
+class PacketProtocolSetTreeAck(PacketProtocolSetTree):
+    PIM_TYPE = "SET_TREE_ACK"
 
     def __init__(self, source, group):
         super().__init__(source, group)

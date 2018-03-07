@@ -1,9 +1,12 @@
 import json
-import random
 from Packet.PacketProtocolHello import PacketProtocolHello
-from Packet.PacketProtocolAssert import PacketProtocolAssert
-from Packet.PacketProtocolTreeInterestQuery import PacketProtocolTreeInterestQuery
-from Packet.PacketProtocolJoin import PacketProtocolJoin
+from Packet.PacketProtocolAssert import PacketProtocolAssert, PacketProtocolAssertReliable, PacketProtocolAssertReliableAck
+from Packet.PacketProtocolTreeInterestQuery import PacketProtocolTreeInterestQuery, PacketProtocolTreeInterestQueryAck
+from Packet.PacketProtocolSetTree import PacketProtocolSetTree, PacketProtocolSetTreeAck
+from Packet.PacketProtocolRemoveTree import PacketProtocolRemoveTree, PacketProtocolRemoveTreeAck
+from Packet.PacketProtocolConfirm import PacketProtocolConfirm, PacketProtocolConfirmAck
+from Packet.PacketProtocolActiveTrees import PacketProtocolActiveTrees, PacketProtocolActiveTreesAck
+from Packet.PacketProtocolJoinTree import PacketProtocolJoinTree, PacketProtocolJoinTreeAck
 
 
 from .PacketPayload import PacketPayload
@@ -16,14 +19,20 @@ class PacketProtocolHeader(PacketPayload):
 
     PIM_MSG_TYPES = {"HELLO": PacketProtocolHello,
                      "ASSERT": PacketProtocolAssert,
-                     "JOIN": PacketProtocolJoin,
+                     "ASSERT_RELIABLE": PacketProtocolAssertReliable,
+                     "ASSERT_RELIABLE_ACK": PacketProtocolAssertReliableAck,
+                     "JOIN_TREE": PacketProtocolJoinTree,
+                     "JOIN_TREE_ACK": PacketProtocolJoinTreeAck,
                      "TREE_INTEREST_QUERY": PacketProtocolTreeInterestQuery,
-                     "SET_TREE": None,
-                     "SET_TREE_ACK": None,
-                     "REMOVE_TREE": None,
-                     "REMOVE_TREE_ACK": None,
-                     "CONFIRM": None,
-                     "CONFIRM_ACK": None
+                     "TREE_INTEREST_QUERY_ACK": PacketProtocolTreeInterestQueryAck,
+                     "SET_TREE": PacketProtocolSetTree,
+                     "SET_TREE_ACK": PacketProtocolSetTreeAck,
+                     "REMOVE_TREE": PacketProtocolRemoveTree,
+                     "REMOVE_TREE_ACK": PacketProtocolRemoveTreeAck,
+                     "CONFIRM": PacketProtocolConfirm,
+                     "CONFIRM_ACK": PacketProtocolConfirmAck,
+                     "ACTIVE_TREES": PacketProtocolActiveTrees,
+                     "ACTIVE_TREES_ACK": PacketProtocolActiveTreesAck
                      }
 
     def __init__(self, payload, id_reliable = 0):
@@ -52,7 +61,7 @@ class PacketProtocolHeader(PacketPayload):
         type = msg["TYPE"]
         print("TYPE", type)
 
-        id_reliable = msg["TYPE"]
+        id_reliable = msg["ID_RELIABLE"]
 
         pim_payload = msg["DATA"]
         print("DATA", pim_payload)

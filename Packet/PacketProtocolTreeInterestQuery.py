@@ -1,4 +1,4 @@
-from Packet.PacketProtocolJoin import PacketProtocolJoin
+from Packet.PacketProtocolJoinTree import PacketProtocolJoinTree
 '''
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -8,8 +8,14 @@ from Packet.PacketProtocolJoin import PacketProtocolJoin
 |   Reserved    |  Num Groups   |          Hold Time            |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 '''
-class PacketProtocolTreeInterestQuery(PacketProtocolJoin):
+class PacketProtocolTreeInterestQuery(PacketProtocolJoinTree):
     PIM_TYPE = "TREE_INTEREST_QUERY"
+
+    def __init__(self, source, group):
+        super().__init__(source, group)
+
+class PacketProtocolTreeInterestQueryAck(PacketProtocolTreeInterestQuery):
+    PIM_TYPE = "TREE_INTEREST_QUERY_ACK"
 
     def __init__(self, source, group):
         super().__init__(source, group)
