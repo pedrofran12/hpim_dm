@@ -37,17 +37,12 @@ class SFMRDownstreamStateABC(metaclass=ABCMeta):  # pragma: no cover
 
     @staticmethod
     @abstractmethod
-    def recv_tree_interest_query_1nbr(interface: SFMRPruneImplABC) -> None:
+    def recv_link_open(interface: SFMRPruneImplABC) -> None:
         raise NotImplementedError()
 
     @staticmethod
     @abstractmethod
-    def recv_join(interface: SFMRPruneImplABC) -> None:
-        raise NotImplementedError()
-
-    @staticmethod
-    @abstractmethod
-    def dipt_expires(interface: SFMRPruneImplABC) -> None:
+    def recv_link_pruned(interface: SFMRPruneImplABC) -> None:
         raise NotImplementedError()
 
     @staticmethod
@@ -57,12 +52,7 @@ class SFMRDownstreamStateABC(metaclass=ABCMeta):  # pragma: no cover
 
     @staticmethod
     @abstractmethod
-    def lost_nbr(interface: SFMRPruneImplABC) -> None:
-        raise NotImplementedError()
-
-    @staticmethod
-    @abstractmethod
-    def lost_last_nbr(interface: SFMRPruneImplABC) -> None:
+    def has_no_neighbors(interface: SFMRPruneImplABC) -> None:
         raise NotImplementedError()
 
 
@@ -71,145 +61,56 @@ class SFMRDownstreamInterested(SFMRDownstreamStateABC):
     def recv_tree_interest_query(interface: SFMRPruneImplABC) -> None:
         #print('recv_tree_interest_query, DI -> DIP')
         interface.downstream_logger.debug('recv_tree_interest_query, DI -> DIP')
-
-        interface.set_downstream_node_interest_state(SFMRPruneState.DIP)
-        interface.set_downstream_interest_pending_timer()
+        interface.send_vote_not_interested()
 
     @staticmethod
-    def recv_tree_interest_query_1nbr(interface: SFMRPruneImplABC) -> None:
-        #print('recv_tree_interest_query, DI -> NDI (only 1 nbr)')
-        interface.downstream_logger.debug('recv_tree_interest_query, DI -> NDI (only 1 nbr)')
+    def recv_link_open(interface: SFMRPruneImplABC) -> None:
+        return
 
+    @staticmethod
+    def recv_link_pruned(interface: SFMRPruneImplABC) -> None:
         interface.set_downstream_node_interest_state(SFMRPruneState.NDI)
 
     @staticmethod
-    def recv_join(interface: SFMRPruneImplABC) -> None:
-        #print('recv_join, DI -> DI')
-        interface.downstream_logger.debug('recv_join, DI -> DI')
-
-    @staticmethod
-    def dipt_expires(interface: SFMRPruneImplABC) -> None:
-        assert False  # pragma: no cover
-
-    @staticmethod
     def is_now_non_root(interface: SFMRPruneImplABC) -> None:
-        assert False  # pragma: no cover
+        interface.send_vote_not_interested()
 
     @staticmethod
-    def lost_nbr(interface: SFMRPruneImplABC) -> None:
-        #print('lost_nbr, DI -> DIP')
+    def has_no_neighbors(interface: SFMRPruneImplABC) -> None:
         interface.downstream_logger.debug('lost_nbr, DI -> DIP')
-
-        interface.set_downstream_node_interest_state(SFMRPruneState.DIP)
-        interface.set_downstream_interest_pending_timer()
-        interface.send_tree_interest_query()
-
-    @staticmethod
-    def lost_last_nbr(interface: SFMRPruneImplABC) -> None:
-        #print('lost_nbr, DI -> NDI')
-        interface.downstream_logger.debug('lost_nbr, DI -> NDI')
 
         interface.set_downstream_node_interest_state(SFMRPruneState.NDI)
 
     def __str__(self):
         return 'DI'
 
-class SFMRDownstreamInterestedPending(SFMRDownstreamStateABC):
-    @staticmethod
-    def recv_tree_interest_query(interface: SFMRPruneImplABC) -> None:
-        #print('recv_prune, DIP -> DIP')
-        interface.downstream_logger.debug('recv_tree_interest_query, DIP -> DIP')
-
-    @staticmethod
-    def recv_tree_interest_query_1nbr(interface: SFMRPruneImplABC) -> None:
-        #print('recv_prune, DIP -> NDI (only 1 nbr)')
-        interface.downstream_logger.debug('recv_tree_interest_query, DIP -> NDI (only 1 nbr)')
-
-        interface.clear_downstream_interest_pending_timer()
-        interface.set_downstream_node_interest_state(SFMRPruneState.NDI)
-
-    @staticmethod
-    def recv_join(interface: SFMRPruneImplABC) -> None:
-        #print('recv_join, DIP -> DI')
-        interface.downstream_logger.debug('recv_join, DIP -> DI')
-
-        interface.clear_downstream_interest_pending_timer()
-        interface.set_downstream_node_interest_state(SFMRPruneState.DI)
-
-    @staticmethod
-    def dipt_expires(interface: SFMRPruneImplABC) -> None:
-        #print('dipt_expires, DIP -> NDI')
-        interface.downstream_logger.debug('dipt_expires, DIP -> NDI')
-
-        interface.set_downstream_node_interest_state(SFMRPruneState.NDI)
-
-    @staticmethod
-    def is_now_non_root(interface: SFMRPruneImplABC) -> None:
-        #print('is_now_nonroot, DIP -> DIP')
-        interface.downstream_logger.debug('is_now_nonroot, DIP -> DIP')
-
-        interface.set_downstream_interest_pending_timer()
-        interface.send_tree_interest_query()
-
-    @staticmethod
-    def lost_nbr(interface: SFMRPruneImplABC) -> None:
-        #print('lost_nbr, DIP -> DIP')
-        interface.downstream_logger.debug('lost_nbr, DIP -> DIP')
-
-    @staticmethod
-    def lost_last_nbr(interface: SFMRPruneImplABC) -> None:
-        #print('lost_nbr (last nbr), DIP -> NDI')
-        interface.downstream_logger.debug('lost_nbr (last nbr), DIP -> NDI')
-
-        # TODO nao ha referencia acerca do DIPT mas faz sentido estar aqui
-        interface.clear_downstream_interest_pending_timer()
-        interface.set_downstream_node_interest_state(SFMRPruneState.NDI)
-
-    def __str__(self):
-        return 'DIP'
 
 class SFMRNoDownstreamInterested(SFMRDownstreamStateABC):
     @staticmethod
     def recv_tree_interest_query(interface: SFMRPruneImplABC) -> None:
-        #print('recv_tree_interest_query, NDI -> NDI')
         interface.downstream_logger.debug('recv_tree_interest_query, NDI -> NDI')
+        interface.send_vote_not_interested()
 
     @staticmethod
-    def recv_tree_interest_query_1nbr(interface: SFMRPruneImplABC) -> None:
-        #print('recv_tree_interest_query, NDI -> NDI')
-        interface.downstream_logger.debug('recv_tree_interest_query, NDI -> NDI')
-
-    @staticmethod
-    def recv_join(interface: SFMRPruneImplABC) -> None:
-        #print('recv_join, NDI -> DI')
+    def recv_link_open(interface: SFMRPruneImplABC) -> None:
         interface.downstream_logger.debug('recv_join, NDI -> DI')
-
         interface.set_downstream_node_interest_state(SFMRPruneState.DI)
-        # TODO nao ha referencia acerca do DIPT e nao faz sentido estar aqui
-        #interface.clear_downstream_interest_pending_timer()
 
     @staticmethod
-    def dipt_expires(interface: SFMRPruneImplABC) -> None:
-        assert False  # pragma: no cover
+    def recv_link_pruned(interface: SFMRPruneImplABC) -> None:
+        return
 
     @staticmethod
     def is_now_non_root(interface: SFMRPruneImplABC) -> None:
-        assert False  # pragma: no cover
+        assert False
 
     @staticmethod
-    def lost_nbr(interface: SFMRPruneImplABC) -> None:
-        #print('lost_nbr, NDI -> NDI')
-        interface.downstream_logger.debug('lost_nbr, NDI -> NDI')
-
-    @staticmethod
-    def lost_last_nbr(interface: SFMRPruneImplABC) -> None:
-        #print('lost_nbr, NDI -> NDI')
-        interface.downstream_logger.debug('lost_nbr, NDI -> NDI')
+    def has_no_neighbors(interface: SFMRPruneImplABC) -> None:
+        return
 
     def __str__(self):
         return 'NDI'
 
 class SFMRPruneState():
     DI = SFMRDownstreamInterested()
-    DIP = SFMRDownstreamInterestedPending()
     NDI = SFMRNoDownstreamInterested()
