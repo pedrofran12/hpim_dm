@@ -1,5 +1,5 @@
 #define N 3
-#define BUFFER_SIZE 20
+#define BUFFER_SIZE 3
 #define INFINITE_METRIC 255
 
 
