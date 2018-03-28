@@ -18,15 +18,17 @@ chan ch[N] = [BUFFER_SIZE] of {mtype, byte, byte, ENTRY};
 
 // set my initial state
 inline initEntries(my_id, initial_state, entries) {
+	d_step{
 	entries.state[my_id] = initial_state;
 	entries.sequence_number[my_id] = 1;
+	}
 }
 
 // send msg reliably
 inline sendMsg(msg_type, me, metric, entries) {
+	atomic{
 	byte i;
 	//int aux[N] = {0, 0, 0, 0};
-	atomic{
 		for (i : 0 .. N-1) {
 			if
 			// discard if my channel
@@ -43,9 +45,9 @@ inline sendMsg(msg_type, me, metric, entries) {
 
 // check if AssertWinner is updated
 inline checkUpdated(my_id, entries, is_updated) {
+	atomic{
 	is_updated = true;
 	byte i;
-	atomic{
 		for (i : 0 .. N-1) {
 			if
 			:: entries.sequence_number[i] == 0 || (entries.state[i] == aw && i!=my_id)->
@@ -60,9 +62,9 @@ inline checkUpdated(my_id, entries, is_updated) {
 
 
 inline checkUpdatedOfNonQuackMsg(entries, recv_entries, is_updated) {
+	atomic{
 	is_updated = true;
 	byte i, j;
-	atomic{
 	for (i : 0 .. N-1) {
 		if
 		// if entry received has a higher valuer => aw should ask information about this node...
@@ -81,8 +83,8 @@ inline checkUpdatedOfNonQuackMsg(entries, recv_entries, is_updated) {
 }
 
 inline clearEntries(entries, my_id) {
-	byte i;
 	d_step{
+	byte i;
 		for (i : 0 .. N-1) {
 			if
 			:: i == my_id ->
@@ -124,7 +126,6 @@ proctype Node(byte my_id; mtype starting_state; byte initial_metric) {
 	bit quack_is_uptodate = false;
 
 	initEntries(my_id, starting_state, global_entries[my_id]);
-
 endsnode:
 	do
 	:: global_entries[my_id].state[my_id] == aw ->
@@ -266,8 +267,10 @@ endsnode:
 
 
 init {
-	run Node(0, nointerest, INFINITE_METRIC);
-	run Node(1, aw, 10);
-	run Node(2, aw, 20);
+	atomic{
+		run Node(0, nointerest, INFINITE_METRIC);
+		run Node(1, aw, 10);
+		run Node(2, aw, 20);
 	//run Node(3, interest, INFINITE_METRIC);
+	}
 }
