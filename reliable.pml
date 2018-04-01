@@ -1,7 +1,10 @@
 #define N 3
 #define BUFFER_SIZE 3
 #define INFINITE_METRIC 255
+#define NO_LAST_NEIGHBOR_QUACK 255
 
+
+#define i_win_assert(my_id, my_metric, other_id, other_metric) (my_metric < other_metric || (my_metric== other_metric && my_id > other_id))
 
 mtype = {msg_interest, msg_nointerest, msg_quack};
 mtype = {noinfo, interest, nointerest, aw, al};
@@ -15,12 +18,13 @@ ENTRY global_entries[N];
 #define test (global_entries[1].state[0] == nointerest && global_entries[1].state[1] == aw && global_entries[1].state[2] == al)
 				//msgtype, source, metric, array_entries
 chan ch[N] = [BUFFER_SIZE] of {mtype, byte, byte, ENTRY};
+chan unicast[N] = [1] of {mtype, byte};
 
 // set my initial state
 inline initEntries(my_id, initial_state, entries) {
 	d_step{
-	entries.state[my_id] = initial_state;
-	entries.sequence_number[my_id] = 1;
+		entries.state[my_id] = initial_state;
+		entries.sequence_number[my_id] = 1;
 	}
 }
 
@@ -31,10 +35,10 @@ inline sendMsg(msg_type, me, metric, entries) {
 	//int aux[N] = {0, 0, 0, 0};
 		for (i : 0 .. N-1) {
 			if
-			// discard if my channel
-			:: i == me -> skip;
-			// randomly send if not my channel
-			:: i != me ->
+			// discard if my channel or channel is full or msg is already in the channel (but receiver didnt access the message)
+			:: i == me || full(ch[i]) || ch[i]??[msg_type, eval(me), eval(metric)] ->skip;
+			// send if not my channel and channel not full and message not in channel
+			:: i != me && nfull(ch[i]) && !(ch[i]??[msg_type, eval(me), eval(metric)]) ->skip;// && nfull(ch[i]) ->//&& !(ch[i]??[msg_type, eval(me), eval(metric)]) ->
 				ch[i] ! msg_type(me, metric, entries);
 				//aux[i] = len(ch[i]);
 			fi;
@@ -61,19 +65,19 @@ inline checkUpdated(my_id, entries, is_updated) {
 }
 
 
-inline checkUpdatedOfNonQuackMsg(entries, recv_entries, is_updated) {
+inline checkUpdatedOfNonQuackMsg(my_id, entries, recv_entries, is_updated) {
 	atomic{
 	is_updated = true;
-	byte i, j;
+	byte i;
 	for (i : 0 .. N-1) {
 		if
 		// if entry received has a higher valuer => aw should ask information about this node...
 		// because that node already sent fresher info but wasnt received by aw
-		:: recv_entries.sequence_number[i] > entries.sequence_number[j] ->
-			entries.state[j] = noinfo;
-			entries.sequence_number[j] = 0;
+		:: i!=my_id && recv_entries.sequence_number[i] > entries.sequence_number[i] ->
+			entries.state[i] = noinfo;
+			entries.sequence_number[i] = 0;
 			is_updated = false; // node should send info
-		:: recv_entries.sequence_number[i] == 0 && entries.sequence_number[j] == 0 ->
+		:: i!=my_id && !(recv_entries.sequence_number[i] > entries.sequence_number[i]) && (entries.sequence_number[i] == 0 || (entries.state[i] == aw))->
 			is_updated = false;
 		:: else ->
 			skip;
@@ -100,30 +104,33 @@ inline clearEntries(entries, my_id) {
 inline printEntries(my_id, entries) {
 	byte i = 0;
 	atomic {
+/*
 		printf("i am process %d\n", my_id);
 		for(i : 0 .. (N-1)) {
 			printf("    %d   %e   %d\n", i, entries.state[i], entries.sequence_number[i]);
 		}
+*/
+//printf("1 is aw %d  :  2 is aw %d\n", global_entries[1].state[1]==aw, global_entries[2].state[2]==aw);
 	}
 }
 
 
-proctype Node(byte my_id; mtype starting_state; byte initial_metric) {
+bool change_at_metric = false;
+proctype Node(byte my_id; mtype starting_state; byte my_metric) {
 	// All states
-		//ENTRY entries;
-		byte last_neighbor_quack = 100; //nao usado
-		byte my_metric = initial_metric;
-		byte metric_of_aw = 0;
+		byte last_neighbor_quack = NO_LAST_NEIGHBOR_QUACK;
+		byte metric_of_aw = INFINITE_METRIC;
 		bool is_updated = false;
+		byte new_metric;
 	// MSG info
 		mtype msg_type;
 		byte source;
 		byte metric_rcv;
 		ENTRY recv_entries;
 
-	bit i_have_better_metric = false;
-	bit recv_fresher_state = false;
-	bit quack_is_uptodate = false;
+		bool i_have_better_metric = false;
+		bool recv_fresher_state = false;
+		bool quack_is_uptodate = false;
 
 	initEntries(my_id, starting_state, global_entries[my_id]);
 endsnode:
@@ -131,12 +138,12 @@ endsnode:
 	:: global_entries[my_id].state[my_id] == aw ->
 		atomic {
 		if
-		:: nempty(ch[my_id]) ->
+		:: nempty(ch[my_id]) && empty(unicast[my_id]) ->
 			ch[my_id] ? msg_type(source, metric_rcv, recv_entries);
 			recv_fresher_state = (global_entries[my_id].sequence_number[source] < recv_entries.sequence_number[source]);
 			if
 			:: msg_type == msg_quack ->
-				i_have_better_metric = my_metric < metric_rcv || (my_metric == metric_rcv && my_id > source);
+				i_have_better_metric = i_win_assert(my_id, my_metric, source, metric_rcv);
 				if
 				// recv worse metric
 				:: i_have_better_metric ->
@@ -146,16 +153,19 @@ endsnode:
 					:: recv_fresher_state ->
 						global_entries[my_id].sequence_number[source] = recv_entries.sequence_number[source];
 						global_entries[my_id].state[source] = recv_entries.state[source];
-						sendMsg(msg_quack, my_id, my_metric, global_entries[my_id]);
-						checkUpdated(my_id, global_entries[my_id], is_updated);
+						//checkUpdated(my_id, global_entries[my_id], is_updated);
 					:: else -> skip;
 					fi;
+					checkUpdated(my_id, global_entries[my_id], is_updated);
+					sendMsg(msg_quack, my_id, my_metric, global_entries[my_id]);
 				:: !i_have_better_metric ->
 					// i am assert loser
+					last_neighbor_quack = source;
+					metric_of_aw = metric_rcv;
+					is_updated = false;
 					global_entries[my_id].state[my_id] = al;
 					global_entries[my_id].sequence_number[my_id]++;
 					sendMsg(msg_nointerest, my_id, my_metric, global_entries[my_id]);
-					is_updated = false;
 				fi;
 			:: msg_type == msg_nointerest || msg_type == msg_interest ->
 				if
@@ -163,28 +173,39 @@ endsnode:
 				:: recv_fresher_state ->
 					global_entries[my_id].sequence_number[source] = recv_entries.sequence_number[source];
 					global_entries[my_id].state[source] = recv_entries.state[source];
-					checkUpdatedOfNonQuackMsg(global_entries[my_id], recv_entries, is_updated);
+					checkUpdatedOfNonQuackMsg(my_id, global_entries[my_id], recv_entries, is_updated);
 					sendMsg(msg_quack, my_id, my_metric, global_entries[my_id]);
-				:: !recv_fresher_state -> skip;
-					checkUpdatedOfNonQuackMsg(global_entries[my_id], recv_entries, is_updated);
+				:: !recv_fresher_state ->
+					checkUpdatedOfNonQuackMsg(my_id, global_entries[my_id], recv_entries, is_updated);
 					sendMsg(msg_quack, my_id, my_metric, global_entries[my_id]);
 				fi;
-				//checkUpdated(my_id, global_entries[my_id], is_updated);
 				//printEntries(my_id, global_entries[my_id]);
 			fi;
-		:: empty(ch[my_id]) && !is_updated ->
+		:: nempty(unicast[my_id]) ->
+				unicast[my_id] ? msg_type(new_metric);
+				if
+				:: new_metric > my_metric ->
+						is_updated = false;
+						clearEntries(global_entries[my_id], my_id);
+						sendMsg(msg_quack, my_id, new_metric, global_entries[my_id]);
+						change_at_metric = false;
+				:: else ->
+						skip;
+				fi;
+				my_metric = new_metric
+		:: empty(ch[my_id]) && empty(unicast[my_id]) && !is_updated ->
 			sendMsg(msg_quack, my_id, my_metric, global_entries[my_id]);
 		fi;
-		}
+	}
 	:: global_entries[my_id].state[my_id] == al ->
 		atomic {
 		if
-		:: nempty(ch[my_id]) ->
+		:: nempty(ch[my_id]) && empty(unicast[my_id]) ->
 			ch[my_id] ? msg_type(source, metric_rcv, recv_entries);
-			i_have_better_metric = my_metric < metric_rcv || (my_metric == metric_rcv && my_id > source);
+			i_have_better_metric = i_win_assert(my_id, my_metric, source, metric_rcv);
 			if
 			:: msg_type == msg_quack ->
-				quack_is_uptodate = global_entries[my_id].sequence_number[source] == recv_entries.sequence_number[source]
+				quack_is_uptodate = global_entries[my_id].sequence_number[my_id] == recv_entries.sequence_number[my_id]
 				if
 				// recv worse metric
 				:: i_have_better_metric ->
@@ -194,10 +215,15 @@ endsnode:
 					clearEntries(global_entries[my_id], my_id)
 					sendMsg(msg_quack, my_id, my_metric, global_entries[my_id]);
 					is_updated = false;
+					last_neighbor_quack = NO_LAST_NEIGHBOR_QUACK;
+					metric_of_aw = INFINITE_METRIC;
 				:: !i_have_better_metric && quack_is_uptodate ->
+					last_neighbor_quack = source;
+					metric_of_aw = metric_rcv;
 					is_updated = true;
-					sendMsg(msg_nointerest, my_id, my_metric, global_entries[my_id]);
 				:: !i_have_better_metric && !quack_is_uptodate ->
+					last_neighbor_quack = NO_LAST_NEIGHBOR_QUACK;
+					metric_of_aw = INFINITE_METRIC;
 					is_updated = false;
 					sendMsg(msg_nointerest, my_id, my_metric, global_entries[my_id]);
 				fi;
@@ -209,14 +235,32 @@ endsnode:
 					clearEntries(global_entries[my_id], my_id)
 					sendMsg(msg_quack, my_id, my_metric, global_entries[my_id]);
 					is_updated = false;
+					last_neighbor_quack = NO_LAST_NEIGHBOR_QUACK;
+					metric_of_aw = INFINITE_METRIC;
 				:: source == last_neighbor_quack && !i_have_better_metric ->
 					sendMsg(msg_nointerest, my_id, my_metric, global_entries[my_id]);
 					is_updated = false;
+					last_neighbor_quack = NO_LAST_NEIGHBOR_QUACK;
+					metric_of_aw = INFINITE_METRIC;
 				:: source != last_neighbor_quack -> skip;
 				fi;
-			:: else -> skip;
 			fi;
-		:: empty(ch[my_id]) && !is_updated ->
+		:: nempty(unicast[my_id]) ->
+				unicast[my_id] ? msg_type(new_metric);
+				my_metric = new_metric;
+				if
+				:: i_win_assert(my_id, my_metric, last_neighbor_quack, metric_of_aw) ->
+						global_entries[my_id].state[my_id] = aw;
+						global_entries[my_id].sequence_number[my_id]++;
+						clearEntries(global_entries[my_id], my_id);
+						sendMsg(msg_quack, my_id, my_metric, global_entries[my_id]);
+						is_updated = false;
+						metric_of_aw = INFINITE_METRIC;
+						last_neighbor_quack = NO_LAST_NEIGHBOR_QUACK;
+				:: else ->
+						skip;
+				fi;
+		:: empty(ch[my_id]) && empty(unicast[my_id]) && !is_updated ->
 			sendMsg(msg_nointerest, my_id, my_metric, global_entries[my_id]);
 		fi;
 	}
@@ -227,13 +271,17 @@ endsnode:
 			ch[my_id] ? msg_type(source, metric_rcv, recv_entries);
 			if
 			:: msg_type == msg_quack ->
-				quack_is_uptodate = global_entries[my_id].sequence_number[source] == recv_entries.sequence_number[source]
+				quack_is_uptodate = global_entries[my_id].sequence_number[my_id] == recv_entries.sequence_number[my_id]
 				if
 				:: quack_is_uptodate ->
 					is_updated = true;
+					last_neighbor_quack = source;
+					metric_of_aw = metric_rcv;
 				:: !quack_is_uptodate ->
 					is_updated = false;
 					sendMsg(msg_nointerest, my_id, INFINITE_METRIC, global_entries[my_id]);
+					last_neighbor_quack = NO_LAST_NEIGHBOR_QUACK;
+					metric_of_aw = INFINITE_METRIC;
 				fi;
 			:: else -> skip;
 			fi;
@@ -245,16 +293,20 @@ endsnode:
 		atomic {
 		if
 		:: nempty(ch[my_id]) ->
-			ch[my_id] ? msg_type(source, metric_rcv, recv_entries);
+		ch[my_id] ? msg_type(source, metric_rcv, recv_entries);
 			if
 			:: msg_type == msg_quack ->
-				quack_is_uptodate = global_entries[my_id].sequence_number[source] == recv_entries.sequence_number[source]
+				quack_is_uptodate = global_entries[my_id].sequence_number[my_id] == recv_entries.sequence_number[my_id]
 				if
 				:: quack_is_uptodate ->
 					is_updated = true;
+					last_neighbor_quack = source;
+					metric_of_aw = metric_rcv;
 				:: !quack_is_uptodate ->
 					is_updated = false;
 					sendMsg(msg_interest, my_id, INFINITE_METRIC, global_entries[my_id]);
+					last_neighbor_quack = NO_LAST_NEIGHBOR_QUACK;
+					metric_of_aw = INFINITE_METRIC;
 				fi;
 			:: else -> skip;
 			fi;
@@ -265,12 +317,54 @@ endsnode:
 	od;
 }
 
+byte aw_id;
+mtype = {delete_node, change_metric};
+byte node_metric[N];
+//ltl test_unicast {[](<>((global_entries[1].state[1]==al) && \
+			(global_entries[2].state[2]==aw) && (global_entries[2].state[1]==al) && \
+			(global_entries[2].state[0]==nointerest)))}
+proctype Unicast() {
+	atomic {
+		byte aw_metric;
+		byte i, node_id;
+
+		//select(node_id : 1 .. 2);
+		node_id = 2;
+		//select(new_metric : 1 .. 254);
+		node_metric[node_id] = 5;
+
+		aw_metric = 255;
+		aw_id = 0
+		unicast[node_id] ! change_metric(5);
+		for(i : 0 .. N-1){
+			// select new assert winner id
+			if
+			:: i_win_assert(i, node_metric[i], aw_id, aw_metric) ->
+				aw_id = i;
+				aw_metric = node_metric[i];
+			:: else ->
+				skip;
+			fi;
+		}
+		change_at_metric = true
+	}
+}
+
+
+
 
 init {
+	node_metric[0] = INFINITE_METRIC;
+	node_metric[1] = 10;
+	node_metric[2] = 20;
 	atomic{
 		run Node(0, nointerest, INFINITE_METRIC);
 		run Node(1, aw, 10);
 		run Node(2, aw, 20);
-	//run Node(3, interest, INFINITE_METRIC);
+		//run Node(3, interest, INFINITE_METRIC);
+	}
+	atomic{
+		run Unicast();
+		//change_at_metric = true;
 	}
 }
