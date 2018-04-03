@@ -1,10 +1,11 @@
 #define N 3
-#define BUFFER_SIZE 3
+#define BUFFER_SIZE 2
 #define INFINITE_METRIC 255
 #define NO_LAST_NEIGHBOR_QUACK 255
 
 
-#define i_win_assert(my_id, my_metric, other_id, other_metric) (my_metric < other_metric || (my_metric== other_metric && my_id > other_id))
+#define i_win_assert(my_id, my_metric, other_id, other_metric) \
+  (my_metric < other_metric || (my_metric== other_metric && my_id > other_id))
 
 mtype = {msg_interest, msg_nointerest, msg_quack};
 mtype = {noinfo, interest, nointerest, aw, al};
@@ -15,7 +16,9 @@ typedef ENTRY {
 }
 
 ENTRY global_entries[N];
-#define test (global_entries[1].state[0] == nointerest && global_entries[1].state[1] == aw && global_entries[1].state[2] == al)
+#define test (global_entries[1].state[0] == nointerest \
+              && global_entries[1].state[1] == aw \
+              && global_entries[1].state[2] == al)
 				//msgtype, source, metric, array_entries
 chan ch[N] = [BUFFER_SIZE] of {mtype, byte, byte, ENTRY};
 chan unicast[N] = [1] of {mtype, byte};
@@ -35,7 +38,8 @@ inline sendMsg(msg_type, me, metric, entries) {
 	//int aux[N] = {0, 0, 0, 0};
 		for (i : 0 .. N-1) {
 			if
-			// discard if my channel or channel is full or msg is already in the channel (but receiver didnt access the message)
+			// discard if my channel or channel is full or msg is already in the
+			// channel (but receiver didnt access the message)
 			:: i == me || full(ch[i]) || ch[i]??[msg_type, eval(me), eval(metric)] ->skip;
 			// send if not my channel and channel not full and message not in channel
 			:: i != me && nfull(ch[i]) && !(ch[i]??[msg_type, eval(me), eval(metric)]) ->skip;// && nfull(ch[i]) ->//&& !(ch[i]??[msg_type, eval(me), eval(metric)]) ->
