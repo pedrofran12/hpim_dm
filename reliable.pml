@@ -392,8 +392,8 @@ endsnode:
 
 				fi;*/
 		:: empty(ch[my_id]) /*&& empty(failure_detector_channel[my_id])*/ && !is_updated ->
-          msg_type_send = ((is_interested(STATE_ME(my_id))) -> msg_interest : msg_nointerest);
-          sendMsg(msg_type_send, my_id, INFINITE_METRIC, global_entries[my_id]);
+          msg_type = ((is_interested(STATE_ME(my_id))) -> msg_interest : msg_nointerest);
+          sendMsg(msg_type, my_id, INFINITE_METRIC, global_entries[my_id]);
 		fi;
     }
 	od;
