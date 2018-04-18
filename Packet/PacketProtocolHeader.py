@@ -1,12 +1,12 @@
 import json
 from Packet.PacketProtocolHello import PacketProtocolHello
 from Packet.PacketProtocolAssert import PacketProtocolAssert, PacketProtocolAssertReliable, PacketProtocolAssertReliableAck
-from Packet.PacketProtocolTreeInterestQuery import PacketProtocolTreeInterestQuery, PacketProtocolTreeInterestQueryAck
+from Packet.PacketProtocolTreeInterestQuery import PacketProtocolPruneL, PacketProtocolQuack
 from Packet.PacketProtocolSetTree import PacketProtocolSetTree, PacketProtocolSetTreeAck
 from Packet.PacketProtocolRemoveTree import PacketProtocolRemoveTree, PacketProtocolRemoveTreeAck
 from Packet.PacketProtocolConfirm import PacketProtocolConfirm, PacketProtocolConfirmAck
 from Packet.PacketProtocolActiveTrees import PacketProtocolActiveTrees, PacketProtocolActiveTreesAck
-from Packet.PacketProtocolJoinTree import PacketProtocolJoinTree, PacketProtocolJoinTreeAck
+from Packet.PacketProtocolJoinTree import PacketProtocolJoinTree, PacketProtocolPruneTree
 
 
 from .PacketPayload import PacketPayload
@@ -17,6 +17,7 @@ from .PacketPayload import PacketPayload
 '''
 class PacketProtocolHeader(PacketPayload):
 
+    '''
     PIM_MSG_TYPES = {"HELLO": PacketProtocolHello,
                      "ASSERT": PacketProtocolAssert,
                      "ASSERT_RELIABLE": PacketProtocolAssertReliable,
@@ -25,6 +26,28 @@ class PacketProtocolHeader(PacketPayload):
                      "JOIN_TREE_ACK": PacketProtocolJoinTreeAck,
                      "TREE_INTEREST_QUERY": PacketProtocolTreeInterestQuery,
                      "TREE_INTEREST_QUERY_ACK": PacketProtocolTreeInterestQueryAck,
+                     "SET_TREE": PacketProtocolSetTree,
+                     "SET_TREE_ACK": PacketProtocolSetTreeAck,
+                     "REMOVE_TREE": PacketProtocolRemoveTree,
+                     "REMOVE_TREE_ACK": PacketProtocolRemoveTreeAck,
+                     "CONFIRM": PacketProtocolConfirm,
+                     "CONFIRM_ACK": PacketProtocolConfirmAck,
+                     "ACTIVE_TREES": PacketProtocolActiveTrees,
+                     "ACTIVE_TREES_ACK": PacketProtocolActiveTreesAck
+                     }
+    '''
+    PIM_MSG_TYPES = {"HELLO": PacketProtocolHello,
+                     "ASSERT": PacketProtocolAssert,
+                     "ASSERT_RELIABLE": PacketProtocolAssertReliable,
+                     "ASSERT_RELIABLE_ACK": PacketProtocolAssertReliableAck,
+                     "JOIN_TREE": PacketProtocolJoinTree,
+                     #"JOIN_TREE_ACK": PacketProtocolJoinTreeAck,
+                     "PRUNE_TREE": PacketProtocolPruneTree,
+                     #"TREE_INTEREST_QUERY": PacketProtocolTreeInterestQuery,
+                     #"TREE_INTEREST_QUERY_ACK": PacketProtocolTreeInterestQueryAck,
+                     "PRUNE_L": PacketProtocolPruneL,
+                     "QUACK": PacketProtocolQuack,
+
                      "SET_TREE": PacketProtocolSetTree,
                      "SET_TREE_ACK": PacketProtocolSetTreeAck,
                      "REMOVE_TREE": PacketProtocolRemoveTree,

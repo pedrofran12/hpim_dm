@@ -119,13 +119,40 @@ class KernelEntry:
         received_metric = AssertMetric(metric_preference=metric_preference, route_metric=metric, ip_address=assert_sender_ip)
         self.interface_state[index].recv_assert_msg(received_metric)
 
+    '''
     def recv_tree_interest_query_msg(self, index, packet):
         print("recv tree_interest_query msg")
         self.interface_state[index].recv_tree_interest_query_msg()
+    '''
 
     def recv_join_msg(self, index, packet):
         print("recv join msg")
-        self.interface_state[index].recv_join_msg()
+        sender_ip = packet.ip_header.ip_src
+        pkt_join = packet.payload.payload
+
+        from .downstream_nodes_state_entry import StateEntry
+        state = StateEntry(sender_ip, "J", pkt_join.counter)
+        self.interface_state[index].recv_join_msg(state)
+
+    def recv_prune_msg(self, index, packet):
+        print("recv prune msg")
+        sender_ip = packet.ip_header.ip_src
+        pkt_prune = packet.payload.payload
+
+        from .downstream_nodes_state_entry import StateEntry
+        state = StateEntry(sender_ip, "P", pkt_prune.counter)
+        self.interface_state[index].recv_prune_msg(state)
+
+    def recv_prune_l_msg(self, index, packet):
+        print("recv prune l msg")
+        pkt_prune_l = packet.payload.payload
+        self.interface_state[index].recv_prune_l_msg(pkt_prune_l.states)
+
+    def recv_quack_msg(self, index, packet):
+        print("recv quack msg")
+        sender_ip = packet.ip_header.ip_src
+        pkt_prune_l = packet.payload.payload
+        self.interface_state[index].recv_quack_msg(sender_ip, pkt_prune_l.states)
 
     ################################################
     # Send state refresh msg

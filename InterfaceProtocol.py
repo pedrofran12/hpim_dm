@@ -18,7 +18,7 @@ from Packet.PacketProtocolSetTree import PacketProtocolSetTree, PacketProtocolSe
 from Packet.PacketProtocolRemoveTree import PacketProtocolRemoveTree, PacketProtocolRemoveTreeAck
 from Packet.PacketProtocolConfirm import PacketProtocolConfirm, PacketProtocolConfirmAck
 from Packet.PacketProtocolJoinTree import PacketProtocolJoinTree, PacketProtocolJoinTreeAck
-from Packet.PacketProtocolTreeInterestQuery import PacketProtocolTreeInterestQuery, PacketProtocolTreeInterestQueryAck
+#from Packet.PacketProtocolTreeInterestQuery import PacketProtocolTreeInterestQuery, PacketProtocolTreeInterestQueryAck
 from Packet.PacketProtocolAssert import PacketProtocolAssertReliableAck, PacketProtocolAssert
 
 import socket
@@ -271,12 +271,7 @@ class InterfaceProtocol(Interface):
 
 
     def receive_join_tree(self, packet):
-        # First send ACK
-        ip_src = packet.ip_header.ip_src
         pkt_jt = packet.payload.payload  # type: PacketProtocolJoinTree
-        pkt_jt_ack = PacketProtocolJoinTreeAck(pkt_jt.source, pkt_jt.group)
-        pkt_ack = PacketProtocolHeader(pkt_jt_ack, id_reliable=packet.payload.id_reliable)
-        self.send(data=Packet(payload=pkt_ack), group_ip=ip_src)
 
         # Process JoinTree msg
         source_group = (pkt_jt.source, pkt_jt.group)
@@ -285,6 +280,39 @@ class InterfaceProtocol(Interface):
         except:
             traceback.print_exc()
 
+    def receive_prune_tree(self, packet):
+        pkt_jt = packet.payload.payload  # type: PacketProtocolPruneTree
+
+        # Process Prune msg
+        source_group = (pkt_jt.source, pkt_jt.group)
+        try:
+            Main.kernel.get_routing_entry(source_group).recv_prune_msg(self.vif_index, packet)
+        except:
+            traceback.print_exc()
+
+    def receive_prune_l(self, packet):
+        pkt_jt = packet.payload.payload  # type: PacketProtocolPruneL
+
+        # Process PruneL msg
+        source_group = (pkt_jt.source, pkt_jt.group)
+        try:
+            Main.kernel.get_routing_entry(source_group).recv_prune_l_msg(self.vif_index, packet)
+        except:
+            traceback.print_exc()
+
+
+    def receive_quack(self, packet):
+        pkt_jt = packet.payload.payload  # type: PacketProtocolQuack
+
+        # Process Quack msg
+        source_group = (pkt_jt.source, pkt_jt.group)
+        try:
+            Main.kernel.get_routing_entry(source_group).recv_quack_msg(self.vif_index, packet)
+        except:
+            traceback.print_exc()
+
+
+    '''
     def receive_tree_interest_query(self, packet):
         # First send ACK
         ip_src = packet.ip_header.ip_src
@@ -299,6 +327,7 @@ class InterfaceProtocol(Interface):
             Main.kernel.get_routing_entry(source_group).recv_tree_interest_query_msg(self.vif_index, packet)
         except:
             traceback.print_exc()
+    '''
 
     def receive_confirm(self, packet):
         # First send ACK
@@ -369,6 +398,7 @@ class InterfaceProtocol(Interface):
             reliable_msg_at_buffer.receive_ack(ip)
 
 
+    '''
     PKT_FUNCTIONS = {
         "HELLO": receive_hello,
         "JOIN_TREE": receive_join_tree,
@@ -390,5 +420,30 @@ class InterfaceProtocol(Interface):
         "REMOVE_TREE_ACK": receive_ack,
         "CONFIRM": receive_confirm,
         #"CONFIRM_ACK": receive_confirm_ack,
+        "CONFIRM_ACK": receive_ack,
+    }
+    '''
+
+    PKT_FUNCTIONS = {
+        "HELLO": receive_hello,
+        "JOIN_TREE": receive_join_tree,
+        "PRUNE_TREE": receive_prune_tree,
+        "PRUNE_L": receive_prune_l,
+        "QUACK": receive_quack,
+        "ASSERT": receive_assert,
+        "ASSERT_RELIABLE": receive_assert_reliable,
+        # "ASSERT_RELIABLE_ACK": receive_assert_reliable_ack,
+        "ASSERT_RELIABLE_ACK": receive_ack,
+        "ACTIVE_TREES": receive_active_trees,
+        # "ACTIVE_TREES_ACK": receive_active_trees_ack,
+        "ACTIVE_TREES_ACK": receive_ack,
+        "SET_TREE": receive_set_tree,
+        # "SET_TREE_ACK": receive_set_tree_ack,
+        "SET_TREE_ACK": receive_ack,
+        "REMOVE_TREE": receive_remove_tree,
+        # "REMOVE_TREE_ACK": receive_remove_tree_ack,
+        "REMOVE_TREE_ACK": receive_ack,
+        "CONFIRM": receive_confirm,
+        # "CONFIRM_ACK": receive_confirm_ack,
         "CONFIRM_ACK": receive_ack,
     }

@@ -11,8 +11,8 @@ import traceback
 from .assert_ import AssertState, SFMRAssertABC, SFMRAssertWinner
 
 from Packet.PacketProtocolHeader import PacketProtocolHeader
-from Packet.PacketProtocolJoinTree import PacketProtocolJoinTree
-from Packet.PacketProtocolTreeInterestQuery import PacketProtocolTreeInterestQuery
+from Packet.PacketProtocolJoinTree import PacketProtocolJoinTree, PacketProtocolPruneTree
+#from Packet.PacketProtocolTreeInterestQuery import PacketProtocolTreeInterestQuery
 from Packet.PacketProtocolAssert import PacketProtocolAssert
 from Packet.Packet import Packet
 
@@ -55,15 +55,25 @@ class TreeInterface(metaclass=ABCMeta):
     def recv_assert_msg(self, received_metric: AssertMetric):
         return
 
-    def recv_join_msg(self):
+    def recv_join_msg(self, join_state):
         return
 
-    def recv_tree_interest_query_msg(self):
+    def recv_prune_msg(self, prune_state):
         return
+
+    def recv_prune_l_msg(self, states):
+        return
+
+    def recv_quack_msg(self, neighbor_ip, captured_states: dict):
+        return
+
+    #def recv_tree_interest_query_msg(self):
+    #    return
 
     ######################################
     # Send messages
     ######################################
+    '''
     def send_tree_interest_query(self):
         print("send tree_interest_query")
         try:
@@ -76,6 +86,9 @@ class TreeInterface(metaclass=ABCMeta):
         except:
             traceback.print_exc()
             return
+    '''
+    def send_quack(self):
+        return
 
     def send_join_tree(self):
         print("send join_tree")
@@ -85,7 +98,20 @@ class TreeInterface(metaclass=ABCMeta):
             pckt = Packet(payload=PacketProtocolHeader(ph))
 
             #self.get_interface().send(pckt)
-            self.get_interface().send_reliably(pckt)
+            self.get_interface().send(pckt)
+        except:
+            traceback.print_exc()
+            return
+
+    def send_prune_tree(self):
+        print("send prune_tree")
+        try:
+            (source, group) = self.get_tree_id()
+
+            ph = PacketProtocolPruneTree(source, group)
+            pckt = Packet(payload=PacketProtocolHeader(ph))
+            #self.get_interface().send(pckt)
+            self.get_interface().send(pckt)
         except:
             traceback.print_exc()
             return

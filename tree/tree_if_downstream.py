@@ -6,7 +6,7 @@ Created on Jul 16, 2015
 from threading import Timer
 from CustomTimer.RemainingTimer import RemainingTimer
 from .assert_ import AssertState, SFMRAssertABC, SFMRAssertWinner
-from .downstream_state import SFMRPruneState, SFMRDownstreamStateABC, SFMRDownstreamInterested, SFMRDownstreamInterestedPending
+from .downstream_state import SFMRPruneState, SFMRDownstreamStateABC
 from .tree_interface import TreeInterface
 from Packet.PacketProtocolRemoveTree import PacketProtocolRemoveTree
 from Packet.PacketProtocolHeader import PacketProtocolHeader
@@ -28,18 +28,45 @@ class TreeInterfaceDownstream(TreeInterface):
         self.assert_logger = logging.LoggerAdapter(logger.logger.getChild('Assert'), logger.extra)
         self.downstream_logger = logging.LoggerAdapter(logger.logger.getChild('Downstream'), logger.extra)
 
+        # Reliable State
+        from .non_root_reliable import SFMRReliableState
+        self._reliable_state = SFMRReliableState.STABLE
+        self._reliable_state_timer = None
+        self._reliable_state_routers_dict = {}
+
         # Assert Winner State
         self._assert_state = AssertState.Winner
         self._assert_winner_metric = AssertMetric(rpc.metric_preference, rpc.route_metric, self.get_ip())
         self.assert_logger.debug(str(self._assert_state))
 
         # Downstream Node Interest State
-        self._downstream_node_interest_state = SFMRPruneState.DIP
+        self._downstream_node_interest_state = SFMRPruneState.DI
         self._downstream_interest_pending_timer = None
         self.downstream_logger.debug(str(self._downstream_node_interest_state))
-        self._downstream_node_interest_state.is_now_non_root(self)
+        #self._downstream_node_interest_state.is_now_non_root(self)
 
         self.logger.debug('Created DownstreamInterface')
+
+        from .downstream_nodes_state_entry import StateEntry
+        for neighbor_ip in self.get_interface().neighbors:
+            self._reliable_state_routers_dict[neighbor_ip] = StateEntry(neighbor_ip, "NI", 0)
+        self._reliable_state_routers_dict[self.get_ip()] = StateEntry(self.get_ip(), "AW", 1)
+
+        self.set_reliable_state(SFMRReliableState.UNSTABLE)
+        self.set_reliable_timer()
+
+    ############################################
+    # Set Reliable state
+    ############################################
+    def set_reliable_state(self, new_state, reset_timer = False):
+        if new_state != self._reliable_state:
+            self._reliable_state = new_state
+            new_state.transition(self)
+        elif reset_timer:
+            new_state.transition(self)
+
+            #self.originator_logger.debug(str(new_state))
+
 
     ############################################
     # Set ASSERT State
@@ -52,6 +79,12 @@ class TreeInterfaceDownstream(TreeInterface):
 
                 self.change_tree()
                 self.evaluate_in_tree()
+
+                # TODO METER ISTO NOUTRO SITIO
+                if new_state == AssertState.Winner:
+                    new_state.is_now_assert_winner(self)
+                else:
+                    new_state.is_now_assert_loser(self)
 
     def set_assert_winner_metric(self, new_assert_metric: AssertMetric):
         with self.get_state_lock():
@@ -80,6 +113,18 @@ class TreeInterfaceDownstream(TreeInterface):
                 self.change_tree()
                 self.evaluate_in_tree()
 
+    def check_downstream_interest(self):
+        it = False
+        for state in self._reliable_state_routers_dict.values():
+            if state.state == "J" or state.state == "NI":
+                it = True
+                break
+
+        if it:
+            self._downstream_node_interest_state.in_tree(self)
+        else:
+            self._downstream_node_interest_state.out_tree(self)
+
     ##########################################
     # Check timers
     ##########################################
@@ -96,20 +141,21 @@ class TreeInterfaceDownstream(TreeInterface):
     ##########################################
     # Set timers
     ##########################################
-    def set_downstream_interest_pending_timer(self, time=5):
-        self.clear_downstream_interest_pending_timer()
-        self._downstream_interest_pending_timer = Timer(time, self.downstream_interest_pending_timeout)
-        self._downstream_interest_pending_timer.start()
+    # Reliable timer
+    def set_reliable_timer(self):
+        self.clear_reliable_timer()
+        self._reliable_state_timer = Timer(10, self.reliable_timeout)
+        self._reliable_state_timer.start()
 
-    def clear_downstream_interest_pending_timer(self):
-        if self._downstream_interest_pending_timer is not None:
-            self._downstream_interest_pending_timer.cancel()
+    def clear_reliable_timer(self):
+        if self._reliable_state_timer is not None:
+            self._reliable_state_timer.cancel()
 
     ###########################################
     # Timer timeout
     ###########################################
-    def downstream_interest_pending_timeout(self):
-        self._downstream_node_interest_state.dipt_expires(self)
+    def reliable_timeout(self):
+        self._reliable_state.timer_expires(self)
 
     ###########################################
     # Recv packets
@@ -124,17 +170,61 @@ class TreeInterfaceDownstream(TreeInterface):
             self._assert_state.recv_worse_metric(self, received_metric)
 
     # Override
-    def recv_join_msg(self):
-        self._downstream_node_interest_state.recv_join(self)
+    def recv_join_msg(self, join_state):
+        neighbor_ip = join_state.neighbor_ip
+        if neighbor_ip in self._reliable_state_routers_dict and join_state.is_better_than(self._reliable_state_routers_dict[neighbor_ip]):
+            self._reliable_state_routers_dict[neighbor_ip] = join_state
+            # todo check in tree
 
-    # Override
+        self._reliable_state.receive_RECENT_join_prune_prunel(self)
+        self.check_downstream_interest()
+
+    def recv_prune_msg(self, prune_state):
+        neighbor_ip = prune_state.neighbor_ip
+        if neighbor_ip in self._reliable_state_routers_dict and prune_state.is_better_than(self._reliable_state_routers_dict[neighbor_ip]):
+            self._reliable_state_routers_dict[neighbor_ip] = prune_state
+            # todo check in tree
+
+        self._reliable_state.receive_RECENT_join_prune_prunel(self)
+        self.check_downstream_interest()
+
+
+    def recv_prune_l_msg(self, states):
+        for neighbor_ip, state in states.items():
+            if neighbor_ip in self._reliable_state_routers_dict and state.is_better_than(self._reliable_state_routers_dict[neighbor_ip]):
+                self._reliable_state_routers_dict[neighbor_ip] = state
+                # todo check in tree
+
+        self._reliable_state.receive_RECENT_join_prune_prunel(self)
+        self.check_downstream_interest()
+
+
+    def recv_quack_msg(self, neighbor_ip, states):
+        for neighbor_ip, state in states.items():
+            if neighbor_ip in self._reliable_state_routers_dict and state.is_better_than(self._reliable_state_routers_dict[neighbor_ip]):
+                self._reliable_state_routers_dict[neighbor_ip] = state
+
+        if self._assert_state == AssertState.Winner:
+            #If im AW there is at least other router thinking that it is AW
+            self._reliable_state.receive_ack_and_info_incorrect_or_not_existent(self)
+        elif self.get_ip() in states and states[self.get_ip()].state == 'AL':
+            # Im AL and want to check if AW received my info correctly
+            self._reliable_state.receive_ack_and_info_correct(self)
+        else:
+            # Im AL and AW didnt receive my info correctly
+            self._reliable_state.receive_ack_and_info_incorrect_or_not_existent(self)
+
+        self.check_downstream_interest()
+
+
+    '''
     def recv_tree_interest_query_msg(self):
         number_of_neighbors = self.number_of_neighbors()
         if number_of_neighbors == 1:
             self._downstream_node_interest_state.recv_tree_interest_query_1nbr(self)
         elif number_of_neighbors > 1:
             self._downstream_node_interest_state.recv_tree_interest_query(self)
-
+    '''
 
     ###########################################
     # Send packets
@@ -152,6 +242,32 @@ class TreeInterfaceDownstream(TreeInterface):
             traceback.print_exc()
             return
 
+    def send_quack(self):
+        from Packet.PacketProtocolTreeInterestQuery import PacketProtocolQuack
+        try:
+            (source, group) = self.get_tree_id()
+            ph = PacketProtocolQuack(source, group, self._reliable_state_routers_dict)
+            pckt = Packet(payload=PacketProtocolHeader(ph))
+
+            self.get_interface().send(pckt)
+            #self.get_interface().send_reliably(pckt)
+        except:
+            traceback.print_exc()
+            return
+
+    def send_prune_l(self):
+        from Packet.PacketProtocolTreeInterestQuery import PacketProtocolPruneL
+        try:
+            (source, group) = self.get_tree_id()
+            ph = PacketProtocolPruneL(source, group, self._reliable_state_routers_dict)
+            pckt = Packet(payload=PacketProtocolHeader(ph))
+
+            self.get_interface().send(pckt)
+            #self.get_interface().send_reliably(pckt)
+        except:
+            traceback.print_exc()
+            return
+
     ##########################################################
 
     # Override
@@ -162,7 +278,12 @@ class TreeInterfaceDownstream(TreeInterface):
         return self.igmp_has_members() or self.are_downstream_nodes_interested()
 
     def are_downstream_nodes_interested(self):
-        return (self._downstream_node_interest_state == SFMRPruneState.DIP) or (self._downstream_node_interest_state == SFMRPruneState.DI)
+        to_forward = False
+        for neighbor_state in self._reliable_state_routers_dict.values():
+            if neighbor_state.state == "J" or neighbor_state.state == "NI":
+                to_forward = True
+                break
+        return (self._downstream_node_interest_state == SFMRPruneState.DI) or to_forward
 
 
     # Override
@@ -177,8 +298,8 @@ class TreeInterfaceDownstream(TreeInterface):
         super().delete(change_type_interface)
 
         # Downstream state
-        self.clear_downstream_interest_pending_timer()
-        self._downstream_node_interest_state = None
+        #self.clear_downstream_interest_pending_timer()
+        #self._downstream_node_interest_state = None
 
         # Assert State
         if change_type_interface:

@@ -14,13 +14,15 @@ from Packet.PacketPimJoinPruneMulticastGroup import PacketPimJoinPruneMulticastG
 class PacketProtocolJoinTree:
     PIM_TYPE = "JOIN_TREE"
 
-    def __init__(self, source, group):
+    def __init__(self, source, group, counter):
         self.source = source
         self.group = group
+        self.counter = counter
 
     def bytes(self) -> bytes:
         msg = {"SOURCE": self.source,
-               "GROUP": self.group
+               "GROUP": self.group,
+               "COUNTER": self.counter
                }
 
         return msg
@@ -32,11 +34,19 @@ class PacketProtocolJoinTree:
     def parse_bytes(cls, data: bytes):
         source = data["SOURCE"]
         group = data["GROUP"]
-        return cls(source, group)
+        counter = data["COUNTER"]
+        return cls(source, group, counter)
+
+
+class PacketProtocolPruneTree(PacketProtocolJoinTree):
+    PIM_TYPE = "PRUNE_TREE"
+
+    def __init__(self, source, group, counter):
+        super().__init__(source, group, counter)
 
 
 class PacketProtocolJoinTreeAck(PacketProtocolJoinTree):
     PIM_TYPE = "JOIN_TREE_ACK"
 
     def __init__(self, source, group):
-        super().__init__(source, group)
+        super().__init__(source, group, None)
