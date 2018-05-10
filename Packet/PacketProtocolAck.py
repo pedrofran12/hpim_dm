@@ -1,4 +1,7 @@
-from Packet.PacketProtocolSetTree import PacketProtocolInstallTree
+import struct
+import socket
+from Packet.PacketPimEncodedUnicastAddress import PacketPimEncodedUnicastAddress
+from Packet.PacketPimJoinPruneMulticastGroup import PacketPimJoinPruneMulticastGroup
 '''
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -8,11 +11,24 @@ from Packet.PacketProtocolSetTree import PacketProtocolInstallTree
 |   Reserved    |  Num Groups   |          Hold Time            |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 '''
-class PacketProtocolUninstallTree(PacketProtocolInstallTree):
-    PIM_TYPE = "UNINSTALL"
+class PacketProtocolAck:
+    PIM_TYPE = "ACK"
 
-    def __init__(self, source, group, counter):
-        super().__init__(source, group, 0, 0, counter)
+    def __init__(self, source, group, sequence_number):
+        self.source = source
+        self.group = group
+        self.sequence_number = sequence_number
+
+    def bytes(self) -> bytes:
+        msg = {"SOURCE": self.source,
+               "GROUP": self.group,
+               "SN": self.sequence_number
+               }
+
+        return msg
+
+    def __len__(self):
+        return len(self.bytes())
 
     @classmethod
     def parse_bytes(cls, data: bytes):

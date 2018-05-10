@@ -13,13 +13,11 @@ from threading import Timer, RLock
 import ipaddress
 from ReliableMsgTransmission import ReliableTransmission
 
-from Packet.PacketProtocolActiveTrees import PacketProtocolActiveTrees, PacketProtocolActiveTreesAck
-from Packet.PacketProtocolSetTree import PacketProtocolSetTree, PacketProtocolSetTreeAck
-from Packet.PacketProtocolRemoveTree import PacketProtocolRemoveTree, PacketProtocolRemoveTreeAck
-from Packet.PacketProtocolConfirm import PacketProtocolConfirm, PacketProtocolConfirmAck
-from Packet.PacketProtocolJoinTree import PacketProtocolJoinTree, PacketProtocolJoinTreeAck
-#from Packet.PacketProtocolTreeInterestQuery import PacketProtocolTreeInterestQuery, PacketProtocolTreeInterestQueryAck
-from Packet.PacketProtocolAssert import PacketProtocolAssertReliableAck, PacketProtocolAssert
+from Packet.PacketProtocolSetTree import PacketProtocolInstallTree
+from Packet.PacketProtocolRemoveTree import PacketProtocolUninstallTree
+from Packet.PacketProtocolJoinTree import PacketProtocolNoInterest, PacketProtocolInterest
+#from Packet.PacketProtocolTreeInterestQuery import PacketProtocolQuack
+
 
 import socket
 import netifaces
@@ -42,18 +40,23 @@ class InterfaceProtocol(Interface):
         self.hello_timer = None
 
         # Synchronization period (discover active trees)
-        self.synchronization_period = Timer(2 * InterfaceProtocol.HELLO_PERIOD, self.synchronization_period_ended)
-        self.synchronization_period.start()
-        self.trees_discovered_during_synchronization = set()
+        #self.synchronization_period = Timer(2 * InterfaceProtocol.HELLO_PERIOD, self.synchronization_period_ended)
+        #self.synchronization_period.start()
+        #self.trees_discovered_during_synchronization = set()
 
         # protocol neighbors
         self._had_neighbors = False
         self.neighbors = {}
-        self.neighbors_lock = RWLockWrite()
+        #self.neighbors_lock = RWLockWrite()
+        self.neighbors_lock = RLock()
 
         # reliable transmission buffer
-        self.reliable_transmission_buffer = {} # Key: ID da msg ; value: ReliableMsgTransmission
-        self.reliable_transmission_lock = RLock()
+        #self.reliable_transmission_buffer = {} # Key: ID da msg ; value: ReliableMsgTransmission
+        #self.reliable_transmission_lock = RLock()
+
+        # sequencer for msg reliability
+        self.sequencer = 0
+        self.sequencer_lock = RLock()
 
         # SOCKET
         ip_interface = netifaces.ifaddresses(interface_name)[netifaces.AF_INET][0]['addr']
@@ -97,6 +100,13 @@ class InterfaceProtocol(Interface):
     def send(self, data: Packet, group_ip: str=MCAST_GRP):
         super().send(data=data.bytes(), group_ip=group_ip)
 
+
+    def get_sequence_number(self):
+        with self.sequencer_lock:
+            self.sequencer+=1
+            return self.sequencer
+
+    '''
     def send_reliably(self, data: Packet, group_ip: str=MCAST_GRP):
         with self.reliable_transmission_lock:
             id_reliable = random.getrandbits(32)
@@ -112,14 +122,22 @@ class InterfaceProtocol(Interface):
                 rmsg = ReliableTransmission(self, data, message_destination=group_ip, neighbors_ips={group_ip})
             self.reliable_transmission_buffer[id_reliable] = rmsg
             self.send(data=data, group_ip=group_ip)
+    '''
+    #########################
+    # Check neighbor status
+    #######################
 
 
+    #########################
+
+    '''
     def synchronization_period_ended(self):
         if len(self.trees_discovered_during_synchronization) == 0:
             return
 
         # todo enviar confirms
         Main.kernel.flood_confirm_tree(self.trees_discovered_during_synchronization)
+    '''
 
     #Random interval for initial Hello message on bootup or triggered Hello message to a rebooting neighbor
     def force_send_hello(self):
@@ -170,7 +188,16 @@ class InterfaceProtocol(Interface):
 
 
     def new_or_reset_neighbor(self, neighbor_ip):
-        Main.kernel.new_neighbor(self, neighbor_ip)
+        with self.sequencer_lock:
+            self.sequencer += 1
+            trees_to_sync = Main.kernel.new_neighbor(self, neighbor_ip)  # type: dict
+            from Packet.PacketProtocolHelloSync import PacketProtocolHelloSync, PacketProtocolHelloSyncEntry
+            tree_to_sync_in_msg_format = []
+            for (source_group, state) in trees_to_sync.items():
+                tree_to_sync_in_msg_format.append(PacketProtocolHelloSyncEntry(source_group[0], source_group[1], state.metric_preference, state.route_metric))
+            msg = PacketProtocolHelloSync(tree_to_sync_in_msg_format, self.sequencer)
+            #self.neighbors[neighbor_ip]
+        # TODO
 
     '''
     def add_neighbor(self, ip, random_number, hello_hold_time):
@@ -183,20 +210,49 @@ class InterfaceProtocol(Interface):
                 self.check_number_of_neighbors()
     '''
 
+    '''
     def get_neighbors(self):
         with self.neighbors_lock.genRlock():
             return self.neighbors.values()
+    '''
 
+    def did_all_neighbors_acked(self, neighbors_that_acked:set):
+        with self.neighbors_lock:
+            return neighbors_that_acked >= self.neighbors.keys()
+
+    '''
     def get_neighbor(self, ip):
         with self.neighbors_lock.genRlock():
             return self.neighbors.get(ip)
+    '''
 
     def remove_neighbor(self, ip):
-        with self.neighbors_lock.genWlock():
+        with self.neighbors_lock:
             del self.neighbors[ip]
-            other_neighbors_remain = len(self.neighbors) > 0
-            Main.kernel.interface_neighbor_removal(self.vif_index, other_neighbors_remain)
 
+            # verifiar todas as arvores
+            Main.kernel.recheck_all_trees(self)
+            #other_neighbors_remain = len(self.neighbors) > 0
+            #Main.kernel.interface_neighbor_removal(self.vif_index, other_neighbors_remain)
+
+    '''
+    def are_neighbors_interested(self, tree):
+        downstream_interest = False
+        with self.neighbors_lock.genRlock():
+            for n in self.neighbors.values():
+                if n.is_interested(tree):
+                    downstream_interest = True
+                    break
+
+    def get_assert_winner(self, tree):
+        winner = None
+        with self.neighbors_lock.genRlock():
+            for n in self.neighbors.values():
+                neighbor_metric = n.get_metric_state(tree)
+                if winner is None or neighbor_metric.is_better_than(winner):
+                    winner = neighbor_metric
+            return winner.get_ip()
+    '''
     '''
     def change_interface(self):
         # check if ip change was already applied to interface
@@ -230,7 +286,7 @@ class InterfaceProtocol(Interface):
         else:
             raise Exception
 
-        with self.neighbors_lock.genWlock():
+        with self.neighbors_lock:
             if ip not in self.neighbors:
                 if hello_hold_time == 0:
                     return
@@ -238,15 +294,14 @@ class InterfaceProtocol(Interface):
                 from Neighbor import Neighbor
                 self.neighbors[ip] = Neighbor(self, ip, generation_id, hello_hold_time)
                 self.force_send_hello()
-                self.new_or_reset_neighbor(ip)
-                #self.check_number_of_neighbors()
+                # TODO self.new_or_reset_neighbor(ip)
                 return
             else:
                 neighbor = self.neighbors[ip]
 
         neighbor.receive_hello(generation_id, hello_hold_time)
 
-
+    '''
     def receive_assert(self, packet):
         pkt_assert = packet.payload.payload  # type: PacketProtocolAssert
         source = pkt_assert.source_address
@@ -268,7 +323,7 @@ class InterfaceProtocol(Interface):
 
         # process received assert
         self.receive_assert(packet)
-
+    
 
     def receive_join_tree(self, packet):
         pkt_jt = packet.payload.payload  # type: PacketProtocolJoinTree
@@ -312,7 +367,7 @@ class InterfaceProtocol(Interface):
             traceback.print_exc()
 
 
-    '''
+    
     def receive_tree_interest_query(self, packet):
         # First send ACK
         ip_src = packet.ip_header.ip_src
@@ -327,8 +382,7 @@ class InterfaceProtocol(Interface):
             Main.kernel.get_routing_entry(source_group).recv_tree_interest_query_msg(self.vif_index, packet)
         except:
             traceback.print_exc()
-    '''
-
+    
     def receive_confirm(self, packet):
         # First send ACK
         ip_src = packet.ip_header.ip_src
@@ -399,29 +453,137 @@ class InterfaceProtocol(Interface):
 
 
     '''
+
+    def receive_interest(self, packet):
+        neighbor_source_ip = packet.ip_header.ip_src
+        pkt_jt = packet.payload.payload  # type: PacketProtocolJoinTree
+
+        # Process JoinTree msg
+        source_group = (pkt_jt.source, pkt_jt.group)
+        sequence_number = pkt_jt.sequence_number
+
+        # check neighbor existence
+        with self.neighbors_lock:
+            neighbor = self.neighbors.get(neighbor_source_ip, None)
+            if neighbor is None:
+                return
+
+            try:
+                if neighbor.recv_reliable_packet(sequence_number, source_group):
+                    neighbor.tree_state[source_group] = True
+                    Main.kernel.recv_interest_msg(source_group, self)
+                    #Main.kernel.get_routing_entry(source_group, create_if_not_existent=False).recv_interest_msg(self.vif_index, packet)
+            except:
+                traceback.print_exc()
+
+    def receive_no_interest(self, packet):
+        neighbor_source_ip = packet.ip_header.ip_src
+        pkt_jt = packet.payload.payload  # type: PacketProtocolPruneTree
+
+        # Process Prune msg
+        source_group = (pkt_jt.source, pkt_jt.group)
+        sequence_number = pkt_jt.sequence_number
+
+        # check neighbor existence
+        with self.neighbors_lock:
+            neighbor = self.neighbors.get(neighbor_source_ip, None)
+            if neighbor is None:
+                return
+
+            try:
+                if neighbor.recv_reliable_packet(sequence_number, source_group):
+                    neighbor.tree_state[source_group] = False
+                    Main.kernel.recv_interest_msg(source_group, self)
+            except:
+                traceback.print_exc()
+
+    '''
+    def receive_quack(self, packet):
+        pkt_jt = packet.payload.payload  # type: PacketProtocolQuack
+
+        # Process Quack msg
+        source_group = (pkt_jt.source, pkt_jt.group)
+        try:
+            Main.kernel.get_routing_entry(source_group).recv_quack_msg(self.vif_index, packet)
+        except:
+            traceback.print_exc()
+    '''
+
+    def receive_install(self, packet):
+        #from Packet.PacketProtocolSetTree import PacketProtocolInstallTree
+        from tree.metric import AssertMetric
+        neighbor_source_ip = packet.ip_header.ip_src
+        pkt_jt = packet.payload.payload # type: PacketProtocolInstallTree
+
+        # Process Quack msg
+        source_group = (pkt_jt.source, pkt_jt.group)
+        sequence_number = pkt_jt.sequence_number
+
+        metric_preference = pkt_jt.metric_preference
+        metric = pkt_jt.metric
+        received_metric = AssertMetric(metric_preference=metric_preference, route_metric=metric, ip_address=neighbor_source_ip)
+
+        # check neighbor existence
+        with self.neighbors_lock:
+            neighbor = self.neighbors.get(neighbor_source_ip, None)
+            if neighbor is None:
+                return
+
+            try:
+                if neighbor.recv_reliable_packet(sequence_number, source_group):
+                    neighbor.tree_state[source_group] = False
+                    neighbor.tree_metric_state[source_group] = received_metric
+                    Main.kernel.recv_install_or_uninstall_msg(source_group, self)
+            except:
+                traceback.print_exc()
+
+    def receive_uninstall(self, packet):
+        neighbor_source_ip = packet.ip_header.ip_src
+        pkt_jt = packet.payload.payload
+
+        # Process Quack msg
+        source_group = (pkt_jt.source, pkt_jt.group)
+        sequence_number = pkt_jt.sequence_number
+
+        # check neighbor existence
+        with self.neighbors_lock:
+            neighbor = self.neighbors.get(neighbor_source_ip, None)
+            if neighbor is None:
+                return
+
+            try:
+                if neighbor.recv_reliable_packet(sequence_number, source_group):
+                    neighbor.tree_state[source_group] = False
+                    neighbor.tree_metric_state[source_group] = None
+                    Main.kernel.recv_install_or_uninstall_msg(source_group, self)
+            except:
+                traceback.print_exc()
+
+
+    def receive_ack(self, packet):
+        neighbor_source_ip = packet.ip_header.ip_src
+        pkt_jt = packet.payload.payload
+
+        # Process Ack msg
+        source_group = (pkt_jt.source, pkt_jt.group)
+        #sequence_number = pkt_jt.sequence_number
+        try:
+            Main.kernel.recv_ack_msg(source_group, self, packet)
+            #Main.kernel.get_routing_entry(source_group, create_if_not_existent=False).recv_ack_msg(self.vif_index, packet)
+        except:
+            traceback.print_exc()
+
+
+
     PKT_FUNCTIONS = {
         "HELLO": receive_hello,
-        "JOIN_TREE": receive_join_tree,
-        "JOIN_TREE_ACK": receive_ack,
-        "ASSERT": receive_assert,
-        "ASSERT_RELIABLE": receive_assert_reliable,
-        #"ASSERT_RELIABLE_ACK": receive_assert_reliable_ack,
-        "ASSERT_RELIABLE_ACK": receive_ack,
-        "TREE_INTEREST_QUERY": receive_tree_interest_query,
-        "TREE_INTEREST_QUERY_ACK": receive_ack,
-        "ACTIVE_TREES": receive_active_trees,
-        #"ACTIVE_TREES_ACK": receive_active_trees_ack,
-        "ACTIVE_TREES_ACK": receive_ack,
-        "SET_TREE": receive_set_tree,
-        #"SET_TREE_ACK": receive_set_tree_ack,
-        "SET_TREE_ACK": receive_ack,
-        "REMOVE_TREE": receive_remove_tree,
-        #"REMOVE_TREE_ACK": receive_remove_tree_ack,
-        "REMOVE_TREE_ACK": receive_ack,
-        "CONFIRM": receive_confirm,
-        #"CONFIRM_ACK": receive_confirm_ack,
-        "CONFIRM_ACK": receive_ack,
+        "INTEREST": receive_interest,
+        "NO_INTEREST": receive_no_interest,
+        "INSTALL": receive_install,
+        "UNINSTALL": receive_uninstall,
+        "ACK": receive_ack,
     }
+
     '''
 
     PKT_FUNCTIONS = {
@@ -447,3 +609,4 @@ class InterfaceProtocol(Interface):
         # "CONFIRM_ACK": receive_confirm_ack,
         "CONFIRM_ACK": receive_ack,
     }
+'''

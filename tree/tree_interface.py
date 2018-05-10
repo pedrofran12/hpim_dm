@@ -8,12 +8,14 @@ import Main
 from threading import RLock
 import traceback
 
-from .assert_ import AssertState, SFMRAssertABC, SFMRAssertWinner
+from .assert_state import AssertState, SFMRAssertWinner
 
 from Packet.PacketProtocolHeader import PacketProtocolHeader
-from Packet.PacketProtocolJoinTree import PacketProtocolJoinTree, PacketProtocolPruneTree
+from Packet.PacketProtocolJoinTree import PacketProtocolInterest, PacketProtocolNoInterest
 #from Packet.PacketProtocolTreeInterestQuery import PacketProtocolTreeInterestQuery
-from Packet.PacketProtocolAssert import PacketProtocolAssert
+#from Packet.PacketProtocolAssert import PacketProtocolAssert
+from Packet.PacketProtocolSetTree import PacketProtocolInstallTree
+from Packet.PacketProtocolRemoveTree import PacketProtocolUninstallTree
 from Packet.Packet import Packet
 
 from .metric import AssertMetric, Metric
@@ -23,10 +25,16 @@ from .globals import *
 import logging
 
 class TreeInterface(metaclass=ABCMeta):
-    def __init__(self, kernel_entry, interface_id, logger: logging.LoggerAdapter):
+    def __init__(self, kernel_entry, interface_id, best_upstream_router, logger: logging.LoggerAdapter):
         self._kernel_entry = kernel_entry
         self._interface_id = interface_id
         self.logger = logger
+
+        #self._reliable_state_counter = 0
+
+        #self._upstream_routers = upstream_routers  # upstream routers that can offer reachability to (S,G) tree
+        self._best_upstream_router = best_upstream_router # current assert winner
+
 
         # Local Membership State
         try:
@@ -45,7 +53,6 @@ class TreeInterface(metaclass=ABCMeta):
 
         self._igmp_lock = RLock()
 
-
     ###########################################
     # Recv packets
     ###########################################
@@ -61,10 +68,18 @@ class TreeInterface(metaclass=ABCMeta):
     def recv_prune_msg(self, prune_state):
         return
 
-    def recv_prune_l_msg(self, states):
+    def recv_quack_msg(self, neighbor_ip, captured_states: dict):
         return
 
-    def recv_quack_msg(self, neighbor_ip, captured_states: dict):
+    def recv_install_msg(self, neighbor_ip, state):
+        #self._upstream_routers[neighbor_ip] = state
+        return
+
+    def recv_uninstall_msg(self, ip):
+        #self._upstream_routers.pop(ip)
+        return
+
+    def recv_ack_msg(self, neighbor_ip, sn):
         return
 
     #def recv_tree_interest_query_msg(self):
@@ -73,6 +88,12 @@ class TreeInterface(metaclass=ABCMeta):
     ######################################
     # Send messages
     ######################################
+    def get_sequence_number(self):
+        return self.get_interface().get_sequence_number()
+
+    def get_sync_state(self):
+        return None
+
     '''
     def send_tree_interest_query(self):
         print("send tree_interest_query")
@@ -87,36 +108,42 @@ class TreeInterface(metaclass=ABCMeta):
             traceback.print_exc()
             return
     '''
+    '''
     def send_quack(self):
         return
+    '''
 
-    def send_join_tree(self):
+    def create_interest_msg(self):
         print("send join_tree")
         try:
+            sn = self.get_sequence_number()
             (source, group) = self.get_tree_id()
-            ph = PacketProtocolJoinTree(source, group)
+
+            ph = PacketProtocolInterest(source, group, sn)
             pckt = Packet(payload=PacketProtocolHeader(ph))
 
             #self.get_interface().send(pckt)
-            self.get_interface().send(pckt)
+            return pckt
         except:
             traceback.print_exc()
-            return
+            return None
 
-    def send_prune_tree(self):
+    def create_no_interest_msg(self):
         print("send prune_tree")
         try:
+            sn = self.get_sequence_number()
             (source, group) = self.get_tree_id()
 
-            ph = PacketProtocolPruneTree(source, group)
+            ph = PacketProtocolNoInterest(source, group, sn)
             pckt = Packet(payload=PacketProtocolHeader(ph))
+
             #self.get_interface().send(pckt)
-            self.get_interface().send(pckt)
+            return pckt
         except:
             traceback.print_exc()
-            return
+            return None
 
-
+    '''
     def send_assert(self):
         print("send assert")
 
@@ -151,11 +178,53 @@ class TreeInterface(metaclass=ABCMeta):
         except:
             traceback.print_exc()
             return
-
+    
     def send_remove_tree(self):
         return
+    '''
+
+    def create_install_msg(self, metric_preference, metric):
+        print("send install")
+        try:
+            sn = self.get_sequence_number()
+            (source, group) = self.get_tree_id()
+
+            ph = PacketProtocolInstallTree(source, group, metric_preference, metric, sn)
+            pckt = Packet(payload=PacketProtocolHeader(ph))
+
+            #self.get_interface().send(pckt)
+            return pckt
+        except:
+            traceback.print_exc()
+            return None
+
+    def create_uninstall_msg(self):
+        print("send uninstall")
+        try:
+            sn = self.get_sequence_number()
+            (source, group) = self.get_tree_id()
+
+            ph = PacketProtocolUninstallTree(source, group, sn)
+            pckt = Packet(payload=PacketProtocolHeader(ph))
+
+            #self.get_interface().send(pckt)
+            return pckt
+        except:
+            traceback.print_exc()
+            return None
+
+    def is_tree_active(self):
+        return self._kernel_entry.is_tree_active()
+
+    def is_tree_inactive(self):
+        return self._kernel_entry.is_tree_inactive()
+
+    def is_tree_unknown(self):
+        return self._kernel_entry.is_tree_unknown()
 
     #############################################################
+    def has_upstream_neighbors(self):
+        return len(self._upstream_routers) > 0 or self.is_S_directly_conn()
 
     @abstractmethod
     def is_forwarding(self):
@@ -194,6 +263,49 @@ class TreeInterface(metaclass=ABCMeta):
     def evaluate_in_tree(self):
         self._kernel_entry.evaluate_in_tree_change()
 
+
+
+    ############################################################
+    # Assert Winner state
+    ############################################################
+    def calculate_assert_winner(self):
+        '''
+        aw = None
+        for upstream_routers_state in self._upstream_routers.values():
+            if aw is None or upstream_routers_state.is_better_than(aw):
+                aw = upstream_routers_state
+
+        self._assert_winner = aw
+        '''
+        '''
+        if self._assert_winner != aw:
+            self._assert_winner = aw
+            self.notify_assert_winner_change()
+        '''
+        return
+
+    def notify_assert_winner_change(self):
+        return
+
+
+    def change_assert_state(self, assert_state):
+        self._best_upstream_router = assert_state
+
+    ###########################################################
+    # Interest state
+    ###########################################################
+    def change_interest_state(self, interest_state):
+        return
+
+
+    ##########################################################
+    #
+    ##########################################################
+    def transition_to_active(self):
+        return
+
+    def transition_to_inactive(self):
+        return
 
     #############################################################
     # Local Membership (IGMP)

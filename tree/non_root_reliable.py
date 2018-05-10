@@ -6,8 +6,13 @@ from abc import ABCMeta, abstractmethod
 #                           'SFMRDownstreamInterestedPending',
 #                           'SFMRNoDownstreamInterested', ]
 
+from utils import TYPE_CHECKING
 
-class SFMRPruneImplABC(metaclass=ABCMeta):
+if TYPE_CHECKING:
+    from .tree_if_downstream import TreeInterfaceDownstream
+
+'''
+class 'TreeInterfaceDownstream'(metaclass=ABCMeta):
     @abstractmethod
     def rprint(self, msg: str, *args: str) -> None:
         pass
@@ -27,185 +32,130 @@ class SFMRPruneImplABC(metaclass=ABCMeta):
     @abstractmethod
     def send_tree_interest_query(self) -> None:
         pass
+'''
 
-
-class SFMRReliableStateABC(metaclass=ABCMeta):
+class SFMRNonRootStateABC():
     @staticmethod
-    @abstractmethod
-    def receive_RECENT_join_prune_prunel(interface: SFMRPruneImplABC) -> None:
-        raise NotImplementedError()
-
-    @staticmethod
-    @abstractmethod
-    def receive_ack_and_info_correct(interface: SFMRPruneImplABC) -> None:
-        raise NotImplementedError()
-
-    @staticmethod
-    @abstractmethod
-    def receive_ack_and_info_incorrect_or_not_existent(interface: SFMRPruneImplABC) -> None:
-        raise NotImplementedError()
-
-    @staticmethod
-    @abstractmethod
-    def timer_expires(interface: SFMRPruneImplABC) -> None:
-        raise NotImplementedError()
-
-    @staticmethod
-    @abstractmethod
-    def transition_to_assert_winner(interface: SFMRPruneImplABC) -> None:
-        raise NotImplementedError()
-
-    @staticmethod
-    @abstractmethod
-    def transition_to_assert_loser(interface: SFMRPruneImplABC) -> None:
-        raise NotImplementedError()
-
-    @staticmethod
-    @abstractmethod
-    def last_neighbor_that_acked_is_dead(interface: SFMRPruneImplABC) -> None:
-        raise NotImplementedError()
-
-
-
-class SFMRStable(SFMRReliableStateABC):
-    @staticmethod
-    def receive_RECENT_join_prune_prunel(interface: SFMRPruneImplABC) -> None:
-        # todo save info
-        interface._assert_state.receive_join_prune_prunel(interface)
-
-    @staticmethod
-    def receive_ack_and_info_correct(interface: SFMRPruneImplABC) -> None:
-        # todo save recent info
-        interface._assert_state.receive_ack_and_info_correct(interface)
-
-    @staticmethod
-    def receive_ack_and_info_incorrect_or_not_existent(interface: SFMRPruneImplABC) -> None:
-        # todo save recent info
-        interface._assert_state.receive_ack_and_info_incorrect(interface)
-
-    @staticmethod
-    def timer_expires(interface: SFMRPruneImplABC) -> None:
-        interface._assert_state.timer_expires(interface)
-
-    @staticmethod
-    def transition_to_assert_winner(interface: SFMRPruneImplABC) -> None:
-        interface._assert_state.is_now_assert_winner(interface)
-
-
-    @staticmethod
-    def transition_to_assert_loser(interface: SFMRPruneImplABC) -> None:
-        interface._assert_state.is_now_assert_loser(interface)
-
-
-    @staticmethod
-    def last_neighbor_that_acked_is_dead(interface: SFMRPruneImplABC) -> None:
-        interface._assert_state.last_neighbor_that_acked_is_dead(interface)
-
-
-    @staticmethod
-    def transition(interface: SFMRPruneImplABC) -> None:
-        interface.clear_reliable_timer()
-
-
-
-    '''
-    @staticmethod
-    def receive_ack_and_info_correct(interface: SFMRPruneImplABC) -> None:
-        #todo guardar ip do neighor q fez ack
+    def root_interface_to_non_root_or_new_tree_or_transition_to_active(interface: 'TreeInterfaceDownstream') -> None:
         return
 
     @staticmethod
-    def receive_ack_and_info_incorrect_or_not_existent(interface: SFMRPruneImplABC) -> None:
-        # todo transitar para unstable
-        # todo enviar join/prune
-        # todo start timer
+    def tree_transitions_to_inactive(interface: 'TreeInterfaceDownstream') -> None:
         return
 
     @staticmethod
-    def timer_expires(interface: SFMRPruneImplABC) -> None:
+    def receive_ack_from_neighbor_and_sn_fresh(interface: 'TreeInterfaceDownstream', neighbor_ip) -> None:
         return
 
     @staticmethod
-    def last_neighbor_that_correctly_acked_died(interface: SFMRPruneImplABC) -> None:
-        # todo transitar para unstable
-        # todo enviar join/prune
-        # todo start timer
-        return
-    '''
-    def __str__(self):
-        return 'Stable'
-
-
-class SFMRUnstable(SFMRReliableStateABC):
-    @staticmethod
-    def receive_RECENT_join_prune_prunel(interface: SFMRPruneImplABC) -> None:
-        # todo save info
-        interface._assert_state.receive_join_prune_prunel(interface)
-
-    @staticmethod
-    def receive_ack_and_info_correct(interface: SFMRPruneImplABC) -> None:
-        # todo save recent info
-        interface._assert_state.receive_ack_and_info_correct(interface)
-
-    @staticmethod
-    def receive_ack_and_info_incorrect_or_not_existent(interface: SFMRPruneImplABC) -> None:
-        # todo save recent info
-        interface._assert_state.receive_ack_and_info_incorrect(interface)
-
-    @staticmethod
-    def timer_expires(interface: SFMRPruneImplABC) -> None:
-        interface._assert_state.timer_expires(interface)
-
-    @staticmethod
-    def transition_to_assert_winner(interface: SFMRPruneImplABC) -> None:
-        interface._assert_state.is_now_assert_winner(interface)
-
-    @staticmethod
-    def transition_to_assert_loser(interface: SFMRPruneImplABC) -> None:
-        interface._assert_state.is_now_assert_loser(interface)
-
-    @staticmethod
-    def last_neighbor_that_acked_is_dead(interface: SFMRPruneImplABC) -> None:
-        interface._assert_state.last_neighbor_that_acked_is_dead(interface)
-
-    @staticmethod
-    def transition(interface: SFMRPruneImplABC) -> None:
-        interface.set_reliable_timer()
-    '''
-    @staticmethod
-    def in_tree(interface: SFMRPruneImplABC) -> None:
-        interface.downstream_logger.debug('IT, NDI -> DI')
-        interface.set_downstream_node_interest_state(SFMRPruneState.DI)
-
-    @staticmethod
-    def out_tree(interface: SFMRPruneImplABC) -> None:
-        interface.downstream_logger.debug('OT, NDI -> NDI')
-    
-    @staticmethod
-    def receive_ack_and_info_correct(interface: SFMRPruneImplABC) -> None:
-        # todo transitar para stable
-        # todo clear timer
-        # todo guardar ip do neighbor q fez ack
+    def all_neighbors_acked(interface: 'TreeInterfaceDownstream') -> None:
         return
 
     @staticmethod
-    def receive_ack_and_info_incorrect_or_not_existent(interface: SFMRPruneImplABC) -> None:
-        # todo enviar join/prune
-        # todo reset timer
+    def install_timer_expires(interface: 'TreeInterfaceDownstream') -> None:
         return
 
     @staticmethod
-    def timer_expires(interface: SFMRPruneImplABC) -> None:
-        # todo enviar join/prune
-        # todo reset timer
+    def receive_interest_msg(interface: 'TreeInterfaceDownstream', neighbor_ip, is_interested) -> None:
         return
 
     @staticmethod
-    def last_neighbor_that_correctly_acked_died(interface: SFMRPruneImplABC) -> None:
+    def receive_install_msg(interface: 'TreeInterfaceDownstream', neighbor_ip, state) -> None:
         return
-    '''
+
+    @staticmethod
+    def receive_uninstall_msg(interface: 'TreeInterfaceDownstream', neighbor_ip) -> None:
+        return
+
+    @staticmethod
+    def rpc_change(interface: 'TreeInterfaceDownstream') -> None:
+        return
 
 
-class SFMRReliableState():
-    STABLE = SFMRStable()
-    UNSTABLE = SFMRUnstable()
+
+
+class SFMRNonRootActiveState(SFMRNonRootStateABC):
+    @staticmethod
+    def root_interface_to_non_root_or_new_tree_or_transition_to_active(interface: 'TreeInterfaceDownstream') -> None:
+        # todo obter rpc!!!!
+        #assert_state = interface._upstream_routers[interface.get_ip()]
+        if interface.number_of_neighbors() == 0:
+            SFMRNonRootActiveState.all_neighbors_acked(interface)
+            return
+        assert_state = interface._my_assert_rpc
+        pkt = interface.create_install_msg(assert_state.metric_preference, assert_state.route_metric)
+        interface._msg_being_reliably_sent = pkt
+        interface.set_install_timer()
+        interface.clear_neighbors_that_acked_list()
+        interface.resend_last_reliable_packet()
+
+    @staticmethod
+    def receive_ack_from_neighbor_and_sn_fresh(interface: 'TreeInterfaceDownstream', neighbor_ip) -> None:
+        interface.neighbor_acked(neighbor_ip)
+
+    @staticmethod
+    def all_neighbors_acked(interface: 'TreeInterfaceDownstream') -> None:
+        interface.clear_install_timer()
+
+    @staticmethod
+    def install_timer_expires(interface: 'TreeInterfaceDownstream') -> None:
+        interface.resend_last_reliable_packet()
+        interface.set_install_timer()
+
+    @staticmethod
+    def receive_interest_msg(interface: 'TreeInterfaceDownstream', neighbor_ip, is_interested) -> None:
+        print("RCV_INTEREST_103_NON_ROOT_RELIABLE")
+        interface.set_neighbor_interest(neighbor_ip, is_interested)
+
+    @staticmethod
+    def receive_install_msg(interface: 'TreeInterfaceDownstream', neighbor_ip, state) -> None:
+        interface.set_upstream_node_state(neighbor_ip, state)
+
+    @staticmethod
+    def receive_uninstall_msg(interface: 'TreeInterfaceDownstream', neighbor_ip) -> None:
+        interface.clear_upstream_node_state(neighbor_ip)
+
+    @staticmethod
+    def rpc_change(interface: 'TreeInterfaceDownstream') -> None:
+        #assert_state = interface._upstream_routers[interface.get_ip()]
+        if interface.number_of_neighbors() == 0:
+            SFMRNonRootActiveState.all_neighbors_acked(interface)
+            return
+        assert_state = interface._my_assert_rpc
+        pkt = interface.create_install_msg(assert_state.metric_preference, assert_state.route_metric)
+        interface._msg_being_reliably_sent = pkt
+        interface.set_install_timer()
+        interface.clear_neighbors_that_acked_list()
+        interface.resend_last_reliable_packet()
+
+
+class SFMRNonRootInactiveState(SFMRNonRootStateABC):
+    @staticmethod
+    def tree_transitions_to_inactive(interface: 'TreeInterfaceDownstream') -> None:
+        if interface.number_of_neighbors() == 0:
+            SFMRNonRootInactiveState.all_neighbors_acked(interface)
+            return
+        pkt = interface.create_uninstall_msg()
+        interface._msg_being_reliably_sent = pkt
+        interface.set_install_timer()
+        interface.clear_neighbors_that_acked_list()
+        interface.resend_last_reliable_packet()
+
+    @staticmethod
+    def receive_ack_from_neighbor_and_sn_fresh(interface: 'TreeInterfaceDownstream', neighbor_ip) -> None:
+        interface.neighbor_acked(neighbor_ip)
+
+    @staticmethod
+    def all_neighbors_acked(interface: 'TreeInterfaceDownstream') -> None:
+        interface.clear_install_timer()
+        interface._kernel_entry.notify_interface_is_ready_to_remove(interface._interface_id)
+
+    @staticmethod
+    def install_timer_expires(interface: 'TreeInterfaceDownstream') -> None:
+        interface.resend_last_reliable_packet()
+        interface.set_install_timer()
+
+
+class SFMRNonRootState():
+    ACTIVE = SFMRNonRootActiveState()
+    INACTIVE = SFMRNonRootInactiveState()

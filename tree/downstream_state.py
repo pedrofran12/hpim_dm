@@ -6,8 +6,14 @@ from abc import ABCMeta, abstractmethod
 #                           'SFMRDownstreamInterestedPending',
 #                           'SFMRNoDownstreamInterested', ]
 
+from utils import TYPE_CHECKING
 
-class SFMRPruneImplABC(metaclass=ABCMeta):
+if TYPE_CHECKING:
+    from .tree_if_downstream import TreeInterfaceDownstream
+
+
+'''
+class 'TreeInterfaceDownstream'(metaclass=ABCMeta):
     @abstractmethod
     def rprint(self, msg: str, *args: str) -> None:
         pass
@@ -27,27 +33,27 @@ class SFMRPruneImplABC(metaclass=ABCMeta):
     @abstractmethod
     def send_tree_interest_query(self) -> None:
         pass
-
+'''
 
 class SFMRDownstreamStateABC(metaclass=ABCMeta):  # pragma: no cover
     @staticmethod
     @abstractmethod
-    def in_tree(interface: SFMRPruneImplABC) -> None:
+    def in_tree(interface: 'TreeInterfaceDownstream') -> None:
         raise NotImplementedError()
 
     @staticmethod
     @abstractmethod
-    def out_tree(interface: SFMRPruneImplABC) -> None:
+    def out_tree(interface: 'TreeInterfaceDownstream') -> None:
         raise NotImplementedError()
 
 
 class SFMRDownstreamInterested(SFMRDownstreamStateABC):
     @staticmethod
-    def in_tree(interface: SFMRPruneImplABC) -> None:
+    def in_tree(interface: 'TreeInterfaceDownstream') -> None:
         interface.downstream_logger.debug('IT, DI -> DI')
 
     @staticmethod
-    def out_tree(interface: SFMRPruneImplABC) -> None:
+    def out_tree(interface: 'TreeInterfaceDownstream') -> None:
         interface.downstream_logger.debug('OT, DI -> NDI')
         interface.set_downstream_node_interest_state(SFMRPruneState.NDI)
 
@@ -57,14 +63,16 @@ class SFMRDownstreamInterested(SFMRDownstreamStateABC):
 
 class SFMRNoDownstreamInterested(SFMRDownstreamStateABC):
     @staticmethod
-    def in_tree(interface: SFMRPruneImplABC) -> None:
+    def in_tree(interface: 'TreeInterfaceDownstream') -> None:
         interface.downstream_logger.debug('IT, NDI -> DI')
         interface.set_downstream_node_interest_state(SFMRPruneState.DI)
 
     @staticmethod
-    def out_tree(interface: SFMRPruneImplABC) -> None:
+    def out_tree(interface: 'TreeInterfaceDownstream') -> None:
         interface.downstream_logger.debug('OT, NDI -> NDI')
 
+    def __str__(self):
+        return 'NDI'
 
 class SFMRPruneState():
     DI = SFMRDownstreamInterested()

@@ -11,18 +11,18 @@ from Packet.PacketPimJoinPruneMulticastGroup import PacketPimJoinPruneMulticastG
 |   Reserved    |  Num Groups   |          Hold Time            |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 '''
-class PacketProtocolJoinTree:
-    PIM_TYPE = "JOIN_TREE"
+class PacketProtocolInterest:
+    PIM_TYPE = "INTEREST"
 
-    def __init__(self, source, group, counter):
+    def __init__(self, source, group, sequence_number):
         self.source = source
         self.group = group
-        self.counter = counter
+        self.sequence_number = sequence_number
 
     def bytes(self) -> bytes:
         msg = {"SOURCE": self.source,
                "GROUP": self.group,
-               "COUNTER": self.counter
+               "SN": self.sequence_number
                }
 
         return msg
@@ -34,19 +34,12 @@ class PacketProtocolJoinTree:
     def parse_bytes(cls, data: bytes):
         source = data["SOURCE"]
         group = data["GROUP"]
-        counter = data["COUNTER"]
-        return cls(source, group, counter)
+        sn = data["SN"]
+        return cls(source, group, sn)
 
 
-class PacketProtocolPruneTree(PacketProtocolJoinTree):
-    PIM_TYPE = "PRUNE_TREE"
+class PacketProtocolNoInterest(PacketProtocolInterest):
+    PIM_TYPE = "NO_INTEREST"
 
-    def __init__(self, source, group, counter):
-        super().__init__(source, group, counter)
-
-
-class PacketProtocolJoinTreeAck(PacketProtocolJoinTree):
-    PIM_TYPE = "JOIN_TREE_ACK"
-
-    def __init__(self, source, group):
-        super().__init__(source, group, None)
+    def __init__(self, source, group, sn):
+        super().__init__(source, group, sn)
