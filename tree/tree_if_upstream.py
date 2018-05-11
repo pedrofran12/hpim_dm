@@ -161,7 +161,7 @@ class TreeInterfaceUpstream(TreeInterface):
         if self.is_S_directly_conn():
             #self._kernel_entry.delete(flood_remove_tree=True)
             #self._kernel_entry.transition_to_inactive()
-            self._kernel_entry.change_tree_to_inactive_state()
+            self._kernel_entry.change_tree_to_unknown_state()
 
     ###########################################
     # Neighbors that acked

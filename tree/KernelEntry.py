@@ -129,6 +129,9 @@ class KernelEntry:
                         self.interface_state[i] = TreeInterfaceUpstream(self, i, None)
                     else:
                         self.interface_state[i] = TreeInterfaceDownstream(self, i, self._rpc)
+                    self._upstream_interface_state[i] = None
+                    self._interest_interface_state[i] = False
+                    self._inactive_interfaces_that_are_ready[i] = False
                 except:
                     import traceback
                     print(traceback.print_exc())
@@ -273,15 +276,16 @@ class KernelEntry:
 
         if all(value is None for value in self._upstream_interface_state.values()):
             # tree is unknown
+            print("PARA UNKNOWN")
             self.change_tree_to_unknown_state()
         elif self.inbound_interface_index == index and not self.interface_state[self.inbound_interface_index].is_S_directly_conn():
             if upstream_state is None:
                 # todo transitar para estado inativo (no caso de nao estar)
-                print("PARA INACTIVO linha 276 de KernelEntry")
+                print("PARA INACTIVO")
                 self.change_tree_to_inactive_state()
             else:
                 # todo transitar para estado ativo (no caso de nao estar)
-                print("PARA ACTIVO linha 280 de KernelEntry")
+                print("PARA ACTIVO")
                 self.change_tree_to_active_state()
 
     def check_interest_state(self, index, interest_state):
@@ -302,7 +306,7 @@ class KernelEntry:
 
     def is_tree_unknown(self):
         with self.CHANGE_STATE_LOCK:
-            return self._tree_state == InactiveTree
+            return self._tree_state == UnknownTree
 
 
     def change_tree_to_unknown_state(self):
@@ -310,22 +314,24 @@ class KernelEntry:
             # TODO alterar isto
             if self._tree_state == UnknownTree:
                 return
-            elif self._tree_state == ActiveTree:
-                self._inactive_interfaces_that_are_ready = {}
-                for (index, interface) in self.interface_state.items():
-                    self._inactive_interfaces_that_are_ready[index] = False
-                    interface.transition_to_inactive()
-            elif self._tree_state == InactiveTree:
-                # check if already can delete entry
-                if False not in self._inactive_interfaces_that_are_ready.values():
-                    self.remove_entry()
-                    return
+            else:
+                old_state = self._tree_state
+                self._tree_state = UnknownTree
 
-            self._tree_state = UnknownTree
+                if old_state == ActiveTree:
+                    #self._inactive_interfaces_that_are_ready = {}
+                    for (index, interface) in self.interface_state.items():
+                        #self._inactive_interfaces_that_are_ready[index] = False
+                        interface.transition_to_inactive()
+                elif old_state == InactiveTree:
+                    # check if already can delete entry
+                    if False not in self._inactive_interfaces_that_are_ready.values():
+                        self.remove_entry()
+                        return
 
-            self.change()
-            self.evaluate_in_tree_change()
 
+            #self.change()
+            #self.evaluate_in_tree_change()
 
     def change_tree_to_inactive_state(self):
         with self.CHANGE_STATE_LOCK:
@@ -335,9 +341,9 @@ class KernelEntry:
 
             # todo determinar se inativo ou unknown
             self._tree_state = InactiveTree
-            self._inactive_interfaces_that_are_ready = {}
+            #self._inactive_interfaces_that_are_ready = {}
             for (index, interface) in self.interface_state.items():
-                self._inactive_interfaces_that_are_ready[index] = False
+                #self._inactive_interfaces_that_are_ready[index] = False
                 print("INTERFACE ", index, "PARA INATIVO")
                 interface.transition_to_inactive()
 
@@ -352,9 +358,10 @@ class KernelEntry:
             #    return
 
             self._tree_state = ActiveTree
-            self._inactive_interfaces_that_are_ready = {}
+            #self._inactive_interfaces_that_are_ready = {}
             for (index, interface) in self.interface_state.items():
                 print("INTERFACE ", index, "PARA ATIVO")
+                self._inactive_interfaces_that_are_ready[index] = False
                 interface.transition_to_active()
 
             self.change()
@@ -366,7 +373,10 @@ class KernelEntry:
             if self._tree_state == ActiveTree:
                 return
 
+            print("NOTIFY REMOVE: ", index)
             self._inactive_interfaces_that_are_ready[index] = True
+
+            print("INTERFACES NOT READY??: ", False in self._inactive_interfaces_that_are_ready.values())
             if False in self._inactive_interfaces_that_are_ready.values():
                 return
 
