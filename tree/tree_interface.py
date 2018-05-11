@@ -237,7 +237,7 @@ class TreeInterface(metaclass=ABCMeta):
         return
 
     @abstractmethod
-    def delete(self, change_type_interface=False):
+    def delete(self):
         '''
         if change_type_interface:
             if self.could_assert():

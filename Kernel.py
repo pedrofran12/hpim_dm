@@ -451,8 +451,8 @@ class Kernel:
 
 
             tree_is_active = upstream_state is not None
-
-
+            print("RCV INSTALL/UNINSTALL")
+            print("INTERESSE: ", interest_state)
             if tree_is_active:
                 if ip_src not in self.routing:
                     self.routing[ip_src] = {}

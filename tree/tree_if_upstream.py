@@ -161,21 +161,24 @@ class TreeInterfaceUpstream(TreeInterface):
         if self.is_S_directly_conn():
             #self._kernel_entry.delete(flood_remove_tree=True)
             #self._kernel_entry.transition_to_inactive()
-            self._kernel_entry.change_tree_to_unknown_state()
+            if self._kernel_entry.are_there_upstream_nodes():
+                self._kernel_entry.change_tree_to_inactive_state()
+            else:
+                self._kernel_entry.change_tree_to_unknown_state()
 
     ###########################################
     # Neighbors that acked
     ###########################################
     def clear_neighbors_that_acked_list(self):
         # todo lock
-        self._neighbors_that_acked = {}
+        self._neighbors_that_acked = set()
 
     def check_if_all_neighbors_acked(self, neighbor_ip):
         self._neighbors_that_acked.add(neighbor_ip)
 
         if self.get_interface().did_all_neighbors_acked(self._neighbors_that_acked):
             if not self.is_tree_active():
-                self._kernel_entry.notify
+                self._kernel_entry.notify_interface_is_ready_to_remove(self._interface_id)
             if self._best_upstream_router is not None:
                 # verificar se existe aw
                 self._upstream_state.all_neighbors_acked_and_there_is_aw(self)
@@ -189,6 +192,8 @@ class TreeInterfaceUpstream(TreeInterface):
     def recv_data_msg(self):
         if self.is_S_directly_conn():
             self.set_source_active_timer()
+            if self.is_tree_inactive():
+                self._kernel_entry.change_tree_to_active_state()
 
     '''
     def recv_quack_msg(self, neighbor_ip, captured_states: dict):
@@ -357,10 +362,10 @@ class TreeInterfaceUpstream(TreeInterface):
             self.clear_prune_limit_timer()
     '''
     #Override
-    def delete(self, change_type_interface=False):
+    def delete(self):
         self.socket_is_enabled = False
         self.socket_pkt.close()
-        super().delete(change_type_interface)
+        super().delete()
         self.clear_source_active_timer()
 
         self.clear_interest_timer()

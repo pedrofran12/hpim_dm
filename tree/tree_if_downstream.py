@@ -36,7 +36,6 @@ class TreeInterfaceDownstream(TreeInterface):
         #self._reliable_state_timer = None
         #self._downstream_routers_state_dict = {}
 
-        from .non_root_reliable import SFMRNonRootState
         if tree_is_active:
             self._downstream_state = SFMRNonRootState.ACTIVE
         else:
@@ -355,8 +354,8 @@ class TreeInterfaceDownstream(TreeInterface):
             self._downstream_node_interest_state.lost_last_nbr(self)
 
     # Override
-    def delete(self, change_type_interface=False):
-        super().delete(change_type_interface)
+    def delete(self):
+        super().delete()
 
 
         self.clear_install_timer()

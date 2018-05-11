@@ -263,18 +263,14 @@ class KernelEntry:
     # TODO
     # TODO
     def check_interface_state(self, index, upstream_state, interest_state):
-        current_upstream_state = self._upstream_interface_state.get(index, False)
-        current_interest_state = self._interest_interface_state.get(index, None)
-
         self._upstream_interface_state[index] = upstream_state
-        self._interest_interface_state[index] = interest_state
 
         # todo criar metodo change_state
         self.interface_state[index].change_assert_state(upstream_state)
         self.check_interest_state(index, interest_state)
 
 
-        if all(value is None for value in self._upstream_interface_state.values()):
+        if all(value is None for value in self._upstream_interface_state.values()) and not self.interface_state[self.inbound_interface_index].is_S_directly_conn():
             # tree is unknown
             print("PARA UNKNOWN")
             self.change_tree_to_unknown_state()
@@ -391,6 +387,8 @@ class KernelEntry:
             else:
                 return self.interface_state[vif_index].get_sync_state()
 
+    def are_there_upstream_nodes(self):
+        return not all(value is None for value in self._upstream_interface_state.values())
 
     ###############################################################
     # Unicast Changes to RPF
@@ -446,16 +444,28 @@ class KernelEntry:
                 old_upstream_interface = self.interface_state[self.inbound_interface_index]
                 old_downstream_interface = self.interface_state[new_inbound_interface_index]
 
+                non_root_interest_state = self._interest_interface_state.get(self.inbound_interface_index, False)
+                non_root_upstream_state = self._upstream_interface_state.get(self.inbound_interface_index, None)
+                root_interest_state = self._interest_interface_state.get(new_inbound_interface_index, False)
+                root_upstream_state = self._upstream_interface_state.get(new_inbound_interface_index, None)
+
                 # change type of interfaces
-                new_downstream_interface = TreeInterfaceDownstream(self, self.inbound_interface_index, self._rpc)
+                new_downstream_interface = TreeInterfaceDownstream(self, self.inbound_interface_index, self._rpc, non_root_upstream_state, non_root_interest_state, self.is_tree_active())
                 self.interface_state[self.inbound_interface_index] = new_downstream_interface
-                new_upstream_interface = TreeInterfaceUpstream(self, new_inbound_interface_index)
+                new_upstream_interface = TreeInterfaceUpstream(self, new_inbound_interface_index, root_upstream_state, True)
                 self.interface_state[new_inbound_interface_index] = new_upstream_interface
                 self.inbound_interface_index = new_inbound_interface_index
 
                 # remove old interfaces
-                old_upstream_interface.delete(change_type_interface=True)
-                old_downstream_interface.delete(change_type_interface=True)
+                old_upstream_interface.delete()
+                old_downstream_interface.delete()
+
+                if self.is_tree_active() and not new_upstream_interface.is_S_directly_conn() and all(value is None for value in self._upstream_interface_state.values()):
+                    self.change_tree_to_unknown_state()
+                elif self.is_tree_active() and not new_upstream_interface.is_S_directly_conn() and root_upstream_state is None:
+                    self.change_tree_to_inactive_state()
+                elif self.is_tree_inactive() and (new_upstream_interface.is_S_directly_conn() or root_upstream_state is not None):
+                    self.change_tree_to_active_state()
 
                 # atualizar tabela de encaminhamento multicast
                 #self._was_olist_null = False
