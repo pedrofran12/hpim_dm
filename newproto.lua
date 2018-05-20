@@ -156,13 +156,20 @@ local dns = Proto("sfmr","New Multicast Protocol")
 
 
 local pf_type               = ProtoField.new    ("Type", "sfmr.type", ftypes.STRING)
-local pf_id_reliable        = ProtoField.new    ("ID Reliable", "sfmr.id_reliable", ftypes.STRING)
+local pf_boot_time        = ProtoField.new    ("Boot Time", "sfmr.boot_time", ftypes.STRING)
 local pf_tree_source = ProtoField.new("Source", "sfmr.options.tree_source", ftypes.STRING)
 local pf_tree_group = ProtoField.new("Group", "sfmr.options.tree_group", ftypes.STRING)
 local pf_hello_holdtime = ProtoField.new("Holdtime", "sfmr.options.hello_holdtime", ftypes.STRING)
 local pf_hello_generation_id = ProtoField.new("Generation ID", "sfmr.options.hello_generation_id", ftypes.STRING)
 local pf_assert_metric = ProtoField.new("Metric", "sfmr.options.assert_metric", ftypes.STRING)
 local pf_assert_metric_preference = ProtoField.new("Metric Preference", "sfmr.options.assert_metric_preference", ftypes.STRING)
+local pf_sequence_number = ProtoField.new("SequenceNumber", "sfmr.options.sequence_number", ftypes.STRING)
+local pf_my_minimum_sequence_number = ProtoField.new("My Minimum Sequence Number", "sfmr.options.my_minimum_sequence_number", ftypes.STRING)
+local pf_neighbor_minimum_sequence_number = ProtoField.new("Neighbor Minimum Sequence Number", "sfmr.options.neighbor_minimum_sequence_number", ftypes.STRING)
+
+local pf_counter = ProtoField.new("Counter", "sfmr.options.counter", ftypes.STRING)
+local pf_neighbor_ip = ProtoField.new("Neighbor IP", "sfmr.options.neighbor_ip", ftypes.STRING)
+local pf_state = ProtoField.new("State", "sfmr.options.state", ftypes.STRING)
 
 -- within the flags field, we want to parse/show the bits separately
 -- note the "base" argument becomes the size of the bitmask'ed field when ftypes.BOOLEAN is used
@@ -216,8 +223,10 @@ local pf_query_class        = ProtoField.uint16("mydns.query.class", "Class", ba
 --    pf_flag_z, pf_flag_authenticated, pf_flag_checking_disabled, pf_flag_rcode,
 --    pf_query, pf_query_name, pf_query_name_len, pf_query_label_count, pf_query_type, pf_query_class }
 
-dns.fields = {pf_type, pf_id_reliable, pf_tree_source, pf_tree_group, pf_assert_metric,
-      pf_assert_metric_preference, pf_hello_holdtime, pf_hello_generation_id}
+dns.fields = {pf_type, pf_boot_time, pf_tree_source, pf_tree_group, pf_assert_metric,
+      pf_assert_metric_preference, pf_hello_holdtime, pf_hello_generation_id, pf_counter,
+      pf_neighbor_ip, pf_state, pf_sequence_number, pf_my_minimum_sequence_number,
+      pf_neighbor_minimum_sequence_number}
 
 ----------------------------------------
 -- create some expert info fields (this is new functionality in 1.11.3)
@@ -251,16 +260,16 @@ dns.experts = { ef_query, ef_too_short, ef_bad_query, ef_response, ef_ultimate }
 -- referencing fields we're creating, and they're not "created" until that line above.
 -- Furthermore, you cannot put these 'Field.new()' lines inside the dissector function.
 -- Before Wireshark version 1.11, you couldn't even do this concept (of using fields you just created).
-local questions_field       = Field.new("mydns.num_questions")
-local query_type_field      = Field.new("mydns.query.type")
-local query_class_field     = Field.new("mydns.query.class")
-local response_field        = Field.new("mydns.flags.response")
+--local questions_field       = Field.new("mydns.num_questions")
+--local query_type_field      = Field.new("mydns.query.type")
+--local query_class_field     = Field.new("mydns.query.class")
+--local response_field        = Field.new("mydns.flags.response")
 
 
-local questions_field       = Field.new("mydns.num_questions")
-local query_type_field      = Field.new("mydns.query.type")
-local query_class_field     = Field.new("mydns.query.class")
-local response_field        = Field.new("mydns.flags.response")
+--local questions_field       = Field.new("mydns.num_questions")
+--local query_type_field      = Field.new("mydns.query.type")
+--local query_class_field     = Field.new("mydns.query.class")
+--local response_field        = Field.new("mydns.flags.response")
 
 -- here's a little helper function to access the response_field value later.
 -- Like any Field retrieval, you can't retrieve a field's value until its value has been
@@ -412,7 +421,7 @@ function dns.dissector(tvbuf,pktinfo,root)
     local msg_type = tab["TYPE"]
     pktinfo.cols.info:set(msg_type)
     tree:add(pf_type, msg_type)
-    tree:add(pf_id_reliable, tab["ID_RELIABLE"])
+    tree:add(pf_boot_time, tostring(tab["BOOT_TIME"]))
 
     -- We'd like to put the transaction id number in the GUI row for this packet, in its
     -- INFO column/cell.  First we need the transaction id value, though.  Since we just
@@ -500,9 +509,32 @@ function dns.dissector(tvbuf,pktinfo,root)
         
     local queries_tree = tree:add("SFMR Options")
     if msg_type == "HELLO" then
-      queries_tree:add(pf_hello_holdtime, tab["DATA"].HOLDTIME)
-      queries_tree:add(pf_hello_generation_id, tostring(tab["DATA"].GENERATION_ID))
-    elseif msg_type == "ASSERT" or msg_type == "ASSERT_RELIABLE" or msg_type == "ASSERT_RELIABLE_ACK" then
+      queries_tree:add(pf_hello_holdtime, tostring(tab["DATA"].HOLDTIME))
+      --queries_tree:add(pf_hello_generation_id, tostring(tab["DATA"].GENERATION_ID))
+    elseif msg_type == "INTEREST" or msg_type == "NO_INTEREST" or msg_type == "ACK" then
+      queries_tree:add(pf_tree_source, tostring(tab["DATA"].SOURCE))
+      queries_tree:add(pf_tree_group, tostring(tab["DATA"].GROUP))
+      queries_tree:add(pf_sequence_number, tostring(tab["DATA"].SN))
+    elseif msg_type == "INSTALL" or msg_type == "UNINSTALL" then
+      queries_tree:add(pf_tree_source, tostring(tab["DATA"].SOURCE))
+      queries_tree:add(pf_tree_group, tostring(tab["DATA"].GROUP))
+      queries_tree:add(pf_sequence_number, tostring(tab["DATA"].SN))
+      queries_tree:add(pf_assert_metric_preference, tostring(tab["DATA"].METRIC_PREFERENCE))
+      queries_tree:add(pf_assert_metric, tostring(tab["DATA"].METRIC))
+    elseif msg_type == "HELLO_SYNC" or msg_type == "HELLO_SYNC_ACK" then
+      queries_tree:add(pf_my_minimum_sequence_number, tostring(tab["DATA"].MY_SN))
+      queries_tree:add(pf_neighbor_minimum_sequence_number, tostring(tab["DATA"].NEIGHBOR_SN))
+      for _, v in pairs(tab["DATA"].TREES) do
+          local tree_info = queries_tree:add("Tree (".. v.SOURCE .. "," .. v.GROUP .. ")")
+          tree_info:add(pf_assert_metric_preference, tostring(v.METRIC_PREFERENCE))
+          tree_info:add(pf_assert_metric, tostring(v.METRIC))
+      end
+    elseif msg_type == "HELLO_SYNC_ACK_ACK" then
+      queries_tree:add(pf_my_minimum_sequence_number, tostring(tab["DATA"].MY_SN))
+      queries_tree:add(pf_neighbor_minimum_sequence_number, tostring(tab["DATA"].NEIGHBOR_SN))
+    end
+    
+    --[[elseif msg_type == "ASSERT" or msg_type == "ASSERT_RELIABLE" or msg_type == "ASSERT_RELIABLE_ACK" then
       queries_tree:add(pf_assert_metric_preference, tostring(tab["DATA"].METRIC_PREFERENCE))
       queries_tree:add(pf_assert_metric, tostring(tab["DATA"].METRIC))
     elseif msg_type == "TREE_INTEREST_QUERY" or msg_type == "TREE_INTEREST_QUERY_ACK" or msg_type == "JOIN_TREE" 
@@ -516,7 +548,13 @@ function dns.dissector(tvbuf,pktinfo,root)
           tree_info:add(pf_tree_source, v.SOURCE)
           tree_info:add(pf_tree_group, v.GROUP)
       end
-    end
+    elseif msg_type == "QUACK" or msg_type == "PRUNE_L" then
+      for i, v in pairs(tab["DATA"].STATES) do
+          local tree_info = queries_tree:add("State "..v.NEIGHBOR_IP)
+          tree_info:add(pf_neighbor_ip, v.NEIGHBOR_IP)
+          tree_info:add(pf_state, v.STATE)
+          tree_info:add(pf_counter, v.COUNTER)
+      end--]]
     
     --[[
     if num_queries > 0 then
