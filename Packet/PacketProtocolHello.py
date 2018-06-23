@@ -49,3 +49,39 @@ class PacketProtocolHello:
             option = PacketProtocolHelloOptions.parse_bytes((key,value))
             pim_payload.add_option(option)
         return pim_payload
+
+
+
+
+
+###############################################################################
+
+'''
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                         Hello HoldTime                        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+'''
+
+
+class PacketNewProtocolHello:
+    PIM_TYPE = 0
+    PIM_HDR_OPTS = "! L"
+    PIM_HDR_OPTS_LEN = struct.calcsize(PIM_HDR_OPTS)
+
+    def __init__(self, hello_holdtime):
+        self.hello_holdtime = hello_holdtime
+
+    def bytes(self) -> bytes:
+        msg = struct.pack(PacketNewProtocolHello.PIM_HDR_OPTS, self.hello_holdtime)
+        return msg
+
+    def __len__(self):
+        return len(self.bytes())
+
+    @staticmethod
+    def parse_bytes(data: bytes):
+        (hello_holdtime) = struct.unpack(PacketNewProtocolHello.PIM_HDR_OPTS,
+                                         data[:PacketNewProtocolHello.PIM_HDR_OPTS_LEN])
+        return PacketNewProtocolHello(hello_holdtime)

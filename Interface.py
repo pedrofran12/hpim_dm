@@ -1,12 +1,11 @@
 import socket
 from abc import ABCMeta, abstractmethod
 import threading
-import random
-import netifaces
-from Packet.ReceivedPacket import ReceivedPacket
-import Main
 import traceback
-from RWLock.RWLock import RWLockWrite
+from fcntl import ioctl
+import struct
+
+SIOCGIFMTU = 0x8921
 
 
 class Interface(metaclass=ABCMeta):
@@ -24,7 +23,7 @@ class Interface(metaclass=ABCMeta):
         self.interface_enabled = False
 
 
-    def _enable(self):
+    def enable(self):
         self.interface_enabled = True
         # run receive method in background
         receive_thread = threading.Thread(target=self.receive)
@@ -64,3 +63,17 @@ class Interface(metaclass=ABCMeta):
     @abstractmethod
     def get_ip(self):
         raise NotImplementedError
+
+    def get_mtu(self):
+        '''Use socket ioctl call to get MTU size'''
+        s = socket.socket(type=socket.SOCK_DGRAM)
+        ifr = self.interface_name + '\x00'*(32-len(self.interface_name))
+        try:
+            ifs = ioctl(s, SIOCGIFMTU, ifr)
+            mtu = struct.unpack('<H',ifs[16:18])[0]
+        except:
+            traceback.print_exc()
+            raise
+
+        #log.debug('get_mtu: mtu of {0} = {1}'.format(self.ifname, mtu))
+        return mtu

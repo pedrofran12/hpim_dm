@@ -12,7 +12,8 @@ from .metric import AssertMetric
 #from Packet.PacketPimStateRefresh import PacketPimStateRefresh
 from Packet.PacketProtocolHeader import PacketProtocolHeader
 from Packet.Packet import Packet
-from .root_reliable import SFMRUpstreamStates
+#from .root_state_machine import SFMRRootStates
+from .reliability import MessageReliabilityABC
 import traceback
 from . import DataPacketsSocket
 import threading
@@ -23,7 +24,7 @@ import Main
 class TreeInterfaceUpstream(TreeInterface):
     LOGGER = logging.getLogger('protocol.KernelEntry.RootInterface')
 
-    def __init__(self, kernel_entry, interface_id, best_upstream_router, was_non_root=False):
+    def __init__(self, kernel_entry, interface_id, best_upstream_router, was_non_root=False, tree_is_active=False, non_root_was_upstream=False):
         extra_dict_logger = kernel_entry.kernel_entry_logger.extra.copy()
         extra_dict_logger['vif'] = interface_id
         extra_dict_logger['interfacename'] = Main.kernel.vif_index_to_name_dic[interface_id]
@@ -36,21 +37,21 @@ class TreeInterfaceUpstream(TreeInterface):
         #self._reliable_state_timer = None
         #self._install_timer = None
 
+        #self._message_state = MessageReliabilityABC
+
         # todo e preciso o was_in_tree???
-        self._was_in_tree = False
-        self._block_timer = None
-        self._interest_timer = None
-        self._msg_being_reliably_sent = None
-        self._neighbors_that_acked = set()
+        #self._retransmission_timer = None
+        #self._msg_being_reliably_sent = None
+        #self._neighbors_that_acked = set()
+        from .root_state_machine import SFMRRootState
+        self._upstream_state = SFMRRootState
         if was_non_root:
-            self._upstream_state = SFMRUpstreamStates.BLOCKED
-            self._upstream_state.non_root_interface_to_root_interface(self)
-        else:
-            self._upstream_state = SFMRUpstreamStates.UNBLOCKED
+            #self._upstream_state = SFMRRootStates.NOT_UPSTREAM_PENDING
+            self._upstream_state.non_root_to_root_interface(self, non_root_was_upstream)
+        elif tree_is_active:
+            #self._upstream_state = SFMRRootStates.NOT_UPSTREAM
+            self._upstream_state.tree_transitions_to_active_state(self)
             #self.send_my_interest()
-
-
-
 
         #self._assert_winner_metric = AssertMetric(rpc.metric_preference, rpc.route_metric, self.get_ip())
         #self.assert_logger.debug(str(self._assert_state))
@@ -62,8 +63,8 @@ class TreeInterfaceUpstream(TreeInterface):
         self.originator_logger.debug(str(self._originator_state))
         '''
 
-        if self.is_S_directly_conn():
-            self.set_source_active_timer()
+        #if self.is_S_directly_conn():
+            #self.set_source_active_timer()
 
         # TODO TESTE SOCKET RECV DATA PCKTS
         self.socket_is_enabled = True
@@ -99,11 +100,18 @@ class TreeInterfaceUpstream(TreeInterface):
             self.originator_logger.debug(str(new_state))
     '''
 
-    def set_upstream_state(self, new_state):
+    def set_root_interface_state(self, new_state):
         if new_state != self._upstream_state:
             self._upstream_state = new_state
-        #new_state.transition(self)
-            #self.originator_logger.debug(str(new_state))
+
+    ############################################
+    # Set Message state
+    ############################################
+    '''
+    def set_message_state(self, new_state):
+        if new_state != self._message_state:
+            self._message_state = new_state
+    '''
 
     ##########################################
     # Check timers
@@ -119,23 +127,15 @@ class TreeInterfaceUpstream(TreeInterface):
     # Set timers
     ##########################################
     # Reliable timer
-    def set_block_timer(self):
-        self.clear_block_timer()
-        self._block_timer = Timer(10, self.block_timeout)
-        self._block_timer.start()
+    '''
+    def set_retransmission_timer(self):
+        self.clear_retransmission_timer()
+        self._retransmission_timer = Timer(10, self.retransmission_timeout)
+        self._retransmission_timer.start()
 
-    def clear_block_timer(self):
-        if self._block_timer is not None:
-            self._block_timer.cancel()
-
-    def set_interest_timer(self):
-        self.clear_interest_timer()
-        self._interest_timer = Timer(10, self.interest_timeout)
-        self._interest_timer.start()
-
-    def clear_interest_timer(self):
-        if self._interest_timer is not None:
-            self._interest_timer.cancel()
+    def clear_retransmission_timer(self):
+        if self._retransmission_timer is not None:
+            self._retransmission_timer.cancel()
 
     # Originator timers
     def set_source_active_timer(self):
@@ -147,16 +147,14 @@ class TreeInterfaceUpstream(TreeInterface):
         if self._source_active_timer is not None:
             self._source_active_timer.cancel()
 
-
+    '''
     ###########################################
     # Timer timeout
     ###########################################
-    def block_timeout(self):
-        self._upstream_state.block_timer_expires(self)
-
-    def interest_timeout(self):
-        self._upstream_state.interest_timer_expires(self)
-
+    '''
+    def retransmission_timeout(self):
+        self._message_state.retransmission_timer_expires(self)
+    
     def source_active_timeout(self):
         if self.is_S_directly_conn():
             #self._kernel_entry.delete(flood_remove_tree=True)
@@ -166,34 +164,40 @@ class TreeInterfaceUpstream(TreeInterface):
             else:
                 self._kernel_entry.change_tree_to_unknown_state()
 
+    '''
     ###########################################
     # Neighbors that acked
     ###########################################
+    '''
     def clear_neighbors_that_acked_list(self):
         # todo lock
         self._neighbors_that_acked = set()
 
-    def check_if_all_neighbors_acked(self, neighbor_ip):
+    def neighbor_acked(self, neighbor_ip):
         self._neighbors_that_acked.add(neighbor_ip)
+        self.check_if_all_neighbors_acked()
 
-        if self.get_interface().did_all_neighbors_acked(self._neighbors_that_acked):
-            if not self.is_tree_active():
-                self._kernel_entry.notify_interface_is_ready_to_remove(self._interface_id)
-            if self._best_upstream_router is not None:
-                # verificar se existe aw
-                self._upstream_state.all_neighbors_acked_and_there_is_aw(self)
-            else:
-                # verificar se nao existe aw
-                self._upstream_state.all_neighbors_acked_and_there_is_no_aw(self)
+    def check_if_all_neighbors_acked(self):
+        if self.did_all_neighbors_acked():
+            self._message_state.all_neighbors_acked(self)
+
+    def did_all_neighbors_acked(self):
+        return self._msg_being_reliably_sent is None or \
+               self.get_interface().did_all_neighbors_acked(self._neighbors_that_acked)
+
+    def message_has_been_reliable_transmitted(self):
+        self._upstream_state.message_has_been_reliably_transmitted(self)
+    '''
 
     ###########################################
     # Recv packets
     ###########################################
     def recv_data_msg(self):
-        if self.is_S_directly_conn():
-            self.set_source_active_timer()
-            if self.is_tree_inactive():
-                self._kernel_entry.change_tree_to_active_state()
+        return
+        #if self.is_S_directly_conn():
+            #self.set_source_active_timer()
+            #if self.is_tree_inactive():
+                #self._kernel_entry.change_tree_to_active_state()
 
     '''
     def recv_quack_msg(self, neighbor_ip, captured_states: dict):
@@ -218,14 +222,28 @@ class TreeInterfaceUpstream(TreeInterface):
     def change_assert_state(self, assert_state):
         best_upstream_router = self._best_upstream_router
         super().change_assert_state(assert_state)
+        print(self.get_tree_id())
+        print("UPSTREAM CHANGE ASSERT STATE")
+        print("best:", best_upstream_router)
+        print("new best", assert_state)
 
         if assert_state is None:
-            self._upstream_state.recv_uninstall_from_aw_and_there_are_no_upstream_routers(self)
+            print("ASSERT IS NONE")
+            #self._upstream_state.recv_uninstall_from_aw_and_there_are_no_upstream_routers(self)
             #self.transition_to_inactive()
-
-        elif best_upstream_router is None or best_upstream_router != assert_state:
+            self._upstream_state.tree_transitions_to_inactive_or_unknown_state(self)
+        elif best_upstream_router is None or best_upstream_router is not assert_state:
+            print("ASSERT IS ELIF")
+            self._upstream_state.tree_is_active_and_best_upstream_router_reelected(self)
+        else:
+            print("ELSE")
+        '''
+        elif best_upstream_router is None or best_upstream_router is not assert_state:
+            print("ASSERT IS ELIF")
             self._upstream_state.recv_install_from_aw(self)
             #self.transition_to_active()
+        '''
+
 
     def change_interest_state(self, interest_state):
         return
@@ -249,21 +267,32 @@ class TreeInterfaceUpstream(TreeInterface):
         else:
             self._upstream_state.recv_uninstall_from_aw_and_there_are_no_upstream_routers(self)
     '''
-
+    '''
     def recv_ack_msg(self, neighbor_ip, sn):
         if self._msg_being_reliably_sent is not None and sn == self._msg_being_reliably_sent[0].payload.payload.sequence_number:
-            self._upstream_state.neighbor_acks_and_sn_is_fresh(self, neighbor_ip)
+            #self._upstream_state.neighbor_acks_and_sn_is_fresh(self, neighbor_ip)
+            self._message_state.receive_ack_and_sn_is_fresh(self, neighbor_ip)
+
+    def recv_ack_sync_msg(self, neighbor_ip, minimum_sn):
+        if self._msg_being_reliably_sent is not None and self._msg_being_reliably_sent[1] == neighbor_ip and \
+                self._msg_being_reliably_sent[0].payload.payload.sequence_number < minimum_sn:
+            #self._upstream_state.neighbor_acks_and_sn_is_fresh(self, neighbor_ip)
+            self._message_state.receive_ack_and_sn_is_fresh(self, neighbor_ip)
+    '''
 
     ############################################
     #
     ############################################
-    def transition_to_active(self):
-        self.send_my_interest()
+    def tree_transition_to_active(self):
+        #self._upstream_state.new_tree_discovered_in_active_state(self)
+        self._upstream_state.tree_transitions_to_active_state(self)
 
-    def transition_to_inactive(self):
+    def tree_transition_to_inactive_or_unknown(self):
         # todo verificar melhor por causa do estado blocked
-        if self._upstream_state == SFMRUpstreamStates.UNBLOCKED:
-            self._kernel_entry.notify_interface_is_ready_to_remove(self._interface_id)
+        self._upstream_state.tree_transitions_to_inactive_or_unknown_state(self)
+
+        #if self._upstream_state == SFMRRootStates.NOT_UPSTREAM:
+        #    self._kernel_entry.notify_interface_is_ready_to_remove(self._interface_id)
 
 
 
@@ -272,62 +301,59 @@ class TreeInterfaceUpstream(TreeInterface):
     ###########################################
     def send_my_interest(self):
         if self.is_node_in_tree() and not self.is_S_directly_conn():
-            self.node_is_in_tree(force=True)
+            #self._message_state.send_new_interest(self)
+            self.send_interest()
         elif not self.is_S_directly_conn():
-            self.node_is_out_tree(force=True)
-
+            #self._message_state.send_new_no_interest(self)
+            self.send_no_interest()
 
     def node_is_out_tree(self, force=False):
         # TODO LOCK PARA COUNTER E ESTADO
         #if not self.is_S_directly_conn() and (self._was_in_tree or force) and self._best_upstream_router is not None:
         if self.is_tree_active() and not self.is_S_directly_conn() and self._best_upstream_router is not None:
-            self._upstream_state.transition_to_ot(self)
-            self._was_in_tree = False
+            self._upstream_state.transition_to_it_or_ot_and_active_tree(self)
+            #self._was_in_tree = False
 
     def node_is_in_tree(self, force=False):
         # TODO LOCK PARA COUNTER E ESTADO
         #if not self.is_S_directly_conn() and (not self._was_in_tree or force) and self._best_upstream_router is not None:
         if self.is_tree_active() and not self.is_S_directly_conn() and self._best_upstream_router is not None:
-            self._upstream_state.transition_to_it(self)
-            self._was_in_tree = True
+            self._upstream_state.transition_to_it_or_ot_and_active_tree(self)
+            #self._was_in_tree = True
 
     ###########################################
     # Change AssertWinner
     ###########################################
+    '''
     def notify_assert_winner_change(self):
         self._reliable_state.aw_change(self)
+    '''
 
     ###########################################
     # Send packets
     ###########################################
-    '''
+    def send_i_am_no_longer_upstream(self):
+        #self._message_state.send_new_i_am_no_longer_upstream(self)
+        (source, group) = self.get_tree_id()
+        self.get_interface().send_i_am_no_longer_upstream(source, group)
+
     def send_interest(self):
-        print("send join_tree")
-        # TODO CONCORRENCIA COUNTER
-        counter = self._reliable_state_counter
-        try:
-            (source, group) = self.get_tree_id()
-            ph = PacketProtocolJoinTree(source, group, counter)
-            pckt = Packet(payload=PacketProtocolHeader(ph))
-            self.get_interface().send(pckt)
-        except:
-            traceback.print_exc()
-            return
+        #self._message_state.send_new_interest(self)
+        (source, group) = self.get_tree_id()
+        best_upstream_neighbor = self._best_upstream_router.get_ip()
+        self.get_interface().send_interest(source, group, best_upstream_neighbor)
 
     def send_no_interest(self):
-        print("send prune_tree")
-        # TODO CONCORRENCIA COUNTER
-        counter = self._reliable_state_counter
-        try:
-            (source, group) = self.get_tree_id()
+        #self._message_state.send_new_no_interest(self)
+        (source, group) = self.get_tree_id()
+        best_upstream_neighbor = self._best_upstream_router.get_ip()
+        self.get_interface().send_no_interest(source, group, best_upstream_neighbor)
 
-            ph = PacketProtocolPruneTree(source, group, counter)
-            pckt = Packet(payload=PacketProtocolHeader(ph))
+    def cancel_message(self):
+        #self._message_state.cancel_message(self)
+        #self.get_interface().cancel_message(self.get_tree_id())
+        self.get_interface().cancel_interest_message(self.get_tree_id())
 
-            self.get_interface().send(pckt)
-        except:
-            traceback.print_exc()
-            return
     '''
     def resend_last_reliable_packet(self):
         try:
@@ -335,7 +361,7 @@ class TreeInterfaceUpstream(TreeInterface):
             self.get_interface().send(pkt, dst)
         except:
             traceback.print_exc()
-
+    '''
     ###########################################
     # Changes to RPF'(s)
     ###########################################
@@ -366,10 +392,11 @@ class TreeInterfaceUpstream(TreeInterface):
         self.socket_is_enabled = False
         self.socket_pkt.close()
         super().delete()
-        self.clear_source_active_timer()
+        #self.clear_source_active_timer()
 
-        self.clear_interest_timer()
-        self.clear_block_timer()
+        self.cancel_message()
+        #self.clear_retransmission_timer()
+
         # Clear Originator state
         #self._originator_state = None
 

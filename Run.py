@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from Daemon.Daemon import Daemon
 import Main
@@ -66,6 +66,9 @@ class MyDaemon(Daemon):
                 elif 'add_interface' in args and args.add_interface:
                     Main.add_protocol_interface(args.add_interface[0])
                     connection.shutdown(socket.SHUT_RDWR)
+                elif 'flood_initial_data' in args and args.flood_initial_data:
+                    from tree import globals
+                    globals.INITIAL_FLOOD ^= True
                 elif 'add_interface_igmp' in args and args.add_interface_igmp:
                     Main.add_igmp_interface(args.add_interface_igmp[0])
                     connection.shutdown(socket.SHUT_RDWR)
@@ -101,6 +104,7 @@ if __name__ == "__main__":
     group.add_argument("-ln", "--list_neighbors", action="store_true", default=False, help="List All Neighbors")
     group.add_argument("-ls", "--list_state", action="store_true", default=False, help="List state of IGMP")
     group.add_argument("-mr", "--multicast_routes", action="store_true", default=False, help="List Multicast Routing table")
+    group.add_argument("-fid", "--flood_initial_data", action="store_true", default=False, help="Flood initial data packets")
     group.add_argument("-ai", "--add_interface", nargs=1, metavar='INTERFACE_NAME', help="Add Protocol interface")
     group.add_argument("-aiigmp", "--add_interface_igmp", nargs=1, metavar='INTERFACE_NAME', help="Add IGMP interface")
     group.add_argument("-ri", "--remove_interface", nargs=1, metavar='INTERFACE_NAME', help="Remove Protocol interface")

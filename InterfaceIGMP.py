@@ -47,7 +47,7 @@ class InterfaceIGMP(Interface):
         self.interface_enabled = True
         from igmp.RouterState import RouterState
         self.interface_state = RouterState(self)
-        super()._enable()
+        #super()._enable()
 
 
     def get_ip(self):

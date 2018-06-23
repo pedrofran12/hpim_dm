@@ -59,6 +59,7 @@ class TreeInterface(metaclass=ABCMeta):
     def recv_data_msg(self):
         pass
 
+    '''
     def recv_assert_msg(self, received_metric: AssertMetric):
         return
 
@@ -78,19 +79,24 @@ class TreeInterface(metaclass=ABCMeta):
     def recv_uninstall_msg(self, ip):
         #self._upstream_routers.pop(ip)
         return
-
+        '''
+    '''
     def recv_ack_msg(self, neighbor_ip, sn):
         return
 
+    def recv_ack_sync_msg(self, neighbor_ip, minimum_sn):
+        return
+    '''
     #def recv_tree_interest_query_msg(self):
     #    return
 
     ######################################
     # Send messages
     ######################################
+    '''
     def get_sequence_number(self):
         return self.get_interface().get_sequence_number()
-
+    '''
     def get_sync_state(self):
         return None
 
@@ -112,7 +118,7 @@ class TreeInterface(metaclass=ABCMeta):
     def send_quack(self):
         return
     '''
-
+    '''
     def create_interest_msg(self):
         print("send join_tree")
         try:
@@ -142,7 +148,7 @@ class TreeInterface(metaclass=ABCMeta):
         except:
             traceback.print_exc()
             return None
-
+    '''
     '''
     def send_assert(self):
         print("send assert")
@@ -182,7 +188,7 @@ class TreeInterface(metaclass=ABCMeta):
     def send_remove_tree(self):
         return
     '''
-
+    '''
     def create_install_msg(self, metric_preference, metric):
         print("send install")
         try:
@@ -212,6 +218,7 @@ class TreeInterface(metaclass=ABCMeta):
         except:
             traceback.print_exc()
             return None
+    '''
 
     def is_tree_active(self):
         return self._kernel_entry.is_tree_active()
@@ -223,18 +230,24 @@ class TreeInterface(metaclass=ABCMeta):
         return self._kernel_entry.is_tree_unknown()
 
     #############################################################
+    '''
     def has_upstream_neighbors(self):
         return len(self._upstream_routers) > 0 or self.is_S_directly_conn()
+    '''
 
     @abstractmethod
     def is_forwarding(self):
         pass
 
+    '''
     def assert_winner_nlt_expires(self):
         return
+    '''
 
+    '''
     def neighbor_removal(self, other_neighbors_remain):
         return
+    '''
 
     @abstractmethod
     def delete(self):
@@ -284,9 +297,10 @@ class TreeInterface(metaclass=ABCMeta):
         '''
         return
 
+    '''
     def notify_assert_winner_change(self):
         return
-
+    '''
 
     def change_assert_state(self, assert_state):
         self._best_upstream_router = assert_state
@@ -324,15 +338,28 @@ class TreeInterface(metaclass=ABCMeta):
             return self._local_membership_state.has_members()
 
     def get_interface(self):
+        #with Main.kernel.interface_lock:
         kernel = Main.kernel
         interface_name = kernel.vif_index_to_name_dic[self._interface_id]
-        interface = Main.interfaces[interface_name]
+        interface = Main.interfaces.get(interface_name, None)
         return interface
 
 
     def get_ip(self):
-        ip = self.get_interface().get_ip()
+        #ip = self.get_interface().get_ip()
+        if_name = Main.kernel.vif_index_to_name_dic[self._interface_id]
+        import netifaces
+        ip = netifaces.ifaddresses(if_name)[netifaces.AF_INET][0]['addr']
         return ip
+
+    '''
+    def neighbors_lock(self):
+        interface = self.get_interface()
+        if interface is not None:
+            return self.get_interface().neighbors_lock
+        else:
+            return Main.kernel.interface_lock
+    '''
 
     def number_of_neighbors(self):
         try:

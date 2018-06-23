@@ -51,7 +51,7 @@ def remove_interface(interface_name, pim=False, igmp=False):
 
 def list_neighbors():
     interfaces_list = interfaces.values()
-    t = PrettyTable(['Interface', 'Neighbor IP', 'Hello Hold Time', "Generation ID", "Uptime"])
+    t = PrettyTable(['Interface', 'Neighbor IP', 'State', 'Hello Hold Time', "BootTime", "MinimumSN", "Uptime"])
     check_time = time.time()
     for interface in interfaces_list:
         for neighbor in interface.get_neighbors():
@@ -59,7 +59,7 @@ def list_neighbors():
             uptime = 0 if (uptime < 0) else uptime
 
             t.add_row(
-                [interface.interface_name, neighbor.ip, neighbor.hello_hold_time, neighbor.generation_id, time.strftime("%H:%M:%S", time.gmtime(uptime))])
+                [interface.interface_name, neighbor.ip, neighbor.neighbor_state.__name__, neighbor.hello_hold_time, neighbor.time_of_boot, neighbor.minimum_sequence_number, time.strftime("%H:%M:%S", time.gmtime(uptime))])
     print(t)
     return str(t)
 
@@ -111,11 +111,12 @@ def list_routing_state():
             routing_entries.append(b)
     vif_indexes = kernel.vif_index_to_name_dic.keys()
 
-    t = PrettyTable(['SourceIP', 'GroupIP', 'Interface', 'PruneState', 'AssertState', 'LocalMembership', "Is Forwarding?"])
+    t = PrettyTable(['SourceIP', 'GroupIP', 'TreeState', 'Interface', 'PruneState', 'AssertState', 'LocalMembership', "Is Forwarding?"])
     for entry in routing_entries:
         ip = entry.source_ip
         group = entry.group_ip
         upstream_if_index = entry.inbound_interface_index
+        tree_state = entry._tree_state.__name__
 
         for index in vif_indexes:
             interface_state = entry.interface_state[index]
@@ -135,7 +136,7 @@ def list_routing_state():
                 assert_state = "-"
                 is_forwarding = "-"
 
-            t.add_row([ip, group, interface_name, prune_state, assert_state, local_membership, is_forwarding])
+            t.add_row([ip, group, tree_state, interface_name, prune_state, assert_state, local_membership, is_forwarding])
     return str(t)
 
 

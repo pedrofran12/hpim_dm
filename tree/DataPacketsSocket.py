@@ -31,7 +31,7 @@ def get_s_g_bpf_filter_code(source, group, interface_name):
     s = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, ETH_P_IP)
     s.setsockopt(socket.SOL_SOCKET, SO_ATTACH_FILTER, fprog)
     # todo pequeno ajuste (tamanho de buffer pequeno para o caso de trafego em rajadas):
-    #s.setsockopt(socket.SOL_SOCKET, SO_RCVBUFFORCE, 1)
+    s.setsockopt(socket.SOL_SOCKET, SO_RCVBUFFORCE, 1)
     s.bind((interface_name, ETH_P_IP))
 
     return s

@@ -2,15 +2,7 @@ import struct
 import socket
 from Packet.PacketPimEncodedUnicastAddress import PacketPimEncodedUnicastAddress
 from Packet.PacketPimJoinPruneMulticastGroup import PacketPimJoinPruneMulticastGroup
-'''
- 0                   1                   2                   3
- 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|        Upstream Neighbor Address (Encoded Unicast Format)     |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|   Reserved    |  Num Groups   |          Hold Time            |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-'''
+
 class PacketProtocolInterest:
     PIM_TYPE = "INTEREST"
 
@@ -43,3 +35,56 @@ class PacketProtocolNoInterest(PacketProtocolInterest):
 
     def __init__(self, source, group, sn):
         super().__init__(source, group, sn)
+
+
+
+'''
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                        Tree Source IP                         |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                         Tree Group IP                         |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                        Sequence Number                        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+'''
+class PacketNewProtocolInterest:
+    PIM_TYPE = 5
+
+    PIM_HDR_INTEREST = "! L L L"
+    PIM_HDR_INTEREST_LEN = struct.calcsize(PIM_HDR_INTEREST)
+
+    def __init__(self, source_ip, group_ip, sequence_number):
+        if type(source_ip) not in (str, bytes) or type(group_ip) not in (str, bytes):
+            raise Exception
+        if type(source_ip) is bytes:
+            source_ip = socket.inet_ntoa(source_ip)
+        if type(group_ip) is bytes:
+            group_ip = socket.inet_ntoa(group_ip)
+
+        self.source = source_ip
+        self.group = group_ip
+        self.sequence_number = sequence_number
+
+    def bytes(self) -> bytes:
+        msg = struct.pack(PacketNewProtocolInterest.PIM_HDR_INTEREST, socket.inet_aton(self.source),
+                          socket.inet_aton(self.group), self.sequence_number)
+
+        return msg
+
+    def __len__(self):
+        return len(self.bytes())
+
+    @classmethod
+    def parse_bytes(cls, data: bytes):
+        (tree_source, tree_group, sn) = struct.unpack(PacketNewProtocolInterest.PIM_HDR_INTEREST,
+                                                   data[:PacketNewProtocolInterest.PIM_HDR_INTEREST_LEN])
+        return cls(tree_source, tree_group, sn)
+
+
+class PacketNewProtocolNoInterest:
+    PIM_TYPE = 6
+
+    def __init__(self, source_ip, group_ip, sequence_number):
+        super().__init__(source_ip, group_ip, sequence_number)

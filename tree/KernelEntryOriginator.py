@@ -1,4 +1,4 @@
-from tree.tree_if_upstream import TreeInterfaceUpstream
+from tree.tree_if_upstream_originator import TreeInterfaceUpstream
 from tree.tree_if_downstream import TreeInterfaceDownstream
 from .tree_interface import TreeInterface
 from threading import Timer, Lock, RLock
@@ -17,7 +17,6 @@ class TreeState:
         for interface in kernel_entry.interface_state.values():
             interface.tree_transition_to_active()
         kernel_entry.change()
-        kernel_entry.evaluate_in_tree_change()
 
     @staticmethod
     def transition_to_inactive(kernel_entry):
@@ -27,7 +26,6 @@ class TreeState:
         for interface in kernel_entry.interface_state.values():
             interface.tree_transition_to_inactive_or_unknown()
         kernel_entry.change()
-        kernel_entry.evaluate_in_tree_change()
 
     @staticmethod
     def transition_to_unknown(kernel_entry):
@@ -54,18 +52,18 @@ class UnknownTree(TreeState):
         return
 
 
-class KernelEntry:
-    KERNEL_LOGGER = logging.getLogger('protocol.KernelEntry')
+class KernelEntryOriginator:
+    KERNEL_LOGGER = logging.getLogger('protocol.KernelEntryOriginator')
 
     def __init__(self, source_ip: str, group_ip: str, upstream_state_dic=None, interest_state_dic=None):
-        self.kernel_entry_logger = logging.LoggerAdapter(KernelEntry.KERNEL_LOGGER, {'tree': '(' + source_ip + ',' + group_ip + ')'})
-        self.kernel_entry_logger.debug('Create KernelEntry')
+        self.kernel_entry_logger = logging.LoggerAdapter(KernelEntryOriginator.KERNEL_LOGGER, {'tree': '(' + source_ip + ',' + group_ip + ')'})
+        self.kernel_entry_logger.debug('Create KernelEntryOriginator')
 
         self.source_ip = source_ip
         self.group_ip = group_ip
 
-
-        self._tree_state = UnknownTree
+        self.sat_is_running = True
+        self._tree_state = ActiveTree
 
         if upstream_state_dic is None:
             upstream_state_dic = {}
@@ -74,7 +72,6 @@ class KernelEntry:
 
         self._interest_interface_state = interest_state_dic
         self._upstream_interface_state = upstream_state_dic
-        self._inactive_interfaces_that_are_ready = {}
         # ip of neighbor of the rpf
         #next_hop = UnicastRouting.get_route(source_ip)["gateway"]
         #self.rpf_node = source_ip if next_hop is None else next_hop
@@ -106,9 +103,6 @@ class KernelEntry:
         self._rpc = Metric(metric_administrative_distance, metric_cost)
         ######################################################################################
 
-        # (S,G) starts OUT-TREE state... later check if node is in-tree via evaluate_in_tree_change()
-        self._was_in_tree = False
-
         # Locks
         self._multicast_change = Lock()
         self._lock_test2 = RLock()
@@ -118,39 +112,30 @@ class KernelEntry:
         #with Main.kernel.interface_lock:
         self.inbound_interface_index = Main.kernel.vif_dic[self.check_rpf()]
 
-
         self.interface_state = {}  # type: Dict[int, TreeInterface]
-        self.first_check_tree_state()
-        tree_is_active = self.is_tree_active()
+        tree_is_active = True
         with self.CHANGE_STATE_LOCK:
             for i in Main.kernel.vif_index_to_name_dic.keys():
                 try:
                     upstream_state = self._upstream_interface_state.get(i, None)
-                    self._inactive_interfaces_that_are_ready[i] = False
 
-                    if i == self.inbound_interface_index:
-                        continue
-                        #self.interface_state[i] = TreeInterfaceUpstream(self, i, upstream_state,
-                        #                                                tree_is_active=tree_is_active)
-                    else:
+                    if i != self.inbound_interface_index:
                         interest_state = self._interest_interface_state.get(i, True) # TODO CORRIGIR!!!
                         self.interface_state[i] = TreeInterfaceDownstream(self, i, self._rpc,
                                                                           best_upstream_router=upstream_state,
                                                                           interest_state=interest_state,
                                                                           tree_is_active=tree_is_active)
-
                 except:
                     import traceback
                     print(traceback.print_exc())
                     continue
-            self._was_in_tree = self.is_in_tree()
-            upstream_state = self._upstream_interface_state.get(self.inbound_interface_index, None)
+
+
             self.interface_state[self.inbound_interface_index] = TreeInterfaceUpstream(self, self.inbound_interface_index,
-                                                                                       upstream_state,
-                                                                                       tree_is_active=tree_is_active)
+                                                                                       None)
 
         self.change()
-        self.evaluate_in_tree_change()
+        self.check_tree_state()
         print('Tree created')
 
 
@@ -179,29 +164,16 @@ class KernelEntry:
 
 
     def check_tree_state(self):
-        if self._upstream_interface_state.get(self.inbound_interface_index, None) is not None:
-            # tree is Active
+        if self.sat_is_running:
             print("PARA ACTIVE")
             self._tree_state.transition_to_active(self)
-        elif not all(value is None for value in self._upstream_interface_state.values()):
-            print("PARA INACTIVE")
-            self._tree_state.transition_to_inactive(self)
-        else:
+        elif not self.sat_is_running and all(value is None for value in self._upstream_interface_state.values()):
+            # tree is unknown
             print("PARA UNKNOWN")
             self._tree_state.transition_to_unknown(self)
-
-
-    def first_check_tree_state(self):
-        if self._upstream_interface_state.get(self.inbound_interface_index, None) is not None:
-            # tree is Active
-            print("PARA ACTIVE")
-            self._tree_state = ActiveTree
-        elif not all(value is None for value in self._upstream_interface_state.values()):
+        elif not self.sat_is_running:
             print("PARA INACTIVE")
-            self._tree_state = InactiveTree
-        else:
-            print("PARA UNKNOWN")
-            self._tree_state = UnknownTree
+            self._tree_state.transition_to_inactive(self)
 
 
     ################################################
@@ -246,8 +218,19 @@ class KernelEntry:
     # TODO
     # TODO
     # TODO
+    def sat_expires(self):
+        self.sat_is_running = False
+        self.check_tree_state()
+
+    def sat_running(self):
+        self.sat_is_running = True
+        self.check_tree_state()
+
     def check_interface_state(self, index, upstream_state, interest_state):
         print("ENTROU CHECK INTERFACE STATE")
+        if index == self.inbound_interface_index:
+            return
+
         self._upstream_interface_state[index] = upstream_state
 
         self.interface_state[index].change_assert_state(upstream_state)
@@ -257,6 +240,9 @@ class KernelEntry:
         print("SAI CHECK INTERFACE STATE")
 
     def check_interest_state(self, index, interest_state):
+        if index == self.inbound_interface_index:
+            return
+
         current_interest_state = self._interest_interface_state.get(index, None)
         self._interest_interface_state[index] = interest_state
 
@@ -276,7 +262,7 @@ class KernelEntry:
         with self.CHANGE_STATE_LOCK:
             return self._tree_state == UnknownTree
 
-
+    '''
     def change_tree_to_unknown_state(self):
         with self.CHANGE_STATE_LOCK:
             # TODO alterar isto
@@ -334,7 +320,7 @@ class KernelEntry:
 
             self.change()
             self.evaluate_in_tree_change()
-
+    
     def notify_interface_is_ready_to_remove(self, index):
         # todo ver melhor lock
         with self.CHANGE_STATE_LOCK:
@@ -352,6 +338,7 @@ class KernelEntry:
         #self.delete()
             if self.is_tree_unknown():
                 self.remove_entry()
+    '''
 
     def get_interface_sync_state(self, vif_index):
         with self.CHANGE_STATE_LOCK:
@@ -422,25 +409,22 @@ class KernelEntry:
                 root_interest_state = self._interest_interface_state.get(new_inbound_interface_index, False)
                 root_upstream_state = self._upstream_interface_state.get(new_inbound_interface_index, None)
 
-                # remove old interfaces
-                old_upstream_interface.delete()
-                old_downstream_interface.delete()
-                non_root_was_upstream = old_downstream_interface.get_sync_state() is not None
-
                 # change type of interfaces
                 new_downstream_interface = TreeInterfaceDownstream(self, self.inbound_interface_index, self._rpc, non_root_upstream_state, non_root_interest_state, self.is_tree_active(), was_root=True)
                 self.interface_state[self.inbound_interface_index] = new_downstream_interface
-                new_upstream_interface = TreeInterfaceUpstream(self, new_inbound_interface_index, root_upstream_state, True, root_upstream_state is not None, non_root_was_upstream=non_root_was_upstream)
+                new_upstream_interface = TreeInterfaceUpstream(self, new_inbound_interface_index, root_upstream_state)
                 self.interface_state[new_inbound_interface_index] = new_upstream_interface
                 self.inbound_interface_index = new_inbound_interface_index
 
+                # remove old interfaces
+                old_upstream_interface.delete()
+                old_downstream_interface.delete()
 
                 self.check_tree_state()
 
                 # atualizar tabela de encaminhamento multicast
                 #self._was_olist_null = False
                 self.change()
-                self.evaluate_in_tree_change()
                 #new_upstream_interface.change_on_unicast_routing(interface_change=True)
             '''
             elif self.rpf_node != rpf_node:
@@ -464,16 +448,8 @@ class KernelEntry:
         return False
 
     def evaluate_in_tree_change(self):
-        with self._lock_test2:
-            is_in_tree = self.is_in_tree()
+        return
 
-            if self._was_in_tree != is_in_tree:
-                if is_in_tree:
-                    self.interface_state[self.inbound_interface_index].node_is_in_tree()
-                else:
-                    self.interface_state[self.inbound_interface_index].node_is_out_tree()
-
-                self._was_in_tree = is_in_tree
 
     def get_source(self):
         return self.source_ip
