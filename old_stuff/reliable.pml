@@ -221,23 +221,23 @@ endsnode:
 		:: nempty(failure_detector_channel[my_id]) ->
 				failure_detector_channel[my_id] ? msg_type(neighbor_id);
 				if
-				:: msg_type == delete_node && neighbor_id != my_id ->
-					neighbor[my_id] = neighbor[my_id] ^ (1 << (neighbor_id-1));
-					global_entries[my_id].sequence_number[neighbor_id] = 255;
-					global_entries[my_id].state[neighbor_id] = dead;
-					checkUpdated(my_id, global_entries[my_id], is_updated);
-				:: msg_type == reset_node && neighbor_id != my_id->
-					neighbor[my_id] = neighbor[my_id] | (1 << (neighbor_id-1));
-					global_entries[my_id].sequence_number[neighbor_id] = 0;
-					global_entries[my_id].state[neighbor_id] = noinfo;
-					is_updated = false;
-				:: msg_type == delete_node && neighbor_id == my_id ->
-					fail = true;
-				:: msg_type == reset_node && neighbor_id == my_id ->
-					is_updated = false;
-					clearEntries(global_entries[my_id], my_id);
-					initEntries(my_id, aw, global_entries[my_id]);
-					sendMsg(msg_quack, my_id, new_metric, global_entries[my_id]);
+        :: msg_type == delete_node && neighbor_id == my_id ->
+          break;
+        :: msg_type == reset_node && neighbor_id == my_id ->
+          is_updated = false;
+          clearEntries(global_entries[my_id], my_id);
+          initEntries(my_id, aw, global_entries[my_id]);
+          sendMsg(msg_quack, my_id, new_metric, global_entries[my_id]);
+        :: neighbor_id != my_id && msg_type == delete_node ->
+          neighbor[my_id] = neighbor[my_id] & (0xFF - (1 << neighbor_id));
+          global_entries[my_id].sequence_number[neighbor_id] = 255;
+          global_entries[my_id].state[neighbor_id] = dead;
+          checkUpdated(my_id, global_entries[my_id], is_updated);
+        :: neighbor_id != my_id && (msg_type == reset_node || msg_type == new_node) ->
+          neighbor[my_id] = neighbor[my_id] | (1 << neighbor_id);
+          global_entries[my_id].sequence_number[neighbor_id] = 0;
+          global_entries[my_id].state[neighbor_id] = noinfo;
+          is_updated = false;
 				fi;*/
 		:: empty(ch[my_id]) && empty(unicast[my_id]) && !is_updated ->
 			sendMsg(msg_quack, my_id, my_metric, global_entries[my_id]);
@@ -324,7 +324,7 @@ endsnode:
 				failure_detector_channel[my_id] ? msg_type(neighbor_id);
 				if
 				:: msg_type == delete_node && neighbor_id == my_id ->
-					fail = true;
+					break;
 				:: msg_type == reset_node && neighbor_id == my_id ->
 					is_updated = false;
 					clearEntries(global_entries[my_id], my_id);
@@ -332,7 +332,15 @@ endsnode:
 					sendMsg(msg_quack, my_id, new_metric, global_entries[my_id]);
 					metric_of_aw = INFINITE_METRIC;
 					last_neighbor_quack = NO_LAST_NEIGHBOR_QUACK;
-				:: (msg_type == delete_node || msg_type == reset_node) && neighbor_id == last_neighbor_quack ->
+        :: neighbor_id != my_id && msg_type == delete_node ->
+          neighbor[my_id] = neighbor[my_id] & (0xFF - (1 << neighbor_id));
+          global_entries[my_id].sequence_number[neighbor_id] = 255;
+          global_entries[my_id].state[neighbor_id] = dead;
+        :: neighbor_id != my_id && (msg_type == reset_node || msg_type == new_node) ->
+          neighbor[my_id] = neighbor[my_id] | (1 << neighbor_id);
+        fi;
+        if
+				:: neighbor_id == last_neighbor_quack ->
 					global_entries[my_id].state[my_id] = aw;
 					global_entries[my_id].sequence_number[my_id]++;
 					clearEntries(global_entries[my_id], my_id);
@@ -340,12 +348,6 @@ endsnode:
 					metric_of_aw = INFINITE_METRIC;
 					last_neighbor_quack = NO_LAST_NEIGHBOR_QUACK;
 				:: else -> skip;
-				fi;
-				if
-				:: msg_type == delete_node ->
-					neighbor[my_id] = neighbor[my_id] ^ (1 << (neighbor_id-1));
-				:: msg_type == reset_node ->
-					neighbor[my_id] = neighbor[my_id] | (1 << (neighbor_id-1));
 				fi;*/
 		:: empty(ch[my_id]) && empty(unicast[my_id]) && !is_updated ->
 			sendMsg(msg_nointerest, my_id, my_metric, global_entries[my_id]);
@@ -378,18 +380,22 @@ endsnode:
 		:: nempty(failure_detector_channel[my_id]) ->
 				failure_detector_channel[my_id] ? msg_type(neighbor_id);
 				if
-				:: neighbor_id==last_neighbor_quack ->
-						is_updated=false;
-						metric_of_aw = INFINITE_METRIC;
-						last_neighbor_quack = NO_LAST_NEIGHBOR_QUACK;
-				:: else -> skip;
+        :: neighbor_id == my_id && msg_type == delete_node ->
+            break;
+        :: neighbor_id == my_id && msg_type == reset_node ->
+            clearEntries(global_entries[my_id], my_id);
+            initEntries(my_id, global_entries[my_id].state[my_id], global_entries[my_id]);
+        :: neighbor_id != my_id && msg_type == delete_node ->
+            neighbor[my_id] = neighbor[my_id] & (0xFF - (1 << neighbor_id));
+        :: neighbor_id != my_id && (msg_type == reset_node || msg_type == new_node) ->
+            neighbor[my_id] = neighbor[my_id] | (1 << neighbor_id);
 				fi;
 				if
-				:: msg_type == delete_node ->
-					neighbor[my_id] = neighbor[my_id] ^ (1 << (neighbor_id-1));
-				:: msg_type == reset_node ->
-					neighbor[my_id] = neighbor[my_id] | (1 << (neighbor_id-1));
-
+        :: neighbor_id == last_neighbor_quack ->
+            is_updated=false;
+            metric_of_aw = INFINITE_METRIC;
+            last_neighbor_quack = NO_LAST_NEIGHBOR_QUACK;
+        :: else -> skip;
 				fi;*/
 		:: empty(ch[my_id]) /*&& empty(failure_detector_channel[my_id])*/ && !is_updated ->
           msg_type = ((is_interested(STATE_ME(my_id))) -> msg_interest : msg_nointerest);
