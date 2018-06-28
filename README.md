@@ -1,8 +1,9 @@
 # Promela
 
 #### Promela Topologies:
-![Topology1](topology.png "Topology 1")
-![Topology2](topology1.png "Topology 2")
+| ![Topology1](topology.png "Topology 1") | ![Topology2](topology1.png "Topology 2") |
+|:---:|:---:|
+| Topology 1 | Topology 2 |
 
 
 #### How to perform tests:
