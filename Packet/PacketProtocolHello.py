@@ -1,6 +1,6 @@
 import struct
 from abc import ABCMeta, abstractstaticmethod
-from .PacketProtocolHelloOptions import PacketProtocolHelloOptions, PacketProtocolHelloNeighbors, PacketProtocolHelloHoldtime, PacketProtocolHelloGenerationID
+from .PacketProtocolHelloOptions import PacketProtocolHelloOptions, PacketProtocolHelloNeighbors, PacketProtocolHelloHoldtime, PacketProtocolHelloCheckpointSN
 
 '''
  0                   1                   2                   3

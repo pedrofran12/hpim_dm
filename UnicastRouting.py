@@ -22,7 +22,7 @@ class UnicastRouting(object):
         UnicastRouting.ipr = IPRoute()
         UnicastRouting.ipdb = IPDB()
         self._ipdb = UnicastRouting.ipdb
-        self._ipdb.register_callback(UnicastRouting.unicast_changes)
+        self._ipdb.register_callback(UnicastRouting.unicast_changes, mode="post")
 
 
     @staticmethod

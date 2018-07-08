@@ -4,54 +4,10 @@ from .tree_interface import TreeInterface
 from threading import Timer, Lock, RLock
 from tree.metric import AssertMetric, Metric
 import UnicastRouting
-from time import time
 import Main
 import logging
+from .tree_state import ActiveTree, InactiveTree, UnknownTree
 from . import globals
-class TreeState:
-    @staticmethod
-    def transition_to_active(kernel_entry):
-        if kernel_entry._tree_state == ActiveTree:
-            return
-        kernel_entry._tree_state = ActiveTree
-        for interface in kernel_entry.interface_state.values():
-            interface.tree_transition_to_active()
-        kernel_entry.change()
-        kernel_entry.evaluate_in_tree_change()
-
-    @staticmethod
-    def transition_to_inactive(kernel_entry):
-        if kernel_entry._tree_state == InactiveTree:
-            return
-        kernel_entry._tree_state = InactiveTree
-        for interface in kernel_entry.interface_state.values():
-            interface.tree_transition_to_inactive_or_unknown()
-        kernel_entry.change()
-        kernel_entry.evaluate_in_tree_change()
-
-    @staticmethod
-    def transition_to_unknown(kernel_entry):
-        if kernel_entry._tree_state == UnknownTree:
-            return
-        kernel_entry._tree_state = UnknownTree
-        for interface in kernel_entry.interface_state.values():
-            interface.tree_transition_to_inactive_or_unknown()
-        kernel_entry.remove_entry()
-
-
-class ActiveTree(TreeState):
-    def __str__(self):
-        return
-
-
-class InactiveTree(TreeState):
-    def __str__(self):
-        return
-
-
-class UnknownTree(TreeState):
-    def __str__(self):
-        return
 
 
 class KernelEntry:
@@ -74,7 +30,6 @@ class KernelEntry:
 
         self._interest_interface_state = interest_state_dic
         self._upstream_interface_state = upstream_state_dic
-        self._inactive_interfaces_that_are_ready = {}
         # ip of neighbor of the rpf
         #next_hop = UnicastRouting.get_route(source_ip)["gateway"]
         #self.rpf_node = source_ip if next_hop is None else next_hop
@@ -126,18 +81,19 @@ class KernelEntry:
             for i in Main.kernel.vif_index_to_name_dic.keys():
                 try:
                     upstream_state = self._upstream_interface_state.get(i, None)
-                    self._inactive_interfaces_that_are_ready[i] = False
 
                     if i == self.inbound_interface_index:
                         continue
                         #self.interface_state[i] = TreeInterfaceUpstream(self, i, upstream_state,
                         #                                                tree_is_active=tree_is_active)
                     else:
-                        interest_state = self._interest_interface_state.get(i, True) # TODO CORRIGIR!!!
+                        interest_state = self._interest_interface_state.get(i, False) # TODO CORRIGIR!!!
                         self.interface_state[i] = TreeInterfaceDownstream(self, i, self._rpc,
                                                                           best_upstream_router=upstream_state,
                                                                           interest_state=interest_state,
-                                                                          tree_is_active=tree_is_active)
+                                                                          was_root=False,
+                                                                          previous_tree_state=UnknownTree,
+                                                                          current_tree_state=self._tree_state)
 
                 except:
                     import traceback
@@ -147,7 +103,8 @@ class KernelEntry:
             upstream_state = self._upstream_interface_state.get(self.inbound_interface_index, None)
             self.interface_state[self.inbound_interface_index] = TreeInterfaceUpstream(self, self.inbound_interface_index,
                                                                                        upstream_state,
-                                                                                       tree_is_active=tree_is_active)
+                                                                                       previous_tree_state=UnknownTree,
+                                                                                       current_tree_state=self._tree_state)
 
         self.change()
         self.evaluate_in_tree_change()
@@ -211,41 +168,12 @@ class KernelEntry:
         print("recv data")
         self.interface_state[index].recv_data_msg()
 
-    '''
-    def recv_ack_msg(self, index, packet):
-        print("recv ack msg")
-        sender_ip = packet.ip_header.ip_src
-        pkt_ack = packet.payload.payload
-        acked_sequence_number = pkt_ack.sequence_number
-        self.interface_state[index].recv_ack_msg(sender_ip, acked_sequence_number)
 
-    def recv_ack_sync_msg(self, index, neighbor_ip, minimum_sn):
-        print("recv ack sync msg")
-        self.interface_state[index].recv_ack_sync_msg(neighbor_ip, minimum_sn)
-    '''
-
-    ###############################################################
-    # Check tree state (Active or Inactive or Unknown)
-    ###############################################################
-    '''
-    def check_interface_state(self):
-        root_interface = self.interface_state[self.inbound_interface_index]
-        if root_interface.has_upstream_neighbors():
-            self._tree_state.transition_to_active(self)
-        else:
-            for (index, interface) in self.interface_state.items():
-                if index != self.inbound_interface_index and interface.has_upstream_neighbors():
-                    self._tree_state.transition_to_inactive(self)
-                    return
-        self._tree_state.transition_to_unknown(self)
-    '''
 
 
     #################
-    # MINHAS ALTERACOES
-    # TODO
-    # TODO
-    # TODO
+    # Check state of interfaces
+    #################
     def check_interface_state(self, index, upstream_state, interest_state):
         print("ENTROU CHECK INTERFACE STATE")
         self._upstream_interface_state[index] = upstream_state
@@ -260,9 +188,17 @@ class KernelEntry:
         current_interest_state = self._interest_interface_state.get(index, None)
         self._interest_interface_state[index] = interest_state
 
-        # todo criar metodo change_interest_state
         if current_interest_state != interest_state:
             self.interface_state[index].change_interest_state(interest_state)
+
+    def check_igmp_state(self, index):
+        print("ENTROU CHECK IGMP STATE")
+        if index not in self.interface_state:
+            return
+
+        self.interface_state[index].check_igmp_state()
+        print("SAI CHECK IGMP STATE")
+
 
     def is_tree_active(self):
         with self.CHANGE_STATE_LOCK:
@@ -276,86 +212,9 @@ class KernelEntry:
         with self.CHANGE_STATE_LOCK:
             return self._tree_state == UnknownTree
 
-
-    def change_tree_to_unknown_state(self):
-        with self.CHANGE_STATE_LOCK:
-            # TODO alterar isto
-            if self._tree_state == UnknownTree:
-                return
-            else:
-                old_state = self._tree_state
-                self._tree_state = UnknownTree
-
-                if old_state == ActiveTree:
-                    #self._inactive_interfaces_that_are_ready = {}
-                    for (index, interface) in self.interface_state.items():
-                        #self._inactive_interfaces_that_are_ready[index] = False
-                        interface.transition_to_inactive()
-                elif old_state == InactiveTree:
-                    # check if already can delete entry
-                    if False not in self._inactive_interfaces_that_are_ready.values():
-                        self.remove_entry()
-                        return
-
-
-            #self.change()
-            #self.evaluate_in_tree_change()
-
-    def change_tree_to_inactive_state(self):
-        with self.CHANGE_STATE_LOCK:
-            # TODO alterar isto
-            if self._tree_state == InactiveTree:
-                return
-
-            # todo determinar se inativo ou unknown
-            self._tree_state = InactiveTree
-            #self._inactive_interfaces_that_are_ready = {}
-            for (index, interface) in self.interface_state.items():
-                #self._inactive_interfaces_that_are_ready[index] = False
-                print("INTERFACE ", index, "PARA INATIVO")
-                interface.transition_to_inactive()
-
-            self.change()
-            self.evaluate_in_tree_change()
-
-    def change_tree_to_active_state(self):
-        with self.CHANGE_STATE_LOCK:
-            if self._tree_state == ActiveTree:
-                return
-            #if self.is_tree_active():
-            #    return
-
-            self._tree_state = ActiveTree
-            #self._inactive_interfaces_that_are_ready = {}
-            for (index, interface) in self.interface_state.items():
-                print("INTERFACE ", index, "PARA ATIVO")
-                self._inactive_interfaces_that_are_ready[index] = False
-                interface.transition_to_active()
-
-            self.change()
-            self.evaluate_in_tree_change()
-
-    def notify_interface_is_ready_to_remove(self, index):
-        # todo ver melhor lock
-        with self.CHANGE_STATE_LOCK:
-            if self._tree_state == ActiveTree:
-                return
-
-            print("NOTIFY REMOVE: ", index)
-            if index in self.interface_state:
-                self._inactive_interfaces_that_are_ready[index] = True
-
-            print("INTERFACES NOT READY??: ", False in self._inactive_interfaces_that_are_ready.values())
-            if False in self._inactive_interfaces_that_are_ready.values():
-                return
-
-        #self.delete()
-            if self.is_tree_unknown():
-                self.remove_entry()
-
     def get_interface_sync_state(self, vif_index):
         with self.CHANGE_STATE_LOCK:
-            if self._tree_state != ActiveTree:
+            if self._tree_state != ActiveTree or vif_index not in self.interface_state:
                 return None
             else:
                 return self.interface_state[vif_index].get_sync_state()
@@ -427,10 +286,16 @@ class KernelEntry:
                 old_downstream_interface.delete()
                 non_root_was_upstream = old_downstream_interface.get_sync_state() is not None
 
+                new_tree_state = self._tree_state
+                if self.is_tree_active() and root_upstream_state is None:
+                    new_tree_state = InactiveTree
+                elif self.is_tree_inactive() and root_upstream_state is not None:
+                    new_tree_state = ActiveTree
+
                 # change type of interfaces
-                new_downstream_interface = TreeInterfaceDownstream(self, self.inbound_interface_index, self._rpc, non_root_upstream_state, non_root_interest_state, self.is_tree_active(), was_root=True)
+                new_downstream_interface = TreeInterfaceDownstream(self, self.inbound_interface_index, self._rpc, non_root_upstream_state, non_root_interest_state, was_root=True, previous_tree_state=self._tree_state, current_tree_state=new_tree_state)
                 self.interface_state[self.inbound_interface_index] = new_downstream_interface
-                new_upstream_interface = TreeInterfaceUpstream(self, new_inbound_interface_index, root_upstream_state, True, root_upstream_state is not None, non_root_was_upstream=non_root_was_upstream)
+                new_upstream_interface = TreeInterfaceUpstream(self, new_inbound_interface_index, root_upstream_state, was_non_root=True, previous_tree_state=self._tree_state, current_tree_state=new_tree_state)
                 self.interface_state[new_inbound_interface_index] = new_upstream_interface
                 self.inbound_interface_index = new_inbound_interface_index
 
@@ -451,11 +316,6 @@ class KernelEntry:
                 self._rpc = new_rpc
                 for interface in self.interface_state.values():
                     interface.notify_rpc_change(new_rpc)
-
-    '''
-    def neighbor_removal(self, if_index, other_neighbors_remain):
-        self.interface_state[if_index].neighbor_removal(other_neighbors_remain)
-    '''
 
     def is_in_tree(self):
         for interface in self.interface_state.values():
@@ -486,17 +346,11 @@ class KernelEntry:
             if self._tree_state != UnknownTree:
                 Main.kernel.set_multicast_route(self)
 
-    def stop_flood(self):
-        self.still_flooding = False
-        self.change()
-
     def remove_entry(self):
         Main.kernel.remove_multicast_route(self)
 
     def delete_state(self):
         for state in self.interface_state.values():
-            #if flood_remove_tree:
-            #    state.send_remove_tree()
             state.delete()
 
     '''
@@ -531,9 +385,10 @@ class KernelEntry:
 
             self._interest_interface_state[index] = interest_state
             self._upstream_interface_state[index] = None
-            self._inactive_interfaces_that_are_ready[index] = False
 
-            self.interface_state[index] = TreeInterfaceDownstream(self, index, self._rpc, tree_is_active=self.is_tree_active(), interest_state=interest_state)
+            self.interface_state[index] = TreeInterfaceDownstream(self, index, self._rpc, interest_state=interest_state,
+                                                                  was_root=False, previous_tree_state=self._tree_state,
+                                                                  current_tree_state=self._tree_state)
 
             self.change()
             self.evaluate_in_tree_change()
@@ -548,12 +403,8 @@ class KernelEntry:
                 self.interface_state.pop(index).delete()
 
                 # remove cached info about removed interface
-                self._upstream_interface_state.pop(index)
-                self._interest_interface_state.pop(index)
-                self._inactive_interfaces_that_are_ready.pop(index)
+                self._upstream_interface_state.pop(index, None)
+                self._interest_interface_state.pop(index, None)
 
                 self.change()
                 self.evaluate_in_tree_change()
-
-                # if tree is being removed, notify that this interface is ready
-                self.notify_interface_is_ready_to_remove(index)

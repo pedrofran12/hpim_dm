@@ -5,13 +5,6 @@ import traceback
 import ipaddress
 import netifaces
 import UnicastRouting
-'''
-from Packet.PacketProtocolSetTree import PacketProtocolSetTree
-from Packet.PacketProtocolRemoveTree import PacketProtocolRemoveTree
-from Packet.PacketProtocolActiveTrees import PacketProtocolActiveTrees
-from Packet.PacketProtocolConfirm import PacketProtocolConfirm
-'''
-from Packet.PacketProtocolHeader import PacketProtocolHeader
 
 from RWLock.RWLock import RWLockWrite
 import Main
@@ -132,6 +125,7 @@ class Kernel:
 
 
     def create_protocol_interface(self, interface_name: str):
+        thread = None
         with self.rwlock.genWlock():
             pim_interface = None
             #with self.interface_lock:
@@ -151,6 +145,8 @@ class Kernel:
                 pim_interface = InterfaceProtocol(interface_name, index)
                 self.protocol_interface[interface_name] = pim_interface
                 ip_interface = pim_interface.ip_interface
+                thread = Thread(target=self.recheck_all_trees, args=(pim_interface,))
+                thread.start()
 
             if not vif_already_exists:
                 self.create_virtual_interface(ip_interface=ip_interface, interface_name=interface_name, index=index)
@@ -158,7 +154,11 @@ class Kernel:
             if pim_interface is not None:
                 pim_interface.enable()
 
+        if thread is not None:
+            thread.join()
+
     def create_igmp_interface(self, interface_name: str):
+        thread = None
         with self.rwlock.genWlock():
             igmp_interface = None
             #with self.interface_lock:
@@ -178,6 +178,8 @@ class Kernel:
                 igmp_interface = InterfaceIGMP(interface_name, index)
                 self.igmp_interface[interface_name] = igmp_interface
                 ip_interface = igmp_interface.ip_interface
+                thread = Thread(target=self.recheck_igmp_all_trees, args=(igmp_interface,))
+                thread.start()
 
             if not vif_already_exists:
                 self.create_virtual_interface(ip_interface=ip_interface, interface_name=interface_name, index=index)
@@ -185,9 +187,11 @@ class Kernel:
             if igmp_interface is not None:
                 igmp_interface.enable()
 
+        if thread is not None:
+            thread.join()
 
     def remove_interface(self, interface_name, igmp:bool=False, pim:bool=False):
-        #with self.interface_lock:
+        thread = None
         with self.rwlock.genWlock():
             ip_interface = None
             pim_interface = self.protocol_interface.get(interface_name)
@@ -205,7 +209,6 @@ class Kernel:
 
             if (not self.igmp_interface.get(interface_name) and not self.protocol_interface.get(interface_name)):
                 self.remove_virtual_interface(ip_interface)
-
 
     def remove_virtual_interface(self, ip_interface):
         #with self.interface_lock:
@@ -294,7 +297,22 @@ class Kernel:
             if len(self.routing[source_ip]) == 0:
                 self.routing.pop(source_ip)
 
+            info_about_tree_can_be_removed = True
+            for interface in self.protocol_interface.values():
+                if not info_about_tree_can_be_removed:
+                    break
+                for n in list(interface.neighbors.values()):
+                    (_, neighbor_upstream_state) = n.get_tree_state(tree=(source_ip, group_ip))
+                    if neighbor_upstream_state is not None:
+                        self.create_entry(kernel_entry.source_ip, kernel_entry.group_ip)
+                        info_about_tree_can_be_removed = False
+                        break
 
+            if info_about_tree_can_be_removed:
+                for interface in self.protocol_interface.values():
+                    interface.remove_tree_state(kernel_entry.source_ip, kernel_entry.group_ip)
+
+            '''
             for interface in self.protocol_interface.values():
                 interest_state = False
                 upstream_state = None
@@ -309,8 +327,8 @@ class Kernel:
                         elif neighbor_upstream_state.is_better_than(upstream_state):
                             upstream_state = neighbor_upstream_state
 
-                tree_is_active = upstream_state is not None
-                if tree_is_active:
+                tree_is_not_unknown = upstream_state is not None
+                if tree_is_not_unknown:
                     if source_ip in self.routing:
                         if group_ip in self.routing[source_ip]:
                             kernel_entry = self.routing[source_ip][group_ip]
@@ -321,7 +339,7 @@ class Kernel:
                         kernel_entry = KernelEntry(source_ip, group_ip)
                         self.routing[source_ip] = {group_ip: kernel_entry}
                     kernel_entry.check_interface_state(interface.vif_index, upstream_state, interest_state)
-
+                '''
 
 
 
@@ -390,17 +408,13 @@ class Kernel:
             if ip_src in self.routing and ip_dst in self.routing[ip_src]:
                 self.routing[ip_src][ip_dst].recv_data_msg(iif)
             elif is_directly_connected:
-                '''
-                kernel_entry = KernelEntry(ip_src, ip_dst)
-                if ip_src not in self.routing:
-                    self.routing[ip_src] = {}
+                if globals.INITIAL_FLOOD_ENABLED:
+                    iif = self.vif_dic.get(UnicastRouting.check_rpf(ip_src))
+                    self.set_flood_multicast_route(ip_src, ip_dst, iif)
 
-                self.routing[ip_src][ip_dst] = kernel_entry
-                kernel_entry.recv_data_msg(iif)
-                '''
                 self.create_entry(ip_src, ip_dst)
                 self.routing[ip_src][ip_dst].recv_data_msg(iif)
-            elif not is_directly_connected and globals.INITIAL_FLOOD:
+            elif not is_directly_connected and globals.INITIAL_FLOOD_ENABLED:
                 # flood
                 iif = self.vif_dic.get(UnicastRouting.check_rpf(ip_src))
                 self.set_flood_multicast_route(ip_src, ip_dst, iif)
@@ -491,38 +505,16 @@ class Kernel:
         print("ENTROU RCV_INSTALL")
         with self.rwlock.genWlock():
             (interest_state, upstream_state) = interface.get_tree_state(source_group)
-
-            '''
-            for n in interface.neighbors.values():
-                (neighbor_interest_state, neighbor_upstream_state) = n.get_tree_state(tree=source_group)
-                if not interest_state and neighbor_interest_state:
-                    interest_state = neighbor_interest_state
-
-                if neighbor_upstream_state is not None:
-                    if upstream_state is None:
-                        upstream_state = neighbor_upstream_state
-                    elif neighbor_upstream_state.is_better_than(upstream_state):
-                        upstream_state = neighbor_upstream_state
-            '''
-
             tree_is_not_unknown = upstream_state is not None
             print("RCV INSTALL/UNINSTALL")
             print("INTERESSE: ", interest_state)
 
             if tree_is_not_unknown and (ip_src not in self.routing or ip_dst not in self.routing.get(ip_src, {})):
                 self.create_entry(ip_src, ip_dst)
-                '''
-                if ip_src not in self.routing:
-                    self.routing[ip_src] = {}
-
-                if ip_dst not in self.routing[ip_src]:
-                    self.routing[ip_src][ip_dst] = KernelEntry(ip_src, ip_dst)
-
+            elif ip_src in self.routing and ip_dst in self.routing[ip_src]:
                 self.routing[ip_src][ip_dst].check_interface_state(interface.vif_index, upstream_state, interest_state)
-                '''
             else:
-                if ip_src in self.routing and ip_dst in self.routing[ip_src]:
-                    self.routing[ip_src][ip_dst].check_interface_state(interface.vif_index, upstream_state, interest_state)
+                interface.remove_tree_state(ip_src, ip_dst)
         print("SAIU RCV_INSTALL")
 
 
@@ -530,22 +522,13 @@ class Kernel:
         ip_src = source_group[0]
         ip_dst = source_group[1]
 
-        interest_state = False
-        #upstream_state = None
         print("ENTROU RECV_INTEREST")
         with self.rwlock.genRlock():
             if ip_src not in self.routing or ip_dst not in self.routing[ip_src]:
+                interface.remove_tree_state(ip_src, ip_dst)
                 return
 
             (interest_state, upstream_state) = interface.get_tree_state(source_group)
-
-            '''
-            for n in interface.neighbors.values():
-                (neighbor_interest_state, _) = n.get_tree_state(tree=source_group)
-                if not interest_state and neighbor_interest_state:
-                    interest_state = neighbor_interest_state
-                    break
-            '''
             self.routing[ip_src][ip_dst].check_interest_state(interface.vif_index, interest_state)
         print("SAIU RECV_INTEREST")
 
@@ -575,44 +558,6 @@ class Kernel:
         elif ip_dst not in self.routing[ip_src]:
             self.routing[ip_src][ip_dst] = KernelEntry(ip_src, ip_dst, upstream_state_dict, interest_state_dict)
 
-    '''
-    def recv_ack_msg(self, source_group, interface, packet):
-        (ip_src, ip_dst) = source_group
-        print("ENTROU RECV_ACK")
-        with self.rwlock.genRlock():
-            if ip_src in self.routing and ip_dst in self.routing[ip_src]:
-                self.routing[ip_src][ip_dst].recv_ack_msg(interface.vif_index, packet)
-        print("SAIU RECV_ACK")
-
-    def recv_ack_sync(self, neighbor_ip, trees, minimum_sn, interface):
-        print("ENTROU RECV_ACK_SYNC")
-        with self.rwlock.genRlock():
-            for tree in trees:
-                if tree[0] in self.routing and tree[1] in self.routing[tree[0]]:
-                    self.routing[tree[0]][tree[1]].recv_ack_sync_msg(interface.vif_index, neighbor_ip, minimum_sn)
-        print("SAIU RECV_ACK_SYNC")
-    '''
-    '''
-    def recheck_all_trees(self, interface: "InterfaceProtocol"):
-        with self.rwlock.genWlock():
-            for (source, src_dict) in self.routing.items():
-                for (group, entry) in src_dict.values():
-                    interest_state = False
-                    upstream_state = None
-                    for n in interface.neighbors.values():
-                        (neighbor_interest_state, neighbor_upstream_state) = n.get_tree_state(tree=(source, group))
-
-                        if not interest_state and neighbor_interest_state:
-                            interest_state = neighbor_interest_state
-
-                        if neighbor_upstream_state is not None:
-                            if upstream_state is None:
-                                upstream_state = neighbor_upstream_state
-                            elif neighbor_upstream_state.is_better_than(upstream_state):
-                                upstream_state = neighbor_upstream_state
-
-                    entry.check_interface_state(interface.vif_index, upstream_state, interest_state)
-    '''
 
     # notify about changes at the interface (IP)
     '''
@@ -704,6 +649,18 @@ class Kernel:
                 elif tree[0] in self.routing and tree[1] in self.routing[tree[0]]:
                         self.routing[tree[0]][tree[1]].check_interface_state(interface.vif_index, upstream_state, interest_state)
         print("SAIU RECHECK")
+
+    def recheck_igmp_all_trees(self, interface: "InterfaceProtocol"):
+        print("ENTROU RECHECK IGMP")
+        with self.rwlock.genWlock():
+            for src_dict in self.routing.values():
+                for entry in src_dict.values():
+                    entry.check_igmp_state(interface.vif_index)
+            print("SAIU RECHECK IGMP")
+
+    def recheck_all_trees_in_all_interfaces(self):
+        for i in self.protocol_interface.values():
+            self.recheck_all_trees(i)
 
     '''
         list_of_trees = []

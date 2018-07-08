@@ -104,3 +104,8 @@ class InterfaceIGMP(Interface):
         Leave_Group: receive_leave_group,
         Membership_Query: receive_membership_query,
     }
+
+    ##################
+    def remove(self):
+        super().remove()
+        self.interface_state.remove()

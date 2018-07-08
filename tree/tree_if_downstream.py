@@ -1,12 +1,7 @@
-from threading import Timer
-from CustomTimer.RemainingTimer import RemainingTimer
 from .assert_state import AssertState, SFMRAssertABC, SFMRAssertWinner
 from .downstream_state import SFMRPruneState, SFMRDownstreamStateABC
 from .tree_interface import TreeInterface
-from Packet.PacketProtocolRemoveTree import PacketProtocolUninstallTree
-from Packet.PacketProtocolHeader import PacketProtocolHeader
-from Packet.Packet import Packet
-from .non_root_state_machine import SFMRNonRootState, SFMRNonRootStateABC
+from .non_root_state_machine import SFMRNonRootStateABCNEW
 
 import traceback
 from .metric import AssertMetric, Metric
@@ -16,7 +11,7 @@ import Main
 class TreeInterfaceDownstream(TreeInterface):
     LOGGER = logging.getLogger('protocol.KernelEntry.NonRootInterface')
 
-    def __init__(self, kernel_entry, interface_id, rpc: Metric, best_upstream_router=None, interest_state=True, tree_is_active=False, was_root=False):
+    def __init__(self, kernel_entry, interface_id, rpc: Metric, best_upstream_router=None, interest_state=True, was_root=False, previous_tree_state=None, current_tree_state=None):
         extra_dict_logger = kernel_entry.kernel_entry_logger.extra.copy()
         extra_dict_logger['vif'] = interface_id
         extra_dict_logger['interfacename'] = Main.kernel.vif_index_to_name_dic[interface_id]
@@ -25,86 +20,42 @@ class TreeInterfaceDownstream(TreeInterface):
         self.assert_logger = logging.LoggerAdapter(logger.logger.getChild('Assert'), logger.extra)
         self.downstream_logger = logging.LoggerAdapter(logger.logger.getChild('Downstream'), logger.extra)
 
-        # Reliable State
-        #from .non_root_reliable import SFMRReliableState
-        #self._reliable_state = None
-        #self._reliable_state_timer = None
-        #self._downstream_routers_state_dict = {}
-
-        #from .reliability import MessageReliabilityStates
-        #self._message_state = MessageReliabilityStates.UPSTREAM
-        self._downstream_state = SFMRNonRootState.UPSTREAM
-        # todo saber activo ou inativo
-
-
-        #self._retransmission_timer = None
-        #self._msg_being_reliably_sent = None
-        #self._neighbors_that_acked = set()
-        #self._neighbors_interest = {}
-        #self._neighbors_upstream = {}  # todo talvez ja esteja na interface upstream
 
         # Downstream Node Interest State
         if interest_state:
             self._downstream_node_interest_state = SFMRPruneState.DI
         else:
             self._downstream_node_interest_state = SFMRPruneState.NDI
-        #self._downstream_interest_pending_timer = None
         #self.downstream_logger.debug(str(self._downstream_node_interest_state))
-        #self._downstream_node_interest_state.is_now_non_root(self)
 
         # Assert Winner State
         self._assert_state = AssertState.Winner
         self._my_assert_rpc = AssertMetric(rpc.metric_preference, rpc.route_metric, self.get_ip())
-        # self._assert_winner_metric = AssertMetric(rpc.metric_preference, rpc.route_metric, self.get_ip())
-        #self._upstream_routers[self.get_ip()] = AssertMetric(rpc.metric_preference, rpc.route_metric, self.get_ip())
         self.calculate_assert_winner()
         # self.assert_logger.debug(str(self._assert_state))
 
+        # Deal with messages according to tree state and interface role change
+        self.current_tree_state = current_tree_state
+        # Event 1
+        if not was_root and not previous_tree_state.is_active() and current_tree_state.is_active():
+            SFMRNonRootStateABCNEW.interfaces_roles_dont_change_and_tree_transitions_to_active_state(self)
+        # Event 2
+        elif was_root and current_tree_state.is_active():
+            SFMRNonRootStateABCNEW.interfaces_roles_change_and_tree_remains_or_transitions_to_active_state(self)
+        # Event 3
+        elif previous_tree_state.is_active() and current_tree_state.is_inactive() and best_upstream_router is None:
+            SFMRNonRootStateABCNEW.tree_transitions_from_active_to_inactive_and_best_upstream_neighbor_is_null(self)
+        # Event 4
+        elif previous_tree_state.is_active() and current_tree_state.is_unknown():
+            SFMRNonRootStateABCNEW.tree_transitions_from_active_to_unknown(self)
+        # Event 5
+        elif previous_tree_state.is_active() and current_tree_state.is_inactive() and best_upstream_router is not None:
+            SFMRNonRootStateABCNEW.tree_transitions_from_active_to_inactive_and_best_upstream_neighbor_is_not_null(self)
+        # Event 8
+        elif previous_tree_state.is_unknown() and current_tree_state.is_inactive() and best_upstream_router is not None:
+            SFMRNonRootStateABCNEW.tree_transitions_from_unknown_to_inactive_and_best_upstream_is_not_null(self)
+
         self.logger.debug('Created DownstreamInterface')
-
-        if tree_is_active:
-            self._downstream_state.root_interface_to_non_root_or_new_tree_or_transition_to_active(self)
-        else:
-            self._downstream_state.tree_transitions_to_inactive_or_unknown(self)
-        '''
-        from .downstream_nodes_state_entry import DownstreamStateEntry
-        for neighbor_ip in self.get_interface().neighbors:
-            if neighbor_ip not in self._upstream_routers:
-                self._downstream_routers_state_dict[neighbor_ip] = DownstreamStateEntry(neighbor_ip, "NI", 0)
-        '''
-        '''
-        if self.calculate_assert_winner().ip == self.get_ip():
-            self._reliable_state = SFMRReliableState.AW
-            self._reliable_state.transition_to_assert_winner(self)
-        else:
-            self._reliable_state = SFMRReliableState.AL
-            self._reliable_state.transition_to_assert_loser(self)
-        '''
-        #self.set_reliable_state(SFMRReliableState.UNSTABLE)
-        #self.set_reliable_timer()
-
-    ############################################
-    # Set Reliable state
-    ############################################
-    def set_reliable_state(self, new_state, reset_timer = False):
-        if new_state != self._reliable_state:
-            self._reliable_state = new_state
-            new_state.transition(self)
-        elif reset_timer:
-            new_state.transition(self)
-
-            #self.originator_logger.debug(str(new_state))
-
-    ############################################
-    # Set Message state
-    ############################################
-    def set_message_state(self, new_state):
-        if new_state != self._message_state:
-            self._message_state = new_state
-
-            #self.originator_logger.debug(str(new_state))
-
-
 
     ############################################
     # Set ASSERT State
@@ -134,32 +85,6 @@ class TreeInterfaceDownstream(TreeInterface):
                 self.change_tree()
                 self.evaluate_in_tree()
 
-    '''
-    def set_assert_winner_metric(self, new_assert_metric: AssertMetric):
-        with self.get_state_lock():
-            try:
-                old_neighbor = self.get_interface().get_neighbor(self._assert_winner_metric.get_ip())
-                new_neighbor = self.get_interface().get_neighbor(new_assert_metric.get_ip())
-
-                if old_neighbor is not None:
-                    old_neighbor.unsubscribe_nlt_expiration(self)
-                if new_neighbor is not None:
-                    new_neighbor.subscribe_nlt_expiration(self)
-            except:
-                traceback.print_exc()
-            finally:
-                self._assert_winner_metric = new_assert_metric
-    '''
-
-    ##########################################
-    # Set NonRoot state
-    ##########################################
-    def set_non_root_interface_state(self, new_state: SFMRNonRootStateABC):
-        with self.get_state_lock():
-            if new_state != self._downstream_node_interest_state:
-                self._downstream_state = new_state
-                self.downstream_logger.debug(str(new_state))
-
     ##########################################
     # Set Downstream Node Interest state
     ##########################################
@@ -171,72 +96,34 @@ class TreeInterfaceDownstream(TreeInterface):
 
                 self.change_tree()
                 self.evaluate_in_tree()
-    '''
-    def check_downstream_interest(self):
-        tree = self.get_tree_id()
-        if self.get_interface().are_neighbors_interested(tree):
-            self._downstream_node_interest_state.in_tree(self)
-        else:
-            self._downstream_node_interest_state.out_tree(self)
-    '''
-
 
     ############################################
-    #
+    # Tree transitions
     ############################################
     def tree_transition_to_active(self):
-        if self._downstream_state != SFMRNonRootState.UPSTREAM:
-            self._downstream_state.root_interface_to_non_root_or_new_tree_or_transition_to_active(self)
+        if not self.current_tree_state.is_active():
+            SFMRNonRootStateABCNEW.interfaces_roles_dont_change_and_tree_transitions_to_active_state(self)
 
-    def tree_transition_to_inactive_or_unknown(self):
-        if self._downstream_state == SFMRNonRootState.UPSTREAM:
-            self._downstream_state.tree_transitions_to_inactive_or_unknown(self)
+        from .KernelEntry import ActiveTree
+        self.current_tree_state = ActiveTree
 
+    def tree_transition_to_inactive(self):
+        if self.current_tree_state.is_active() and self._best_upstream_router is None:
+            SFMRNonRootStateABCNEW.tree_transitions_from_active_to_inactive_and_best_upstream_neighbor_is_null(self)
+        elif self.current_tree_state.is_active() and self._best_upstream_router is not None:
+            SFMRNonRootStateABCNEW.tree_transitions_from_active_to_inactive_and_best_upstream_neighbor_is_not_null(self)
+        elif self.current_tree_state.is_unknown() and self._best_upstream_router is not None:
+            SFMRNonRootStateABCNEW.tree_transitions_from_unknown_to_inactive_and_best_upstream_is_not_null(self)
 
+        from .KernelEntry import InactiveTree
+        self.current_tree_state = InactiveTree
 
-    ##########################################
-    # Set timers
-    ##########################################
-    # Reliable timer
-    '''
-    def set_retransmission_timer(self):
-        self.clear_retransmission_timer()
-        self._retransmission_timer = Timer(10, self.retransmission_timeout)
-        self._retransmission_timer.start()
+    def tree_transition_to_unknown(self):
+        if self.current_tree_state.is_active():
+            SFMRNonRootStateABCNEW.tree_transitions_from_active_to_unknown(self)
 
-    def clear_retransmission_timer(self):
-        if self._retransmission_timer is not None:
-            self._retransmission_timer.cancel()
-
-    ###########################################
-    # Timer timeout
-    ###########################################
-    def retransmission_timeout(self):
-        self._message_state.retransmission_timer_expires(self)
-    '''
-    ###########################################
-    # Neighbors state
-    ###########################################
-    '''
-    def clear_neighbors_that_acked_list(self):
-        # todo lock
-        self._neighbors_that_acked = set()
-
-    def neighbor_acked(self, neighbor_ip):
-        self._neighbors_that_acked.add(neighbor_ip)
-        self.check_if_all_neighbors_acked()
-
-    def check_if_all_neighbors_acked(self):
-        if self.did_all_neighbors_acked():
-            self._message_state.all_neighbors_acked(self)
-
-    def did_all_neighbors_acked(self):
-        return self._msg_being_reliably_sent is None or \
-               self.get_interface().did_all_neighbors_acked(self._neighbors_that_acked)
-
-    def message_has_been_reliable_transmitted(self):
-        self._downstream_state.message_has_been_reliably_transmitted(self)
-    '''
+        from .KernelEntry import UnknownTree
+        self.current_tree_state = UnknownTree
 
     ###########################################
     # Recv packets
@@ -250,10 +137,17 @@ class TreeInterfaceDownstream(TreeInterface):
         super().change_assert_state(assert_state)
         self.calculate_assert_winner()
 
+        '''
         if best_upstream_router is None and assert_state is not None or \
                 best_upstream_router is not None and assert_state is None or \
                 best_upstream_router is not assert_state:
             self._downstream_state.tree_is_inactive_and_best_upstream_router_reelected(self)
+        '''
+        # Event 6 and 7
+        if self.current_tree_state.is_inactive() and assert_state is not None and \
+                 (best_upstream_router is None or best_upstream_router is not assert_state):
+            SFMRNonRootStateABCNEW.tree_remains_inactive_and_best_upstream_router_reelected(self)
+
 
 
     def change_interest_state(self, interest_state):
@@ -332,46 +226,12 @@ class TreeInterfaceDownstream(TreeInterface):
     def send_i_am_upstream(self):
         #self._message_state.send_new_i_am_upstream(self, self._my_assert_rpc)
         (source, group) = self.get_tree_id()
-        self.get_interface().send_i_am_upstream(source, group, self._my_assert_rpc)
-
-    def send_i_am_no_longer_upstream(self):
-        #self._message_state.send_new_i_am_no_longer_upstream(self)
-        (source, group) = self.get_tree_id()
-        self.get_interface().send_i_am_no_longer_upstream(source, group)
-
-    def send_interest(self):
-        #self._message_state.send_new_interest(self)
-        (source, group) = self.get_tree_id()
-        best_upstream_neighbor = self._best_upstream_router.get_ip()
-        self.get_interface().send_interest(source, group, best_upstream_neighbor)
-
-    def send_no_interest(self):
-        #self._message_state.send_new_no_interest(self)
-        (source, group) = self.get_tree_id()
-        best_upstream_neighbor = self._best_upstream_router.get_ip()
-        self.get_interface().send_no_interest(source, group, best_upstream_neighbor)
-
-    def cancel_message(self):
-        #self._message_state.cancel_message(self)
-        #self.get_interface().cancel_message(self.get_tree_id())
-        self.get_interface().cancel_interest_message(self.get_tree_id())
-
-    '''
-    def resend_last_reliable_packet(self):
-        if self._msg_being_reliably_sent is None:
-            return
-        (msg, dst) = self._msg_being_reliably_sent
-        try:
-            if msg is not None and dst is None:
-                self.get_interface().send(msg)
-            elif msg is not None:
-                self.get_interface().send(msg, dst)
-        except:
-            traceback.print_exc()
-    '''
+        if self.get_interface() is not None:
+            self.get_interface().send_i_am_upstream(source, group, self._my_assert_rpc)
 
     def get_sync_state(self):
-        if self._downstream_state == SFMRNonRootState.UPSTREAM:
+        #if self._downstream_state == SFMRNonRootState.UPSTREAM:
+        if self.current_tree_state.is_active():
             return self._my_assert_rpc
         else:
             return None
@@ -390,28 +250,9 @@ class TreeInterfaceDownstream(TreeInterface):
         return self._downstream_node_interest_state == SFMRPruneState.DI
 
     # Override
-    '''
-    def neighbor_removal(self, other_neighbors_remain):
-        if other_neighbors_remain:
-            self._downstream_node_interest_state.lost_nbr(self)
-        else:
-            self._downstream_node_interest_state.lost_last_nbr(self)
-    '''
-
-    # Override
     def delete(self):
         super().delete()
-
         self.cancel_message()
-        # Downstream state
-        #self.clear_downstream_interest_pending_timer()
-        #self._downstream_node_interest_state = None
-
-        # Assert State
-        #if change_type_interface:
-        #    self._assert_state.is_now_root(self)
-
-        #self.set_assert_winner_metric(AssertMetric.infinite_assert_metric())  # unsubscribe from current AssertWinner NeighborLivenessTimer
         self._my_assert_rpc = None
 
     def is_downstream(self):
@@ -435,5 +276,7 @@ class TreeInterfaceDownstream(TreeInterface):
         #    self._assert_state.my_rpc_is_better_than_aw(self, my_new_assert_metric)
         #else:
         #    self._assert_state.my_rpc_is_worse_than_aw(self, my_new_assert_metric)
-        self._downstream_state.my_rpc_changes(self)
+        if self.current_tree_state.is_active():
+            SFMRNonRootStateABCNEW.tree_is_active_and_my_rpc_changes(self)
+        #self._downstream_state.my_rpc_changes(self)
         self.calculate_assert_winner()

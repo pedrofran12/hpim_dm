@@ -130,3 +130,12 @@ class GroupState(object):
 
     def has_members(self):
         return self.state is not NoMembersPresent
+
+    def remove(self):
+        with self.multicast_interface_state_lock:
+            self.clear_retransmit_timer()
+            self.clear_timer()
+            self.clear_v1_host_timer()
+            for interface_state in self.multicast_interface_state:
+                interface_state.notify_igmp(has_members=False)
+            del self.multicast_interface_state[:]

@@ -1,24 +1,8 @@
-'''
-Created on Feb 23, 2015
+INITIAL_FLOOD_ENABLED = True
+INITIAL_FLOOD_TIME = 15
 
-This module is intended to have all constants and global values for pim_dm
-
-@author: alex
-'''
-
-ASSERT_TIME = 180
-GRAFT_RETRY_PERIOD = 3
-JP_OVERRIDE_INTERVAL = 3.0
-OVERRIDE_INTERVAL = 2.5
-PROPAGATION_DELAY = 0.5
-REFRESH_INTERVAL = 60  # State Refresh Interval
+# Originator will stop considering the tree Active after not hearing data packets from the source after SOURCE_LIFETIME SECONDS
 SOURCE_LIFETIME = 210
-T_LIMIT = 210
 
-
-
-ASSERT_CANCEL_METRIC = 0xFFFFFFFF
-
-
-INITIAL_FLOOD = False
-INITIAL_FLOOD_TIME = 5
+# TODO substituir no codigo... atualmente esta estatico ou valores estao noutras variaveis do codigo
+MESSAGE_RETRANSMISSION = 10

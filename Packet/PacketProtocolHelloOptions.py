@@ -53,27 +53,27 @@ class PacketProtocolHelloHoldtime(PacketProtocolHelloOptions):
 
 
 
-class PacketProtocolHelloGenerationID(PacketProtocolHelloOptions):
+class PacketProtocolHelloCheckpointSN(PacketProtocolHelloOptions):
     '''
      0                   1                   2                   3
      0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |                         Generation ID                         |
+    |                         Checkpoint SN                         |
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     '''
-    def __init__(self, generation_id: int):
-        super().__init__(type="GENERATION_ID")
-        self.generation_id = generation_id
+    def __init__(self, checkpoint_sn: int):
+        super().__init__(type="CHECKPOINT_SN")
+        self.checkpoint_sn = checkpoint_sn
 
     def bytes(self) -> dict:
-        return {"GENERATION_ID": self.generation_id}
+        return {"CHECKPOINT_SN": self.checkpoint_sn}
 
     @staticmethod
     def parse_bytes(data, type:int = None):
         if type is None:
             raise Exception
-        generation_id = data
-        return PacketProtocolHelloGenerationID(generation_id=generation_id)
+        checkpoint_sn = data
+        return PacketProtocolHelloCheckpointSN(checkpoint_sn=checkpoint_sn)
 
 
 class PacketProtocolHelloNeighbors(PacketProtocolHelloOptions):
@@ -126,6 +126,6 @@ class PacketProtocolHelloUnknown(PacketProtocolHelloOptions):
 
 
 PIM_MSG_TYPES = {"HOLDTIME": PacketProtocolHelloHoldtime,
-                 "GENERATION_ID": PacketProtocolHelloGenerationID,
+                 "CHECKPOINT_SN": PacketProtocolHelloCheckpointSN,
                  "NEIGHBORS": PacketProtocolHelloNeighbors,
                  }

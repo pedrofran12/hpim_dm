@@ -1,10 +1,4 @@
 from abc import ABCMeta, abstractmethod
-#from typing import Union
-
-
-#SFMRPruneStateType = Union['SFMRNoInfo', 'SFMRDownstreamInterested',
-#                           'SFMRDownstreamInterestedPending',
-#                           'SFMRNoDownstreamInterested', ]
 
 from utils import TYPE_CHECKING
 
@@ -12,30 +6,7 @@ if TYPE_CHECKING:
     from .tree_if_downstream import TreeInterfaceDownstream
 
 
-'''
-class 'TreeInterfaceDownstream'(metaclass=ABCMeta):
-    @abstractmethod
-    def rprint(self, msg: str, *args: str) -> None:
-        pass
-
-    @abstractmethod
-    def set_downstream_node_interest_state(self, state: 'SFMRPruneStateType') -> None:
-        pass
-
-    @abstractmethod
-    def set_downstream_interest_pending_timer(self):
-        pass
-
-    @abstractmethod
-    def clear_downstream_interest_pending_timer(self):
-        pass
-
-    @abstractmethod
-    def send_tree_interest_query(self) -> None:
-        pass
-'''
-
-class SFMRDownstreamStateABC(metaclass=ABCMeta):  # pragma: no cover
+class SFMRDownstreamStateABC(metaclass=ABCMeta):
     @staticmethod
     @abstractmethod
     def in_tree(interface: 'TreeInterfaceDownstream') -> None:
@@ -73,6 +44,7 @@ class SFMRNoDownstreamInterested(SFMRDownstreamStateABC):
 
     def __str__(self):
         return 'NDI'
+
 
 class SFMRPruneState():
     DI = SFMRDownstreamInterested()

@@ -8,7 +8,7 @@ from TestLogger import RootFilter
 from Kernel import Kernel
 import UnicastRouting
 
-interfaces = {}  # interfaces with multicast routing enabled
+interfaces = {}  # interfaces with multicast routing protocol enabled
 igmp_interfaces = {}  # igmp interfaces
 kernel = None
 unicast_routing = None
@@ -24,29 +24,6 @@ def add_igmp_interface(interface_name):
 
 
 def remove_interface(interface_name, pim=False, igmp=False):
-    #if pim is True and ((interface_name in interfaces) or interface_name == "*"):
-    #    if interface_name == "*":
-    #        interface_name_list = list(interfaces.keys())
-    #    else:
-    #        interface_name_list = [interface_name]
-    #    for if_name in interface_name_list:
-    #        interface_obj = interfaces.pop(if_name)
-    #        interface_obj.remove()
-    #        #interfaces[if_name].remove()
-    #        #del interfaces[if_name]
-    #    print("removido interface")
-    #    print(interfaces)
-
-    #if igmp is True and ((interface_name in igmp_interfaces) or interface_name == "*"):
-    #    if interface_name == "*":
-    #        interface_name_list = list(igmp_interfaces.keys())
-    #    else:
-    #        interface_name_list = [interface_name]
-    #    for if_name in interface_name_list:
-    #        igmp_interfaces[if_name].remove()
-    #        del igmp_interfaces[if_name]
-    #    print("removido interface")
-    #    print(igmp_interfaces)
     kernel.remove_interface(interface_name, pim=pim, igmp=igmp)
 
 def list_neighbors():
@@ -102,6 +79,31 @@ def list_igmp_state():
             group_state_txt = group_state.print_state()
             t.add_row([interface_name, state_txt, group_addr, group_state_txt])
     return str(t)
+
+
+
+def list_sequence_numbers():
+    t = PrettyTable(['Interface', 'BootTime', 'InterfaceSN'])
+    for (interface_name, interface_obj) in interfaces.copy().items():
+        interface_boot_time = interface_obj.time_of_boot
+        interface_sn = interface_obj.sequencer
+        t.add_row([interface_name, interface_boot_time, interface_sn])
+    table_txt = str(t) + "\n\n\n"
+
+    t = PrettyTable(['Neighbor', 'BootTime', 'NeighborSnapshotSN'])
+    for interface in interfaces.values():
+        for neighbor in interface.get_neighbors():
+            t.add_row([neighbor.ip, neighbor.time_of_boot, neighbor.minimum_sequence_number])
+    table_txt += str(t) + "\n\n"
+
+    t = PrettyTable(['Neighbor', 'Tree', 'LastSN'])
+    for interface in interfaces.values():
+        for neighbor in interface.get_neighbors():
+            neighbor_last_sn = neighbor.last_sequence_number.copy()
+            for (tree, last_sn) in neighbor_last_sn.items():
+                t.add_row([neighbor.ip, tree, last_sn])
+    table_txt += str(t)
+    return str(table_txt)
 
 
 def list_routing_state():

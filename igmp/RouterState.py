@@ -126,3 +126,7 @@ class RouterState(object):
             max_response_time = packet.payload.max_resp_time
             #self.group_state[igmp_group].receive_group_specific_query(max_response_time)
             self.get_group_state(igmp_group).receive_group_specific_query(max_response_time)
+
+    def remove(self):
+        for group in self.group_state.values():
+            group.remove()

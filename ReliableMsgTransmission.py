@@ -6,18 +6,17 @@ from Packet.PacketProtocolRemoveTree import PacketProtocolUninstallTree
 from Packet.PacketProtocolJoinTree import PacketProtocolInterest
 from Packet.PacketProtocolJoinTree import PacketProtocolNoInterest
 
-
+'''
 class ReliableTransmission(object):
     TIMEOUT = 10
 
-    def __init__(self, interface, packet, message_destination=None, callback=None):
+    def __init__(self, interface, packet, message_destination=None):
         self._interface = interface
         self._msg = packet
         self._msg_dst = message_destination
         self._neighbors_that_acked = set()
         #self._retransmission_timer = Timer(ReliableTransmission.TIMEOUT, self.retransmission_timeout)
         #self._retransmission_timer.start()
-        self._callback = callback
         self._retransmission_timer = None
         self.retransmission_timeout()
 
@@ -40,9 +39,6 @@ class ReliableTransmission(object):
 
     def message_has_been_reliably_transmitted(self):
         self.cancel_message()
-        # TODO CORRIGIR ESTE CALLBACK
-        # TODO DEIXA DE SER NECESSARIO
-        self._callback.message_has_been_reliable_transmitted()
 
     def cancel_message(self):
         self.clear_retransmission_timer()
@@ -76,9 +72,7 @@ class ReliableTransmission(object):
             self._interface.send(self._msg, self._msg_dst)
         self.set_retransmission_timer()
 
-
-
-
+'''
 
 class ReliableMessageTransmission(object):
     TIMEOUT = 10
@@ -145,17 +139,19 @@ class ReliableMessageTransmission(object):
             self._interface.send(*self._msg_unicast)
 
 
-    def receive_ack(self, neighbor_ip, sn):
+    def receive_ack(self, neighbor_ip, bt, sn):
         with self._lock:
             msg = self._msg_multicast
-            if msg is not None and sn >= msg.payload.payload.sequence_number:
+            if msg is not None and (bt > msg.payload.boot_time or
+                                    bt == msg.payload.boot_time and sn >= msg.payload.payload.sequence_number):
                 self._neighbors_that_acked.add(neighbor_ip)
                 if self.did_all_neighbors_acked():
                     #self.message_has_been_reliably_transmitted()
                     self.cancel_messsage_multicast()
 
             (msg, dst) = self._msg_unicast
-            if msg is not None and dst == neighbor_ip and sn >= msg.payload.payload.sequence_number:
+            if msg is not None and dst == neighbor_ip and (bt > msg.payload.boot_time or
+                                            bt == msg.payload.boot_time and sn >= msg.payload.payload.sequence_number):
                 # destination is unicast
                 #self.message_has_been_reliably_transmitted()
                 self.cancel_message_unicast()
@@ -190,7 +186,7 @@ class ReliableMessageTransmission(object):
     # Reliable timer
     def set_retransmission_timer(self):
         self.clear_retransmission_timer()
-        self._retransmission_timer = Timer(ReliableTransmission.TIMEOUT, self.retransmission_timeout)
+        self._retransmission_timer = Timer(ReliableMessageTransmission.TIMEOUT, self.retransmission_timeout)
         self._retransmission_timer.start()
 
     def clear_retransmission_timer(self):
@@ -217,3 +213,20 @@ class ReliableMessageTransmission(object):
 
             if self._msg_multicast is not None or self._msg_unicast[0] is not None:
                 self.set_retransmission_timer()
+
+    #############################################
+    # Get Sequence Number for CheckpointSN
+    #############################################
+    def get_sequence_number(self):
+        bt_sn = (None, None)
+        with self._lock:
+            msg = self._msg_multicast
+            if msg is not None:
+                bt_sn = (msg.payload.boot_time, msg.payload.payload.sequence_number)
+
+            (msg, _) = self._msg_unicast
+            if msg is not None and bt_sn[0] is None or\
+                    msg is not None and bt_sn[0] is not None and bt_sn[0] <= msg.payload.boot_time and bt_sn[1] > msg.payload.payload.sequence_number:
+                bt_sn = (msg.payload.boot_time, msg.payload.payload.sequence_number)
+
+        return bt_sn

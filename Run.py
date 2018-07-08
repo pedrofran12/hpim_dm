@@ -63,12 +63,16 @@ class MyDaemon(Daemon):
                     connection.sendall(pickle.dumps(Main.list_neighbors()))
                 elif 'list_state' in args and args.list_state:
                     connection.sendall(pickle.dumps(Main.list_state()))
+                elif 'list_sequence_numbers' in args and args.list_sequence_numbers:
+                    connection.sendall(pickle.dumps(Main.list_sequence_numbers()))
                 elif 'add_interface' in args and args.add_interface:
                     Main.add_protocol_interface(args.add_interface[0])
                     connection.shutdown(socket.SHUT_RDWR)
                 elif 'flood_initial_data' in args and args.flood_initial_data:
                     from tree import globals
-                    globals.INITIAL_FLOOD ^= True
+                    globals.INITIAL_FLOOD_ENABLED ^= True
+                    Main.kernel.recheck_all_trees_in_all_interfaces()
+                    connection.sendall(pickle.dumps("Flood is enabled?: " + str(globals.INITIAL_FLOOD_ENABLED)))
                 elif 'add_interface_igmp' in args and args.add_interface_igmp:
                     Main.add_igmp_interface(args.add_interface_igmp[0])
                     connection.shutdown(socket.SHUT_RDWR)
@@ -102,7 +106,8 @@ if __name__ == "__main__":
     group.add_argument("-restart", "--restart", action="store_true", default=False, help="Restart Protocol")
     group.add_argument("-li", "--list_interfaces", action="store_true", default=False, help="List All Interfaces")
     group.add_argument("-ln", "--list_neighbors", action="store_true", default=False, help="List All Neighbors")
-    group.add_argument("-ls", "--list_state", action="store_true", default=False, help="List state of IGMP")
+    group.add_argument("-ls", "--list_state", action="store_true", default=False, help="List state of IGMP and Multicast Routing Protocol")
+    group.add_argument("-lsn", "--list_sequence_numbers", action="store_true", default=False, help="List Sequence Numbers")
     group.add_argument("-mr", "--multicast_routes", action="store_true", default=False, help="List Multicast Routing table")
     group.add_argument("-fid", "--flood_initial_data", action="store_true", default=False, help="Flood initial data packets")
     group.add_argument("-ai", "--add_interface", nargs=1, metavar='INTERFACE_NAME', help="Add Protocol interface")
