@@ -386,6 +386,7 @@ class Neighbor:
     ################################################################################################
     def get_tree_state(self, tree):
         if self.neighbor_state != Updated:
+            # do not interpret stored state if not Updated
             return (False, None)
         else:
             upstream_state = self.tree_metric_state.get(tree, None)
@@ -412,11 +413,10 @@ class Neighbor:
 
         last_received_sn = self.last_sequence_number.get(tree, 0)
 
-        if sn < self.minimum_sequence_number:
+        if sn <= self.minimum_sequence_number:
             # dont deliver to application
             print("RCVD ", sn)
             print("MSN ", self.minimum_sequence_number)
-
             return False
         elif sn >= last_received_sn:
             (source, group) = tree
@@ -432,7 +432,6 @@ class Neighbor:
                 # deliver to application
                 return True
         # dont deliver to application
-
         print("RCVD ", sn)
         print("LAST TREE SN ", last_received_sn)
         return False
