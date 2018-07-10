@@ -1,12 +1,11 @@
 import json
 import struct
 from utils import checksum
-from Packet.PacketProtocolHello import PacketProtocolHello
-from Packet.PacketProtocolSetTree import PacketProtocolInstallTree, PacketNewProtocolInstall
-from Packet.PacketProtocolRemoveTree import PacketProtocolUninstallTree, PacketNewProtocolUninstall
-from Packet.PacketProtocolJoinTree import PacketProtocolInterest, PacketProtocolNoInterest, PacketNewProtocolInterest, PacketNewProtocolNoInterest
+from Packet.PacketProtocolHello import PacketProtocolHello, PacketNewProtocolHello
+from Packet.PacketProtocolSetTree import PacketProtocolUpstream, PacketNewProtocolUpstream
+from Packet.PacketProtocolRemoveTree import PacketProtocolNoLongerUpstream, PacketNewProtocolNoLongerUpstream
+from Packet.PacketProtocolInterest import PacketProtocolInterest, PacketProtocolNoInterest, PacketNewProtocolInterest, PacketNewProtocolNoInterest
 from Packet.PacketProtocolAck import PacketProtocolAck, PacketNewProtocolAck
-#from Packet.PacketProtocolHelloSync import PacketProtocolHelloSync, PacketProtocolHelloSyncAck, PacketProtocolHelloSyncAckAck
 from Packet.PacketProtocolSync import PacketProtocolHelloSync, PacketNewProtocolSync
 
 from .PacketPayload import PacketPayload
@@ -20,13 +19,11 @@ class PacketProtocolHeader(PacketPayload):
     PIM_MSG_TYPES = {"HELLO": PacketProtocolHello,
                      "INTEREST": PacketProtocolInterest,
                      "NO_INTEREST": PacketProtocolNoInterest,
-                     "I_AM_UPSTREAM": PacketProtocolInstallTree,
-                     "I_AM_NO_LONGER_UPSTREAM": PacketProtocolUninstallTree,
+                     "I_AM_UPSTREAM": PacketProtocolUpstream,
+                     "I_AM_NO_LONGER_UPSTREAM": PacketProtocolNoLongerUpstream,
                      "ACK": PacketProtocolAck,
 
                      "SYNC": PacketProtocolHelloSync,
-                     #"HELLO_SYNC_ACK": PacketProtocolHelloSyncAck,
-                     #"HELLO_SYNC_ACK_ACK": PacketProtocolHelloSyncAckAck,
                      }
 
     def __init__(self, payload, boot_time=0):
@@ -76,19 +73,18 @@ HEADER IN BYTE FORMAT
 '''
 
 class PacketNewProtocolHeader(PacketPayload):
-    PIM_VERSION = 2
+    PIM_VERSION = 0
 
     PIM_HDR = "! L BB H"
     PIM_HDR_LEN = struct.calcsize(PIM_HDR)
 
-    PIM_MSG_TYPES = {"HELLO": PacketProtocolHello,
+    PIM_MSG_TYPES = {PacketNewProtocolHello.PIM_TYPE: PacketNewProtocolHello,
+                     PacketNewProtocolSync.PIM_TYPE: PacketNewProtocolSync,
+                     PacketNewProtocolUpstream.PIM_TYPE: PacketNewProtocolUpstream,
+                     PacketNewProtocolNoLongerUpstream.PIM_TYPE: PacketNewProtocolNoLongerUpstream,
                      PacketNewProtocolInterest.PIM_TYPE: PacketNewProtocolInterest,
                      PacketNewProtocolNoInterest.PIM_TYPE: PacketNewProtocolNoInterest,
-                     PacketNewProtocolInstall.PIM_TYPE: PacketNewProtocolInstall,
-                     PacketNewProtocolUninstall.PIM_TYPE: PacketNewProtocolUninstall,
                      PacketNewProtocolAck.PIM_TYPE: PacketNewProtocolAck,
-
-                     PacketNewProtocolSync.PIM_TYPE: PacketNewProtocolSync,
                      }
 
     def __init__(self, payload, boot_time=0):
@@ -102,10 +98,10 @@ class PacketNewProtocolHeader(PacketPayload):
     def bytes(self) -> bytes:
         # obter mensagem e criar checksum
         pim_vrs_type = (PacketNewProtocolHeader.PIM_VERSION << 4) + self.get_pim_type()
-        msg_without_chcksum = struct.pack(PacketNewProtocolHeader.PIM_HDR, pim_vrs_type, 0, 0)
-        msg_without_chcksum += self.payload.bytes()
+        msg = struct.pack(PacketNewProtocolHeader.PIM_HDR, self.boot_time, pim_vrs_type, 0, 0)
+        msg += self.payload.bytes()
         #pim_checksum = checksum(msg_without_chcksum)
-        msg = msg_without_chcksum[0:2] + msg_without_chcksum[4:]
+        #msg = msg_without_chcksum[0:2] + msg_without_chcksum[4:]
         return msg
 
     def __len__(self):
@@ -116,14 +112,14 @@ class PacketNewProtocolHeader(PacketPayload):
         print("parsePimHdr: ", data)
 
         pim_hdr = data[0:PacketNewProtocolHeader.PIM_HDR_LEN]
-        (boot_time, pim_ver_type, reserved, rcv_checksum) = struct.unpack(PacketNewProtocolHeader.PIM_HDR, pim_hdr)
+        (boot_time, pim_ver_type, _, _) = struct.unpack(PacketNewProtocolHeader.PIM_HDR, pim_hdr)
 
-        print(pim_ver_type, reserved, rcv_checksum)
+        print(pim_ver_type)
         pim_version = (pim_ver_type & 0xF0) >> 4
         pim_type = pim_ver_type & 0x0F
 
         if pim_version != PacketNewProtocolHeader.PIM_VERSION:
-            print("Version of PIM packet received not known (!=2)")
+            print("Version of PROTOCOL packet received not known (!=0)")
             raise Exception
 
         #msg_to_checksum = data[0:2] + b'\x00\x00' + data[4:]

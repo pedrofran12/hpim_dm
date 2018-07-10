@@ -1,11 +1,13 @@
-from Packet.PacketProtocolSetTree import PacketProtocolInstallTree
-from Packet.PacketProtocolJoinTree import PacketNewProtocolInterest
+from Packet.PacketProtocolInterest import PacketNewProtocolInterest, PacketProtocolInterest
 
-class PacketProtocolUninstallTree(PacketProtocolInstallTree):
+###########################################################################################################
+# JSON FORMAT
+###########################################################################################################
+class PacketProtocolNoLongerUpstream(PacketProtocolInterest):
     PIM_TYPE = "I_AM_NO_LONGER_UPSTREAM"
 
-    def __init__(self, source, group, counter):
-        super().__init__(source, group, 0, 0, counter)
+    def __init__(self, source, group, sequence_number):
+        super().__init__(source, group, sequence_number)
 
     @classmethod
     def parse_bytes(cls, data: bytes):
@@ -15,6 +17,9 @@ class PacketProtocolUninstallTree(PacketProtocolInstallTree):
         return cls(source, group, sn)
 
 
+###########################################################################################################
+# BINARY FORMAT
+###########################################################################################################
 '''
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -26,8 +31,8 @@ class PacketProtocolUninstallTree(PacketProtocolInstallTree):
 |                        Sequence Number                        |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 '''
-class PacketNewProtocolUninstall(PacketNewProtocolInterest):
-    PIM_TYPE = 4
+class PacketNewProtocolNoLongerUpstream(PacketNewProtocolInterest):
+    PIM_TYPE = 3
 
     def __init__(self, source_ip, group_ip, sequence_number):
         super().__init__(source_ip, group_ip, sequence_number)

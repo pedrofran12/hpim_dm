@@ -2,15 +2,10 @@ import struct
 import socket
 from Packet.PacketPimEncodedUnicastAddress import PacketPimEncodedUnicastAddress
 from Packet.PacketPimJoinPruneMulticastGroup import PacketPimJoinPruneMulticastGroup
-'''
- 0                   1                   2                   3
- 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|        Upstream Neighbor Address (Encoded Unicast Format)     |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|   Reserved    |  Num Groups   |          Hold Time            |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-'''
+
+###########################################################################################################
+# JSON FORMAT
+###########################################################################################################
 class PacketProtocolAck:
     PIM_TYPE = "ACK"
 
@@ -40,7 +35,10 @@ class PacketProtocolAck:
         nbt = data["NEIGHBOR_BOOT_TIME"]
         return cls(source, group, sn, nbt)
 
-#######################################################################################
+
+###########################################################################################################
+# BINARY FORMAT
+###########################################################################################################
 '''
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -49,16 +47,18 @@ class PacketProtocolAck:
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                         Tree Group IP                         |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|                        Sequence Number                        |
+|                       Neighbor BootTime                       |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                     Neighbor Sequence Number                  |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 '''
 class PacketNewProtocolAck:
-    PIM_TYPE = 7
+    PIM_TYPE = 6
 
-    PIM_HDR_ACK = "! L L L"
+    PIM_HDR_ACK = "! 4s 4s L L"
     PIM_HDR_ACK_LEN = struct.calcsize(PIM_HDR_ACK)
 
-    def __init__(self, source_ip, group_ip, sequence_number):
+    def __init__(self, source_ip, group_ip, sequence_number, neighbor_boot_time=0):
         if type(source_ip) not in (str, bytes) or type(group_ip) not in (str, bytes):
             raise Exception
         if type(source_ip) is bytes:
@@ -68,11 +68,12 @@ class PacketNewProtocolAck:
 
         self.source = source_ip
         self.group = group_ip
+        self.neighbor_boot_time = neighbor_boot_time
         self.sequence_number = sequence_number
 
     def bytes(self) -> bytes:
         msg = struct.pack(PacketNewProtocolAck.PIM_HDR_ACK, socket.inet_aton(self.source),
-                          socket.inet_aton(self.group), self.sequence_number)
+                          socket.inet_aton(self.group), self.neighbor_boot_time, self.sequence_number)
 
         return msg
 
@@ -81,6 +82,6 @@ class PacketNewProtocolAck:
 
     @classmethod
     def parse_bytes(cls, data: bytes):
-        (tree_source, tree_group, sn) = struct.unpack(PacketNewProtocolAck.PIM_HDR_ACK,
+        (tree_source, tree_group, neighbor_boot_time, sn) = struct.unpack(PacketNewProtocolAck.PIM_HDR_ACK,
                                                    data[:PacketNewProtocolAck.PIM_HDR_ACK_LEN])
-        return cls(tree_source, tree_group, sn)
+        return cls(tree_source, tree_group, sn, neighbor_boot_time)

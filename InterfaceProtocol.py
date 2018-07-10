@@ -11,9 +11,10 @@ from Packet.Packet import Packet
 from utils import HELLO_HOLD_TIME_TIMEOUT
 from threading import Timer, RLock
 
-from Packet.PacketProtocolSetTree import PacketProtocolInstallTree
-from Packet.PacketProtocolRemoveTree import PacketProtocolUninstallTree
-from Packet.PacketProtocolJoinTree import PacketProtocolNoInterest, PacketProtocolInterest
+from Packet.PacketProtocolSync import PacketProtocolHelloSyncEntry
+from Packet.PacketProtocolSetTree import PacketProtocolUpstream
+from Packet.PacketProtocolRemoveTree import PacketProtocolNoLongerUpstream
+from Packet.PacketProtocolInterest import PacketProtocolNoInterest, PacketProtocolInterest
 from Packet.PacketProtocolSync import PacketProtocolHelloSync
 from ReliableMsgTransmission import ReliableMessageTransmission
 
@@ -212,7 +213,6 @@ class InterfaceProtocol(Interface):
                 (snapshot_bt, snapshot_sn) = self.get_sequence_number()
 
                 trees_to_sync = Main.kernel.snapshot_multicast_routing_table(self)  # type: dict
-                from Packet.PacketProtocolHelloSync import PacketProtocolHelloSyncEntry
                 #tree_to_sync_in_msg_format = []
                 tree_to_sync_in_msg_format = {}
 
@@ -415,7 +415,7 @@ class InterfaceProtocol(Interface):
         from tree.metric import AssertMetric
         neighbor_source_ip = packet.ip_header.ip_src
         boot_time = packet.payload.boot_time
-        pkt_jt = packet.payload.payload # type: PacketProtocolInstallTree
+        pkt_jt = packet.payload.payload # type: PacketProtocolUpstream
 
         # Process Install msg
         source_group = (pkt_jt.source, pkt_jt.group)

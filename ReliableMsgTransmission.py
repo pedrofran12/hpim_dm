@@ -1,10 +1,10 @@
 from threading import Timer, RLock
 from Packet.Packet import Packet
 from Packet.PacketProtocolHeader import PacketProtocolHeader
-from Packet.PacketProtocolSetTree import PacketProtocolInstallTree
-from Packet.PacketProtocolRemoveTree import PacketProtocolUninstallTree
-from Packet.PacketProtocolJoinTree import PacketProtocolInterest
-from Packet.PacketProtocolJoinTree import PacketProtocolNoInterest
+from Packet.PacketProtocolSetTree import PacketProtocolUpstream
+from Packet.PacketProtocolRemoveTree import PacketProtocolNoLongerUpstream
+from Packet.PacketProtocolInterest import PacketProtocolInterest
+from Packet.PacketProtocolInterest import PacketProtocolNoInterest
 
 '''
 class ReliableTransmission(object):
@@ -95,7 +95,7 @@ class ReliableMessageTransmission(object):
             metric_preference = rpc.metric_preference
             metric = rpc.route_metric
 
-            ph = PacketProtocolInstallTree(source, group, metric_preference, metric, sn)
+            ph = PacketProtocolUpstream(source, group, metric_preference, metric, sn)
             self._msg_multicast = Packet(payload=PacketProtocolHeader(ph, boot_time=bt))
 
             self.set_retransmission_timer()
@@ -108,7 +108,7 @@ class ReliableMessageTransmission(object):
 
             (bt, sn) = self._interface.get_sequence_number()
 
-            ph = PacketProtocolUninstallTree(source, group, sn)
+            ph = PacketProtocolNoLongerUpstream(source, group, sn)
             self._msg_multicast = Packet(payload=PacketProtocolHeader(ph, boot_time=bt))
 
             self.set_retransmission_timer()

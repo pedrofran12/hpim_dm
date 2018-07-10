@@ -2,6 +2,9 @@ import struct
 from abc import ABCMeta, abstractmethod
 import math
 
+###################################################################################
+# JSON FORMAT
+###################################################################################
 class PacketProtocolHelloOptions(metaclass=ABCMeta):
     '''
      0                   1                   2                   3
@@ -25,7 +28,7 @@ class PacketProtocolHelloOptions(metaclass=ABCMeta):
     def parse_bytes(data: tuple, type:int = None):
         type = data[0]
         data = data[1]
-        return PIM_MSG_TYPES.get(type, PacketProtocolHelloUnknown).parse_bytes(data, type)
+        return JSON_MSG_TYPES.get(type, PacketProtocolHelloUnknown).parse_bytes(data, type)
 
 
 class PacketProtocolHelloHoldtime(PacketProtocolHelloOptions):
@@ -76,31 +79,6 @@ class PacketProtocolHelloCheckpointSN(PacketProtocolHelloOptions):
         return PacketProtocolHelloCheckpointSN(checkpoint_sn=checkpoint_sn)
 
 
-class PacketProtocolHelloNeighbors(PacketProtocolHelloOptions):
-
-    '''
-     0                   1                   2                   3
-     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |                         Neighbors....                         |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    '''
-    def __init__(self, neighbors: list):
-        super().__init__(type="NEIGHBORS")
-        self.neighbors = neighbors
-
-    def bytes(self) -> dict:
-        return {"NEIGHBORS": self.neighbors}
-
-    @staticmethod
-    def parse_bytes(data, type:int = None):
-        if type is None:
-            raise Exception
-        neighbors = data
-        return PacketProtocolHelloNeighbors(neighbors=neighbors)
-
-
-
 class PacketProtocolHelloUnknown(PacketProtocolHelloOptions):
     '''
      0                   1                   2                   3
@@ -124,8 +102,121 @@ class PacketProtocolHelloUnknown(PacketProtocolHelloOptions):
 
 
 
-
-PIM_MSG_TYPES = {"HOLDTIME": PacketProtocolHelloHoldtime,
+JSON_MSG_TYPES = {"HOLDTIME": PacketProtocolHelloHoldtime,
                  "CHECKPOINT_SN": PacketProtocolHelloCheckpointSN,
-                 "NEIGHBORS": PacketProtocolHelloNeighbors,
                  }
+
+
+
+class PacketNewProtocolHelloOptions(metaclass=ABCMeta):
+    PIM_HDR_OPTS = "! HH"
+    PIM_HDR_OPTS_LEN = struct.calcsize(PIM_HDR_OPTS)
+    '''
+     0                   1                   2                   3
+     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |              Type             |             Length            |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    '''
+    def __init__(self, type: int, length: int):
+        self.type = type
+        self.length = length
+
+    def bytes(self) -> bytes:
+        return struct.pack(PacketNewProtocolHelloOptions.PIM_HDR_OPTS, self.type, self.length)
+
+    def __len__(self):
+        return self.PIM_HDR_OPTS_LEN + self.length
+
+    @staticmethod
+    def parse_bytes(data: bytes, type:int = None, length:int = None):
+        (type, length) = struct.unpack(PacketNewProtocolHelloOptions.PIM_HDR_OPTS,
+                                        data[:PacketNewProtocolHelloOptions.PIM_HDR_OPTS_LEN])
+        #print("TYPE:", type)
+        #print("LENGTH:", length)
+        data = data[PacketNewProtocolHelloOptions.PIM_HDR_OPTS_LEN:]
+        #return PIM_MSG_TYPES[type](data)
+        return NEW_PROTOCOL_MSG_TYPES.get(type, PacketNewProtocolHelloUnknown).parse_bytes(data, type, length)
+
+
+class PacketNewProtocolHelloHoldtime(PacketNewProtocolHelloOptions):
+    PIM_HDR_OPT = "! H"
+    PIM_HDR_OPT_LEN = struct.calcsize(PIM_HDR_OPT)
+    '''
+     0                   1                   2                   3
+     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |            Hold Time          |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    '''
+    def __init__(self, holdtime: int or float):
+        super().__init__(type=1, length=2)
+        self.holdtime = int(holdtime)
+
+    def bytes(self) -> bytes:
+        return super().bytes() + struct.pack(self.PIM_HDR_OPT, self.holdtime)
+
+    @staticmethod
+    def parse_bytes(data: bytes, type:int = None, length:int = None):
+        if type is None or length is None:
+            raise Exception
+        (holdtime, ) = struct.unpack(PacketNewProtocolHelloHoldtime.PIM_HDR_OPT,
+                                     data[:PacketNewProtocolHelloHoldtime.PIM_HDR_OPT_LEN])
+        print("HOLDTIME:", holdtime)
+        return PacketNewProtocolHelloHoldtime(holdtime=holdtime)
+
+
+class PacketNewProtocolHelloCheckpointSN(PacketNewProtocolHelloOptions):
+    PIM_HDR_OPT = "! L"
+    PIM_HDR_OPT_LEN = struct.calcsize(PIM_HDR_OPT)
+    '''
+     0                   1                   2                   3
+     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                         Checkpoint SN                         |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    '''
+    def __init__(self, checkpoint_sn: int):
+        super().__init__(type=2, length=4)
+        self.checkpoint_sn = checkpoint_sn
+
+    def bytes(self) -> bytes:
+        return super().bytes() + struct.pack(self.PIM_HDR_OPT, self.checkpoint_sn)
+
+    @staticmethod
+    def parse_bytes(data: bytes, type:int = None, length:int = None):
+        if type is None or length is None:
+            raise Exception
+        (checkpoint_sn, ) = struct.unpack(PacketNewProtocolHelloCheckpointSN.PIM_HDR_OPT,
+                                     data[:PacketNewProtocolHelloCheckpointSN.PIM_HDR_OPT_LEN])
+        print("CheckpointSN:", checkpoint_sn)
+        return PacketNewProtocolHelloCheckpointSN(checkpoint_sn=checkpoint_sn)
+
+
+class PacketNewProtocolHelloUnknown(PacketNewProtocolHelloOptions):
+    PIM_HDR_OPT = "! L"
+    PIM_HDR_OPT_LEN = struct.calcsize(PIM_HDR_OPT)
+    '''
+     0                   1                   2                   3
+     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                            Unknown                            |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    '''
+    def __init__(self, type, length):
+        super().__init__(type=type, length=length)
+        #print("PIM Hello Option Unknown... TYPE=", type, "LENGTH=", length)
+
+    def bytes(self) -> bytes:
+        raise Exception
+
+    @staticmethod
+    def parse_bytes(data: bytes, type:int = None, length:int = None):
+        if type is None or length is None:
+            raise Exception
+        return PacketNewProtocolHelloUnknown(type, length)
+
+
+NEW_PROTOCOL_MSG_TYPES = {1: PacketNewProtocolHelloHoldtime,
+                          2: PacketNewProtocolHelloCheckpointSN,
+                         }

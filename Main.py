@@ -28,7 +28,7 @@ def remove_interface(interface_name, pim=False, igmp=False):
 
 def list_neighbors():
     interfaces_list = interfaces.values()
-    t = PrettyTable(['Interface', 'Neighbor IP', 'State', 'Hello Hold Time', "BootTime", "MinimumSN", "Uptime"])
+    t = PrettyTable(['Interface', 'Neighbor IP', 'State', 'Hello Hold Time', "BootTime", "NeighborSnapshotSN", "Uptime"])
     check_time = time.time()
     for interface in interfaces_list:
         for neighbor in interface.get_neighbors():
@@ -36,7 +36,7 @@ def list_neighbors():
             uptime = 0 if (uptime < 0) else uptime
 
             t.add_row(
-                [interface.interface_name, neighbor.ip, neighbor.neighbor_state.__name__, neighbor.hello_hold_time, neighbor.time_of_boot, neighbor.minimum_sequence_number, time.strftime("%H:%M:%S", time.gmtime(uptime))])
+                [interface.interface_name, neighbor.ip, neighbor.neighbor_state.__name__, neighbor.hello_hold_time, neighbor.time_of_boot, neighbor.neighbor_snapshot_sn, time.strftime("%H:%M:%S", time.gmtime(uptime))])
     print(t)
     return str(t)
 
@@ -93,7 +93,7 @@ def list_sequence_numbers():
     t = PrettyTable(['Neighbor', 'BootTime', 'NeighborSnapshotSN'])
     for interface in interfaces.values():
         for neighbor in interface.get_neighbors():
-            t.add_row([neighbor.ip, neighbor.time_of_boot, neighbor.minimum_sequence_number])
+            t.add_row([neighbor.ip, neighbor.time_of_boot, neighbor.neighbor_snapshot_sn])
     table_txt += str(t) + "\n\n"
 
     t = PrettyTable(['Neighbor', 'Tree', 'LastSN'])

@@ -1,8 +1,11 @@
-from Packet.PacketProtocolJoinTree import PacketProtocolInterest
+from Packet.PacketProtocolInterest import PacketProtocolInterest
 import struct
 import socket
 
-class PacketProtocolInstallTree():
+###########################################################################################################
+# JSON FORMAT
+###########################################################################################################
+class PacketProtocolUpstream():
     PIM_TYPE = "I_AM_UPSTREAM"
 
     def __init__(self, source, group, metric_preference, metric, sequence_number):
@@ -32,6 +35,9 @@ class PacketProtocolInstallTree():
         return cls(source, group, metric_preference, metric, sn)
 
 
+###########################################################################################################
+# BINARY FORMAT
+###########################################################################################################
 '''
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -47,10 +53,10 @@ class PacketProtocolInstallTree():
 |                            Metric                             |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 '''
-class PacketNewProtocolInstall:
-    PIM_TYPE = 3
+class PacketNewProtocolUpstream:
+    PIM_TYPE = 2
 
-    PIM_HDR_INSTALL = "! L L L L L"
+    PIM_HDR_INSTALL = "! 4s 4s L L L"
     PIM_HDR_INSTALL_LEN = struct.calcsize(PIM_HDR_INSTALL)
 
     def __init__(self, source_ip, group_ip, metric_preference, metric, sequence_number):
@@ -68,7 +74,7 @@ class PacketNewProtocolInstall:
         self.sequence_number = sequence_number
 
     def bytes(self) -> bytes:
-        msg = struct.pack(PacketNewProtocolInstall.PIM_HDR_INSTALL, socket.inet_aton(self.source),
+        msg = struct.pack(PacketNewProtocolUpstream.PIM_HDR_INSTALL, socket.inet_aton(self.source),
                           socket.inet_aton(self.group), self.sequence_number, self.metric_preference, self.metric)
 
         return msg
@@ -78,6 +84,6 @@ class PacketNewProtocolInstall:
 
     @classmethod
     def parse_bytes(cls, data: bytes):
-        (tree_source, tree_group, sn, mp, m) = struct.unpack(PacketNewProtocolInstall.PIM_HDR_INSTALL,
-                                                   data[:PacketNewProtocolInstall.PIM_HDR_INSTALL_LEN])
+        (tree_source, tree_group, sn, mp, m) = struct.unpack(PacketNewProtocolUpstream.PIM_HDR_INSTALL,
+                                                             data[:PacketNewProtocolUpstream.PIM_HDR_INSTALL_LEN])
         return cls(tree_source, tree_group, mp, m, sn)

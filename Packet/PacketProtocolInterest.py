@@ -3,6 +3,9 @@ import socket
 from Packet.PacketPimEncodedUnicastAddress import PacketPimEncodedUnicastAddress
 from Packet.PacketPimJoinPruneMulticastGroup import PacketPimJoinPruneMulticastGroup
 
+###########################################################################################################
+# JSON FORMAT
+###########################################################################################################
 class PacketProtocolInterest:
     PIM_TYPE = "INTEREST"
 
@@ -36,8 +39,9 @@ class PacketProtocolNoInterest(PacketProtocolInterest):
     def __init__(self, source, group, sn):
         super().__init__(source, group, sn)
 
-
-
+###########################################################################################################
+# BINARY FORMAT
+###########################################################################################################
 '''
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -50,9 +54,9 @@ class PacketProtocolNoInterest(PacketProtocolInterest):
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 '''
 class PacketNewProtocolInterest:
-    PIM_TYPE = 5
+    PIM_TYPE = 4
 
-    PIM_HDR_INTEREST = "! L L L"
+    PIM_HDR_INTEREST = "! 4s 4s L"
     PIM_HDR_INTEREST_LEN = struct.calcsize(PIM_HDR_INTEREST)
 
     def __init__(self, source_ip, group_ip, sequence_number):
@@ -83,8 +87,8 @@ class PacketNewProtocolInterest:
         return cls(tree_source, tree_group, sn)
 
 
-class PacketNewProtocolNoInterest:
-    PIM_TYPE = 6
+class PacketNewProtocolNoInterest(PacketNewProtocolInterest):
+    PIM_TYPE = 5
 
     def __init__(self, source_ip, group_ip, sequence_number):
         super().__init__(source_ip, group_ip, sequence_number)

@@ -26,7 +26,7 @@ class NeighborState():
         neighbor.tree_metric_state.clear()
         neighbor.last_sequence_number.clear()
         neighbor.current_sync_sn = 0
-        neighbor.minimum_sequence_number = 0
+        neighbor.neighbor_snapshot_sn = 0
         #
 
         my_snapshot_mrt = neighbor.my_snapshot_multicast_routing_table[0:5]
@@ -54,16 +54,16 @@ class NeighborState():
 class Updated(NeighborState):
     @staticmethod
     def recv_sync(neighbor, tree_state, my_snapshot_sn, neighbor_snapshot_sn, sync_sn, master_bit, more_bit):
-        if neighbor.minimum_sequence_number > neighbor_snapshot_sn:
+        if neighbor.neighbor_snapshot_sn > neighbor_snapshot_sn:
             return
-        elif neighbor.minimum_sequence_number < neighbor_snapshot_sn:
+        elif neighbor.neighbor_snapshot_sn < neighbor_snapshot_sn:
             Updated.new_neighbor_or_adjacency_reset(neighbor)
             return
 
         if sync_sn != neighbor.current_sync_sn:
             return
 
-        if master_bit and (sync_sn > 0 and neighbor.my_snapshot_sequencer == my_snapshot_sn or sync_sn==0):
+        if master_bit and neighbor.my_snapshot_sequencer == my_snapshot_sn:
             pkt_s = PacketProtocolHelloSync(my_snapshot_sn, neighbor_snapshot_sn, sync_sequence_number=sync_sn,
                                             master_flag=False, more_flag=False, neighbor_boot_time=neighbor.time_of_boot)
             pkt = Packet(payload=PacketProtocolHeader(pkt_s, neighbor.my_snapshot_boot_time))
@@ -74,16 +74,16 @@ class Updated(NeighborState):
 class Master(NeighborState):
     @staticmethod
     def recv_sync(neighbor, tree_state, my_snapshot_sn, neighbor_snapshot_sn, sync_sn, master_bit, more_bit):
-        if neighbor.current_sync_sn == 0 and neighbor.minimum_sequence_number == 0:
-            neighbor.minimum_sequence_number = neighbor_snapshot_sn
+        if neighbor.current_sync_sn == 0 and neighbor.neighbor_snapshot_sn == 0:
+            neighbor.neighbor_snapshot_sn = neighbor_snapshot_sn
 
         if sync_sn != neighbor.current_sync_sn:
             print("EXIT MASTER")
             return
 
-        if neighbor.minimum_sequence_number > neighbor_snapshot_sn:
+        if neighbor.neighbor_snapshot_sn > neighbor_snapshot_sn:
             return
-        elif neighbor.minimum_sequence_number < neighbor_snapshot_sn:
+        elif neighbor.neighbor_snapshot_sn < neighbor_snapshot_sn:
             Master.new_neighbor_or_adjacency_reset(neighbor)
             return
 
@@ -94,7 +94,7 @@ class Master(NeighborState):
             my_snapshot_mrt = neighbor.my_snapshot_multicast_routing_table[neighbor.current_sync_sn*5:(neighbor.current_sync_sn+1)*5]
             my_more_bit = len(neighbor.my_snapshot_multicast_routing_table) > neighbor.current_sync_sn*5
             my_snapshot_sn = neighbor.my_snapshot_sequencer
-            neighbor_sn = neighbor.minimum_sequence_number
+            neighbor_sn = neighbor.neighbor_snapshot_sn
 
             pkt_s = PacketProtocolHelloSync(my_snapshot_sn, neighbor_sn,
                                             sync_sequence_number=neighbor.current_sync_sn,
@@ -118,7 +118,7 @@ class Master(NeighborState):
                                                                        neighbor.current_sync_sn * 5]
         my_more_bit = len(neighbor.my_snapshot_multicast_routing_table) > (neighbor.current_sync_sn - 1) * 5
         my_snapshot_sn = neighbor.my_snapshot_sequencer
-        neighbor_sn = neighbor.minimum_sequence_number
+        neighbor_sn = neighbor.neighbor_snapshot_sn
 
         pkt_s = PacketProtocolHelloSync(my_snapshot_sn, neighbor_sn,
                                         sync_sequence_number=neighbor.current_sync_sn - 1,
@@ -132,12 +132,12 @@ class Master(NeighborState):
 class Slave(NeighborState):
     @staticmethod
     def recv_sync(neighbor, tree_state, my_snapshot_sn, neighbor_snapshot_sn, sync_sn, master_bit, more_bit):
-        if neighbor.current_sync_sn == 0 and neighbor.minimum_sequence_number == 0:
-            neighbor.minimum_sequence_number = neighbor_snapshot_sn
+        if neighbor.current_sync_sn == 0 and neighbor.neighbor_snapshot_sn == 0:
+            neighbor.neighbor_snapshot_sn = neighbor_snapshot_sn
 
-        if neighbor.minimum_sequence_number > neighbor_snapshot_sn:
+        if neighbor.neighbor_snapshot_sn > neighbor_snapshot_sn:
             return
-        elif neighbor.minimum_sequence_number < neighbor_snapshot_sn:
+        elif neighbor.neighbor_snapshot_sn < neighbor_snapshot_sn:
             Slave.new_neighbor_or_adjacency_reset(neighbor)
             return
 
@@ -174,7 +174,7 @@ class Slave(NeighborState):
                 my_snapshot_mrt = neighbor.my_snapshot_multicast_routing_table[neighbor.current_sync_sn*5:(neighbor.current_sync_sn+1)*5]
                 my_more_bit = len(neighbor.my_snapshot_multicast_routing_table) > neighbor.current_sync_sn*5
                 my_snapshot_sn = neighbor.my_snapshot_sequencer
-                neighbor_sn = neighbor.minimum_sequence_number
+                neighbor_sn = neighbor.neighbor_snapshot_sn
 
                 pkt_s = PacketProtocolHelloSync(my_snapshot_sn, neighbor_sn,
                                                 sync_sequence_number=neighbor.current_sync_sn,
@@ -190,7 +190,7 @@ class Slave(NeighborState):
                           neighbor.current_sync_sn * 5:(neighbor.current_sync_sn + 1) * 5]
         my_more_bit = len(neighbor.my_snapshot_multicast_routing_table) > neighbor.current_sync_sn * 5
         my_snapshot_sn = neighbor.my_snapshot_sequencer
-        neighbor_sn = neighbor.minimum_sequence_number
+        neighbor_sn = neighbor.neighbor_snapshot_sn
 
         pkt_s = PacketProtocolHelloSync(my_snapshot_sn, neighbor_sn,
                                         sync_sequence_number=neighbor.current_sync_sn,
@@ -215,7 +215,7 @@ class Unknown(NeighborState):
             neighbor.tree_metric_state.clear()
             neighbor.last_sequence_number.clear()
             neighbor.current_sync_sn = 0
-            neighbor.minimum_sequence_number = 0
+            neighbor.neighbor_snapshot_sn = 0
             #
 
             Master.recv_sync(neighbor, tree_state, my_snapshot_sn, neighbor_snapshot_sn, sync_sn, master_bit, more_bit)
@@ -247,7 +247,7 @@ class Neighbor:
 
         # Control if received control packets should be processed
         # Used to detect msg retransmissions and out of order reception
-        self.minimum_sequence_number = 0
+        self.neighbor_snapshot_sn = 0
         self.last_sequence_number = {}
 
         self.sync_timer = None
@@ -347,12 +347,12 @@ class Neighbor:
         self.my_snapshot_multicast_routing_table = list(my_snapshot_mrt.values())
         self.my_snapshot_trees = list(my_snapshot_mrt.keys())
 
-    def recv_hello(self, boot_time, holdtime, checkpoint_sn=0):
+    def recv_hello(self, boot_time, holdtime, checkpoint_sn):
         if boot_time < self.time_of_boot:
             return
         elif boot_time > self.time_of_boot:
             self.time_of_boot = boot_time
-            self.minimum_sequence_number = 0
+            self.neighbor_snapshot_sn = 0
             self.neighbor_state.new_neighbor_or_adjacency_reset(self)
             return
 
@@ -360,12 +360,12 @@ class Neighbor:
             self.time_of_last_update = time.time()
             self.set_hello_hold_time(holdtime)
             self.set_checkpoint_sn(checkpoint_sn)
-        elif holdtime==0:
+        elif holdtime == 0:
             self.set_hello_hold_time(holdtime)
 
     def set_checkpoint_sn(self, checkpoint_sn):
-        if checkpoint_sn > self.minimum_sequence_number:
-            self.minimum_sequence_number = checkpoint_sn
+        if checkpoint_sn > self.neighbor_snapshot_sn:
+            self.neighbor_snapshot_sn = checkpoint_sn
 
             to_remove = {k for k,v in self.last_sequence_number.items() if v <= checkpoint_sn}
             for k in to_remove:
@@ -376,7 +376,7 @@ class Neighbor:
             return
         elif boot_time > self.time_of_boot or own_interface_boot_time > self.my_snapshot_boot_time:
             self.time_of_boot = boot_time
-            self.minimum_sequence_number = 0
+            self.neighbor_snapshot_sn = 0
             #self.start_sync_process(True)
             self.neighbor_state.new_neighbor_or_adjacency_reset(self)
             return
@@ -407,16 +407,16 @@ class Neighbor:
             return False
         elif boot_time > self.time_of_boot:
             self.time_of_boot = boot_time
-            self.minimum_sequence_number = 0
+            self.neighbor_snapshot_sn = 0
             self.start_sync_process()
             return False
 
         last_received_sn = self.last_sequence_number.get(tree, 0)
 
-        if sn <= self.minimum_sequence_number:
+        if sn <= self.neighbor_snapshot_sn:
             # dont deliver to application
             print("RCVD ", sn)
-            print("MSN ", self.minimum_sequence_number)
+            print("NSSN ", self.neighbor_snapshot_sn)
             return False
         elif sn >= last_received_sn:
             (source, group) = tree
