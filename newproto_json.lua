@@ -163,9 +163,15 @@ local pf_hello_holdtime = ProtoField.new("Holdtime", "sfmr.options.hello_holdtim
 local pf_hello_generation_id = ProtoField.new("Generation ID", "sfmr.options.hello_generation_id", ftypes.STRING)
 local pf_assert_metric = ProtoField.new("Metric", "sfmr.options.assert_metric", ftypes.STRING)
 local pf_assert_metric_preference = ProtoField.new("Metric Preference", "sfmr.options.assert_metric_preference", ftypes.STRING)
+local pf_neighbor_boot_time = ProtoField.new("Neighbor Boot Time", "sfmr.options.neighbor_boot_time", ftypes.STRING)
 local pf_sequence_number = ProtoField.new("SequenceNumber", "sfmr.options.sequence_number", ftypes.STRING)
-local pf_my_minimum_sequence_number = ProtoField.new("My Minimum Sequence Number", "sfmr.options.my_minimum_sequence_number", ftypes.STRING)
-local pf_neighbor_minimum_sequence_number = ProtoField.new("Neighbor Minimum Sequence Number", "sfmr.options.neighbor_minimum_sequence_number", ftypes.STRING)
+local pf_my_snapshot_sequence_number = ProtoField.new("My Snapshot Sequence Number", "sfmr.options.my_snapshot_sequence_number", ftypes.STRING)
+local pf_neighbor_snapshot_sequence_number = ProtoField.new("Neighbor Snapshot Sequence Number", "sfmr.options.neighbor_snapshot_sequence_number", ftypes.STRING)
+local pf_checkpoint_sequence_number = ProtoField.new("Checkpoint Sequence Number", "sfmr.options.checkpoint_sequence_number", ftypes.STRING)
+
+local pf_sync_sequence_number = ProtoField.new("Sync Sequence Number", "sfmr.options.sync_sequence_number", ftypes.STRING)
+local pf_master_flag = ProtoField.new("Master flag", "sfmr.options.master_flag", ftypes.STRING)
+local pf_more_flag = ProtoField.new("More flag", "sfmr.options.more_flag", ftypes.STRING)
 
 local pf_counter = ProtoField.new("Counter", "sfmr.options.counter", ftypes.STRING)
 local pf_neighbor_ip = ProtoField.new("Neighbor IP", "sfmr.options.neighbor_ip", ftypes.STRING)
@@ -225,8 +231,9 @@ local pf_query_class        = ProtoField.uint16("mydns.query.class", "Class", ba
 
 dns.fields = {pf_type, pf_boot_time, pf_tree_source, pf_tree_group, pf_assert_metric,
       pf_assert_metric_preference, pf_hello_holdtime, pf_hello_generation_id, pf_counter,
-      pf_neighbor_ip, pf_state, pf_sequence_number, pf_my_minimum_sequence_number,
-      pf_neighbor_minimum_sequence_number}
+      pf_neighbor_ip, pf_state, pf_sequence_number, pf_my_snapshot_sequence_number,
+      pf_neighbor_snapshot_sequence_number, pf_sync_sequence_number, pf_master_flag,
+      pf_more_flag, pf_neighbor_boot_time, pf_checkpoint_sequence_number}
 
 ----------------------------------------
 -- create some expert info fields (this is new functionality in 1.11.3)
@@ -510,18 +517,35 @@ function dns.dissector(tvbuf,pktinfo,root)
     local queries_tree = tree:add("SFMR Options")
     if msg_type == "HELLO" then
       queries_tree:add(pf_hello_holdtime, tostring(tab["DATA"].HOLDTIME))
-      --queries_tree:add(pf_hello_generation_id, tostring(tab["DATA"].GENERATION_ID))
-    elseif msg_type == "INTEREST" or msg_type == "NO_INTEREST" or msg_type == "ACK" then
+      queries_tree:add(pf_checkpoint_sequence_number, tostring(tab["DATA"].CHECKPOINT_SN))
+    elseif msg_type == "INTEREST" or msg_type == "NO_INTEREST" or msg_type == "I_AM_NO_LONGER_UPSTREAM" or msg_type == "ACK" then
       queries_tree:add(pf_tree_source, tostring(tab["DATA"].SOURCE))
       queries_tree:add(pf_tree_group, tostring(tab["DATA"].GROUP))
+      if msg_type == "ACK" then
+          queries_tree:add(pf_neighbor_boot_time, tostring(tab["DATA"].NEIGHBOR_BOOT_TIME))
+      end
       queries_tree:add(pf_sequence_number, tostring(tab["DATA"].SN))
-    elseif msg_type == "INSTALL" or msg_type == "UNINSTALL" then
+    elseif msg_type == "I_AM_UPSTREAM" then
       queries_tree:add(pf_tree_source, tostring(tab["DATA"].SOURCE))
       queries_tree:add(pf_tree_group, tostring(tab["DATA"].GROUP))
       queries_tree:add(pf_sequence_number, tostring(tab["DATA"].SN))
       queries_tree:add(pf_assert_metric_preference, tostring(tab["DATA"].METRIC_PREFERENCE))
       queries_tree:add(pf_assert_metric, tostring(tab["DATA"].METRIC))
-    elseif msg_type == "HELLO_SYNC" or msg_type == "HELLO_SYNC_ACK" then
+   elseif msg_type == "SYNC" then
+      queries_tree:add(pf_sync_sequence_number, tostring(tab["DATA"].SYNC_SN))
+      queries_tree:add(pf_my_snapshot_sequence_number, tostring(tab["DATA"].MY_SNAPSHOT_SN))
+      queries_tree:add(pf_neighbor_snapshot_sequence_number, tostring(tab["DATA"].NEIGHBOR_SNAPSHOT_SN))
+      queries_tree:add(pf_neighbor_boot_time, tostring(tab["DATA"].NEIGHBOR_BOOT_TIME))      
+      queries_tree:add(pf_master_flag, tostring(tab["DATA"].MASTER_FLAG))
+      queries_tree:add(pf_more_flag, tostring(tab["DATA"].MORE_FLAG))
+      for _, v in pairs(tab["DATA"].TREES) do
+          local tree_info = queries_tree:add("Tree (".. v.SOURCE .. "," .. v.GROUP .. ")")
+          tree_info:add(pf_assert_metric_preference, tostring(v.METRIC_PREFERENCE))
+          tree_info:add(pf_assert_metric, tostring(v.METRIC))
+      end
+   end
+     
+    --[[elseif msg_type == "HELLO_SYNC" or msg_type == "HELLO_SYNC_ACK" then
       queries_tree:add(pf_my_minimum_sequence_number, tostring(tab["DATA"].MY_SN))
       queries_tree:add(pf_neighbor_minimum_sequence_number, tostring(tab["DATA"].NEIGHBOR_SN))
       for _, v in pairs(tab["DATA"].TREES) do
@@ -532,7 +556,7 @@ function dns.dissector(tvbuf,pktinfo,root)
     elseif msg_type == "HELLO_SYNC_ACK_ACK" then
       queries_tree:add(pf_my_minimum_sequence_number, tostring(tab["DATA"].MY_SN))
       queries_tree:add(pf_neighbor_minimum_sequence_number, tostring(tab["DATA"].NEIGHBOR_SN))
-    end
+    end--]]
     
     --[[elseif msg_type == "ASSERT" or msg_type == "ASSERT_RELIABLE" or msg_type == "ASSERT_RELIABLE_ACK" then
       queries_tree:add(pf_assert_metric_preference, tostring(tab["DATA"].METRIC_PREFERENCE))
