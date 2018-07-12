@@ -82,7 +82,7 @@ class PacketNewProtocolHello:
         self.options = {}
 
     def add_option(self, option: 'PacketNewProtocolHelloOptions'):
-        self.options[option.type] = option
+        self.options[option.TYPE] = option
 
     def get_options(self):
         return self.options

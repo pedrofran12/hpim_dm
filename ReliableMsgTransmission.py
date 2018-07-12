@@ -1,10 +1,18 @@
 from threading import Timer, RLock
 from Packet.Packet import Packet
-from Packet.PacketProtocolHeader import PacketProtocolHeader
-from Packet.PacketProtocolSetTree import PacketProtocolUpstream
-from Packet.PacketProtocolRemoveTree import PacketProtocolNoLongerUpstream
-from Packet.PacketProtocolInterest import PacketProtocolInterest
-from Packet.PacketProtocolInterest import PacketProtocolNoInterest
+from tree.globals import MSG_FORMAT, MESSAGE_RETRANSMISSION_TIME
+if MSG_FORMAT == "BINARY":
+    from Packet.PacketProtocolHeader import PacketNewProtocolHeader as PacketProtocolHeader
+    from Packet.PacketProtocolSetTree import PacketNewProtocolUpstream as PacketProtocolUpstream
+    from Packet.PacketProtocolRemoveTree import PacketNewProtocolNoLongerUpstream as PacketProtocolNoLongerUpstream
+    from Packet.PacketProtocolInterest import PacketNewProtocolInterest as PacketProtocolInterest
+    from Packet.PacketProtocolInterest import PacketNewProtocolNoInterest as PacketProtocolNoInterest
+else:
+    from Packet.PacketProtocolHeader import PacketProtocolHeader
+    from Packet.PacketProtocolSetTree import PacketProtocolUpstream
+    from Packet.PacketProtocolRemoveTree import PacketProtocolNoLongerUpstream
+    from Packet.PacketProtocolInterest import PacketProtocolInterest
+    from Packet.PacketProtocolInterest import PacketProtocolNoInterest
 
 '''
 class ReliableTransmission(object):
@@ -75,8 +83,6 @@ class ReliableTransmission(object):
 '''
 
 class ReliableMessageTransmission(object):
-    TIMEOUT = 10
-
     def __init__(self, interface):
         self._interface = interface
         self._msg_multicast = None
@@ -186,7 +192,7 @@ class ReliableMessageTransmission(object):
     # Reliable timer
     def set_retransmission_timer(self):
         self.clear_retransmission_timer()
-        self._retransmission_timer = Timer(ReliableMessageTransmission.TIMEOUT, self.retransmission_timeout)
+        self._retransmission_timer = Timer(MESSAGE_RETRANSMISSION_TIME, self.retransmission_timeout)
         self._retransmission_timer.start()
 
     def clear_retransmission_timer(self):

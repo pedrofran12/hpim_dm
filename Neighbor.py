@@ -1,11 +1,16 @@
 from threading import Timer
 import time
 from utils import HELLO_HOLD_TIME_NO_TIMEOUT, HELLO_HOLD_TIME_TIMEOUT, TYPE_CHECKING
-from Packet.PacketProtocolAck import PacketProtocolAck
-from Packet.PacketProtocolSync import PacketProtocolHelloSync
-from Packet.PacketProtocolHeader import PacketProtocolHeader
-from Packet.Packet import Packet
 from tree import globals
+if globals.MSG_FORMAT == "BINARY":
+    from Packet.PacketProtocolAck import PacketNewProtocolAck as PacketProtocolAck
+    from Packet.PacketProtocolSync import PacketNewProtocolSync as PacketProtocolHelloSync
+    from Packet.PacketProtocolHeader import PacketNewProtocolHeader as PacketProtocolHeader
+else:
+    from Packet.PacketProtocolAck import PacketProtocolAck
+    from Packet.PacketProtocolSync import PacketProtocolHelloSync
+    from Packet.PacketProtocolHeader import PacketProtocolHeader
+from Packet.Packet import Packet
 
 if TYPE_CHECKING:
     from InterfaceProtocol import InterfaceProtocol
@@ -34,7 +39,7 @@ class NeighborState():
         my_snapshot_sn = neighbor.my_snapshot_sequencer
 
         pkt_s = PacketProtocolHelloSync(my_snapshot_sn, 0,
-                                        sync_sequence_number=neighbor.current_sync_sn,
+                                        sync_sn=neighbor.current_sync_sn,
                                         upstream_trees=my_snapshot_mrt, master_flag=True,
                                         more_flag=my_more_bit, neighbor_boot_time=neighbor.time_of_boot)
         pkt = Packet(payload=PacketProtocolHeader(pkt_s, neighbor.my_snapshot_boot_time))
@@ -64,7 +69,7 @@ class Updated(NeighborState):
             return
 
         if master_bit and neighbor.my_snapshot_sequencer == my_snapshot_sn:
-            pkt_s = PacketProtocolHelloSync(my_snapshot_sn, neighbor_snapshot_sn, sync_sequence_number=sync_sn,
+            pkt_s = PacketProtocolHelloSync(my_snapshot_sn, neighbor_snapshot_sn, sync_sn=sync_sn,
                                             master_flag=False, more_flag=False, neighbor_boot_time=neighbor.time_of_boot)
             pkt = Packet(payload=PacketProtocolHeader(pkt_s, neighbor.my_snapshot_boot_time))
             neighbor.send(pkt)
@@ -97,7 +102,7 @@ class Master(NeighborState):
             neighbor_sn = neighbor.neighbor_snapshot_sn
 
             pkt_s = PacketProtocolHelloSync(my_snapshot_sn, neighbor_sn,
-                                            sync_sequence_number=neighbor.current_sync_sn,
+                                            sync_sn=neighbor.current_sync_sn,
                                             upstream_trees=my_snapshot_mrt, master_flag=False,
                                             more_flag=my_more_bit, neighbor_boot_time=neighbor.time_of_boot)
             pkt = Packet(payload=PacketProtocolHeader(pkt_s, neighbor.my_snapshot_boot_time))
@@ -121,7 +126,7 @@ class Master(NeighborState):
         neighbor_sn = neighbor.neighbor_snapshot_sn
 
         pkt_s = PacketProtocolHelloSync(my_snapshot_sn, neighbor_sn,
-                                        sync_sequence_number=neighbor.current_sync_sn - 1,
+                                        sync_sn=neighbor.current_sync_sn - 1,
                                         upstream_trees=my_snapshot_mrt, master_flag=False,
                                         more_flag=my_more_bit, neighbor_boot_time=neighbor.time_of_boot)
         pkt = Packet(payload=PacketProtocolHeader(pkt_s, neighbor.my_snapshot_boot_time))
@@ -177,7 +182,7 @@ class Slave(NeighborState):
                 neighbor_sn = neighbor.neighbor_snapshot_sn
 
                 pkt_s = PacketProtocolHelloSync(my_snapshot_sn, neighbor_sn,
-                                                sync_sequence_number=neighbor.current_sync_sn,
+                                                sync_sn=neighbor.current_sync_sn,
                                                 upstream_trees=my_snapshot_mrt, master_flag=True,
                                                 more_flag=my_more_bit, neighbor_boot_time=neighbor.time_of_boot)
                 pkt = Packet(payload=PacketProtocolHeader(pkt_s, neighbor.my_snapshot_boot_time))
@@ -193,7 +198,7 @@ class Slave(NeighborState):
         neighbor_sn = neighbor.neighbor_snapshot_sn
 
         pkt_s = PacketProtocolHelloSync(my_snapshot_sn, neighbor_sn,
-                                        sync_sequence_number=neighbor.current_sync_sn,
+                                        sync_sn=neighbor.current_sync_sn,
                                         upstream_trees=my_snapshot_mrt, master_flag=True,
                                         more_flag=my_more_bit, neighbor_boot_time=neighbor.time_of_boot)
         pkt = Packet(payload=PacketProtocolHeader(pkt_s, neighbor.my_snapshot_boot_time))
@@ -253,14 +258,10 @@ class Neighbor:
         self.sync_timer = None
         self.neighbor_state = Unknown
 
-        #(my_snapshot_sn, my_snapshot_mrt) = contact_interface.snapshot_multicast_routing_table()
-        #self.my_snapshot_sequencer = my_snapshot_sn # TODO
-        #self.my_snapshot_multicast_routing_table = my_snapshot_mrt.values() # TODO
-        #self.my_snapshot_trees = my_snapshot_mrt.keys() # TODO
+        # Information of my snapshot
         self.my_snapshot_boot_time = my_interface_boot_time
         self.my_snapshot_sequencer = 0
         self.my_snapshot_multicast_routing_table = []
-        self.my_snapshot_trees = []
 
     ######################################################################
     # Checkpoint SN
@@ -345,7 +346,6 @@ class Neighbor:
         self.my_snapshot_boot_time = my_snapshot_bt
         self.my_snapshot_sequencer = my_snapshot_sn
         self.my_snapshot_multicast_routing_table = list(my_snapshot_mrt.values())
-        self.my_snapshot_trees = list(my_snapshot_mrt.keys())
 
     def recv_hello(self, boot_time, holdtime, checkpoint_sn):
         if boot_time < self.time_of_boot:

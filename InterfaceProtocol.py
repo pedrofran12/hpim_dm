@@ -1,21 +1,36 @@
 import random
 from Interface import Interface
-from Packet.PacketProtocolAck import PacketProtocolAck
-from Packet.ReceivedPacket import ReceivedPacket
 import Main
 import traceback
-from Packet.PacketProtocolHelloOptions import *
-from Packet.PacketProtocolHello import PacketProtocolHello
-from Packet.PacketProtocolHeader import PacketProtocolHeader
+from tree.globals import MSG_FORMAT
+if MSG_FORMAT == "BINARY":
+    from Packet.PacketProtocolHelloOptions import PacketNewProtocolHelloHoldtime as PacketProtocolHelloHoldtime, \
+        PacketNewProtocolHelloCheckpointSN as PacketProtocolHelloCheckpointSN
+    from Packet.PacketProtocolHello import PacketNewProtocolHello as PacketProtocolHello
+    from Packet.PacketProtocolHeader import PacketNewProtocolHeader as PacketProtocolHeader
+    from Packet.PacketProtocolSync import PacketNewProtocolSyncEntry as PacketProtocolHelloSyncEntry,\
+        PacketNewProtocolSync as PacketProtocolHelloSync
+    from Packet.PacketProtocolInterest import PacketNewProtocolNoInterest as PacketProtocolNoInterest,\
+        PacketNewProtocolInterest as PacketProtocolInterest
+    from Packet.PacketProtocolSetTree import PacketNewProtocolUpstream as PacketProtocolUpstream
+    from Packet.PacketProtocolRemoveTree import PacketNewProtocolNoLongerUpstream as PacketProtocolNoLongerUpstream
+    from Packet.PacketProtocolAck import PacketNewProtocolAck as PacketProtocolAck
+else:
+    from Packet.PacketProtocolHelloOptions import PacketProtocolHelloHoldtime, PacketProtocolHelloCheckpointSN
+    from Packet.PacketProtocolHello import PacketProtocolHello
+    from Packet.PacketProtocolHeader import PacketProtocolHeader
+    from Packet.PacketProtocolSync import PacketProtocolHelloSync
+    from Packet.PacketProtocolSetTree import PacketProtocolUpstream
+    from Packet.PacketProtocolInterest import PacketProtocolNoInterest, PacketProtocolInterest
+    from Packet.PacketProtocolSync import PacketProtocolHelloSyncEntry
+    from Packet.PacketProtocolRemoveTree import PacketProtocolNoLongerUpstream
+    from Packet.PacketProtocolAck import PacketProtocolAck
+
+from Packet.ReceivedPacket import ReceivedPacket
 from Packet.Packet import Packet
 from utils import HELLO_HOLD_TIME_TIMEOUT
 from threading import Timer, RLock
 
-from Packet.PacketProtocolSync import PacketProtocolHelloSyncEntry
-from Packet.PacketProtocolSetTree import PacketProtocolUpstream
-from Packet.PacketProtocolRemoveTree import PacketProtocolNoLongerUpstream
-from Packet.PacketProtocolInterest import PacketProtocolNoInterest, PacketProtocolInterest
-from Packet.PacketProtocolSync import PacketProtocolHelloSync
 from ReliableMsgTransmission import ReliableMessageTransmission
 
 import socket
@@ -499,7 +514,7 @@ class InterfaceProtocol(Interface):
                     #Main.kernel.get_routing_entry(source_group, create_if_not_existent=False).recv_ack_msg(self.vif_index, packet)
 
 
-
+    '''
     PKT_FUNCTIONS = {
         "HELLO": receive_hello,
         "INTEREST": receive_interest,
@@ -510,6 +525,18 @@ class InterfaceProtocol(Interface):
 
         "SYNC": receive_sync,
     }
+    '''
+
+    PKT_FUNCTIONS = {
+        PacketProtocolHello.PIM_TYPE:            receive_hello,
+        PacketProtocolHelloSync.PIM_TYPE:        receive_sync,
+        PacketProtocolUpstream.PIM_TYPE:         receive_i_am_upstream,
+        PacketProtocolNoLongerUpstream.PIM_TYPE: receive_i_am_no_longer_upstream,
+        PacketProtocolInterest.PIM_TYPE:         receive_interest,
+        PacketProtocolNoInterest.PIM_TYPE:       receive_no_interest,
+        PacketProtocolAck.PIM_TYPE:              receive_ack,
+    }
+
 
     ########################################################################
     # Message Transmission

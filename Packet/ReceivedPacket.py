@@ -1,11 +1,16 @@
 from Packet.Packet import Packet
 from Packet.PacketIpHeader import PacketIpHeader
 from Packet.PacketIGMPHeader import PacketIGMPHeader
-#from .PacketProtocolHeader import PacketProtocolHeader
-from .PacketProtocolHeader import PacketNewProtocolHeader as PacketProtocolHeader
+from tree.globals import MSG_FORMAT
 from utils import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from Interface import Interface
+
+if MSG_FORMAT == "BINARY":
+    from .PacketProtocolHeader import PacketNewProtocolHeader as PacketProtocolHeader
+else:
+    from .PacketProtocolHeader import PacketProtocolHeader
 
 
 class ReceivedPacket(Packet):

@@ -100,8 +100,6 @@ class PacketProtocolHelloUnknown(PacketProtocolHelloOptions):
         return PacketProtocolHelloUnknown(type)
 
 
-
-
 JSON_MSG_TYPES = {"HOLDTIME": PacketProtocolHelloHoldtime,
                  "CHECKPOINT_SN": PacketProtocolHelloCheckpointSN,
                  }
@@ -109,6 +107,7 @@ JSON_MSG_TYPES = {"HOLDTIME": PacketProtocolHelloHoldtime,
 
 
 class PacketNewProtocolHelloOptions(metaclass=ABCMeta):
+    TYPE = "UNKNOWN"
     PIM_HDR_OPTS = "! HH"
     PIM_HDR_OPTS_LEN = struct.calcsize(PIM_HDR_OPTS)
     '''
@@ -140,6 +139,7 @@ class PacketNewProtocolHelloOptions(metaclass=ABCMeta):
 
 
 class PacketNewProtocolHelloHoldtime(PacketNewProtocolHelloOptions):
+    TYPE = "HOLDTIME"
     PIM_HDR_OPT = "! H"
     PIM_HDR_OPT_LEN = struct.calcsize(PIM_HDR_OPT)
     '''
@@ -167,6 +167,7 @@ class PacketNewProtocolHelloHoldtime(PacketNewProtocolHelloOptions):
 
 
 class PacketNewProtocolHelloCheckpointSN(PacketNewProtocolHelloOptions):
+    TYPE = "CHECKPOINT_SN"
     PIM_HDR_OPT = "! L"
     PIM_HDR_OPT_LEN = struct.calcsize(PIM_HDR_OPT)
     '''
@@ -194,6 +195,7 @@ class PacketNewProtocolHelloCheckpointSN(PacketNewProtocolHelloOptions):
 
 
 class PacketNewProtocolHelloUnknown(PacketNewProtocolHelloOptions):
+    TYPE = "UNKNOWN"
     PIM_HDR_OPT = "! L"
     PIM_HDR_OPT_LEN = struct.calcsize(PIM_HDR_OPT)
     '''
