@@ -64,7 +64,7 @@ local DEBUG = debug_level.LEVEL_1
 local default_settings =
 {
     debug_level  = DEBUG,
-    proto         = 103,
+    proto_number = 103,
     heur_enabled = false,
 }
 
@@ -140,20 +140,20 @@ assert(ProtoExpert.new, "Wireshark does not have the ProtoExpert class, so it's 
 
 ----------------------------------------
 -- creates a Proto object, but doesn't register it yet
-local dns = Proto("sfmr","New Multicast Protocol")
+local protocol = Proto("sfmr","New Multicast Protocol")
 
 ----------------------------------------
-local pf_boot_time = ProtoField.new("Boot Time", "sfmr.boot_time", ftypes.UINT32)
-local pf_tree_source = ProtoField.new("Source", "sfmr.options.tree_source", ftypes.IPv4)
-local pf_tree_group = ProtoField.new("Group", "sfmr.options.tree_group", ftypes.IPv4)
-local pf_hello_holdtime = ProtoField.new("Holdtime", "sfmr.options.hello_holdtime", ftypes.UINT16)
-local pf_assert_metric = ProtoField.new("Metric", "sfmr.options.assert_metric", ftypes.UINT32)
-local pf_assert_metric_preference = ProtoField.new("Metric Preference", "sfmr.options.assert_metric_preference", ftypes.UINT32)
-local pf_neighbor_boot_time = ProtoField.new("Neighbor Boot Time", "sfmr.options.neighbor_boot_time", ftypes.UINT32)
-local pf_sequence_number = ProtoField.new("SequenceNumber", "sfmr.options.sequence_number", ftypes.UINT32)
-local pf_my_snapshot_sequence_number = ProtoField.new("My Snapshot Sequence Number", "sfmr.options.my_snapshot_sequence_number", ftypes.UINT32)
+local pf_boot_time                         = ProtoField.new("Boot Time", "sfmr.boot_time", ftypes.UINT32)
+local pf_tree_source                       = ProtoField.new("Source", "sfmr.options.tree_source", ftypes.IPv4)
+local pf_tree_group                        = ProtoField.new("Group", "sfmr.options.tree_group", ftypes.IPv4)
+local pf_hello_holdtime                    = ProtoField.new("Holdtime", "sfmr.options.hello_holdtime", ftypes.UINT16)
+local pf_assert_metric                     = ProtoField.new("Metric", "sfmr.options.assert_metric", ftypes.UINT32)
+local pf_assert_metric_preference          = ProtoField.new("Metric Preference", "sfmr.options.assert_metric_preference", ftypes.UINT32)
+local pf_neighbor_boot_time                = ProtoField.new("Neighbor Boot Time", "sfmr.options.neighbor_boot_time", ftypes.UINT32)
+local pf_sequence_number                   = ProtoField.new("SequenceNumber", "sfmr.options.sequence_number", ftypes.UINT32)
+local pf_my_snapshot_sequence_number       = ProtoField.new("My Snapshot Sequence Number", "sfmr.options.my_snapshot_sequence_number", ftypes.UINT32)
 local pf_neighbor_snapshot_sequence_number = ProtoField.new("Neighbor Snapshot Sequence Number", "sfmr.options.neighbor_snapshot_sequence_number", ftypes.UINT32)
-local pf_checkpoint_sequence_number = ProtoField.new("Checkpoint Sequence Number", "sfmr.options.checkpoint_sequence_number", ftypes.UINT32)
+local pf_checkpoint_sequence_number        = ProtoField.new("Checkpoint Sequence Number", "sfmr.options.checkpoint_sequence_number", ftypes.UINT32)
 
 packet_type = {
   [0] = "HELLO", 
@@ -169,19 +169,18 @@ packet_type = {
 -- note the "base" argument becomes the size of the bitmask'ed field when ftypes.BOOLEAN is used
 -- the "mask" argument is which bits we want to use for this field (e.g., base=16 and mask=0x8000 means we want the top bit of a 16-bit field)
 -- again the following shows different ways of doing the same thing basically
-local pf_version                    = ProtoField.new   ("Version", "sfmr.version", ftypes.UINT8, nil, base.DEC, 0xF0)
-local pf_type                       = ProtoField.new   ("Type", "sfmr.type", ftypes.UINT8, packet_type, base.DEC, 0x0F)
-local pf_master_flag                = ProtoField.new   ("Master flag", "sfmr.options.master_flag", ftypes.BOOLEAN, nil, 32, 0x080000000)
-local pf_more_flag                  = ProtoField.new   ("More flag", "sfmr.options.more_flag", ftypes.BOOLEAN, nil, 32, 0x040000000)
-local pf_sync_sequence_number       = ProtoField.new   ("Sync Sequence Number", "sfmr.options.sync_sequence_number", ftypes.UINT32, nil, base.DEC, 0x3FFFFFFF)
-local pf_flag_opcode                = ProtoField.new   ("Opcode", "mydns.flags.opcode", ftypes.UINT16, nil, base.DEC, 0x7800, "operation code")
+local pf_version                    = ProtoField.new("Version", "sfmr.version", ftypes.UINT8, nil, base.DEC, 0xF0)
+local pf_type                       = ProtoField.new("Type", "sfmr.type", ftypes.UINT8, packet_type, base.DEC, 0x0F)
+local pf_master_flag                = ProtoField.new("Master flag", "sfmr.options.master_flag", ftypes.BOOLEAN, nil, 32, 0x080000000)
+local pf_more_flag                  = ProtoField.new("More flag", "sfmr.options.more_flag", ftypes.BOOLEAN, nil, 32, 0x040000000)
+local pf_sync_sequence_number       = ProtoField.new("Sync Sequence Number", "sfmr.options.sync_sequence_number", ftypes.UINT32, nil, base.DEC, 0x3FFFFFFF)
 
 ----------------------------------------
 -- this actually registers the ProtoFields above, into our new Protocol
 -- in a real script I wouldn't do it this way; I'd build a table of fields programmatically
--- and then set dns.fields to it, so as to avoid forgetting a field
+-- and then set protocol.fields to it, so as to avoid forgetting a field
 
-dns.fields = {pf_version, pf_type, pf_boot_time, pf_tree_source, pf_tree_group, pf_assert_metric,
+protocol.fields = {pf_version, pf_type, pf_boot_time, pf_tree_source, pf_tree_group, pf_assert_metric,
       pf_assert_metric_preference, pf_hello_holdtime,
       pf_sequence_number, pf_my_snapshot_sequence_number,
       pf_neighbor_snapshot_sequence_number, pf_sync_sequence_number, pf_master_flag,
@@ -202,37 +201,38 @@ local debug_pref_enum = {
     { 3,  "Level 2",  debug_level.LEVEL_2  },
 }
 
-dns.prefs.debug = Pref.enum("Debug", default_settings.debug_level,
+protocol.prefs.debug = Pref.enum("Debug", default_settings.debug_level,
                             "The debug printing level", debug_pref_enum)
 
-dns.prefs.port  = Pref.uint("Port number", default_settings.port,
-                            "The UDP port number for MyDNS")
+protocol.prefs.proto_number  = Pref.uint("Protocol number", default_settings.proto_number,
+                            "Protocol number at the IP header for NewProtocol")
 
-dns.prefs.heur  = Pref.bool("Heuristic enabled", default_settings.heur_enabled,
-                            "Whether heuristic dissection is enabled or not")
+--protocol.prefs.heur  = Pref.bool("Heuristic enabled", default_settings.heur_enabled,
+--                           "Whether heuristic dissection is enabled or not")
 
 ----------------------------------------
 -- a function for handling prefs being changed
-function dns.prefs_changed()
+function protocol.prefs_changed()
     dprint2("prefs_changed called")
 
-    default_settings.debug_level  = dns.prefs.debug
+    default_settings.debug_level  = protocol.prefs.debug
     reset_debug_level()
 
-    default_settings.heur_enabled = dns.prefs.heur
+    --default_settings.heur_enabled = protocol.prefs.heur
 
-    if default_settings.port ~= dns.prefs.port then
+    if default_settings.proto_number ~= protocol.prefs.proto_number then
         -- remove old one, if not 0
-        if default_settings.port ~= 0 then
-            dprint2("removing MyDNS from port",default_settings.port)
-            DissectorTable.get("udp.port"):remove(default_settings.port, dns)
+        if default_settings.proto_number ~= 0 then
+            dprint2("removing NewProtocol from Protocol Number",default_settings.proto_number)
+            DissectorTable.get("ip.proto"):remove(default_settings.proto_number, protocol)
+            
         end
         -- set our new default
-        default_settings.port = dns.prefs.port
+        default_settings.proto_number = protocol.prefs.proto_number
         -- add new one, if not 0
-        if default_settings.port ~= 0 then
-            dprint2("adding MyDNS to port",default_settings.port)
-            DissectorTable.get("udp.port"):add(default_settings.port, dns)
+        if default_settings.proto_number ~= 0 then
+            dprint2("adding NewProtocol to Protocol Number",default_settings.proto_number)
+            DissectorTable.get("ip.proto"):add(default_settings.proto_number, protocol)
         end
     end
 
@@ -243,12 +243,9 @@ dprint2("SFMR Prefs registered")
 
 ----------------------------------------
 ---- some constants for later use ----
--- the DNS header size
-local DNS_HDR_LEN = 12
+-- the Prtocol header size
+local PROTOCOL_HDR_LEN = 8
 
--- the smallest possible DNS query field size
--- has to be at least a label length octet, label character, label null terminator, 2-bytes type and 2-bytes class
-local MIN_QUERY_LEN = 7
 
 ----------------------------------------
 
@@ -256,30 +253,28 @@ local MIN_QUERY_LEN = 7
 
 ----------------------------------------
 -- The following creates the callback function for the dissector.
--- It's the same as doing "dns.dissector = function (tvbuf,pkt,root)"
+-- It's the same as doing "protocol.dissector = function (tvbuf,pkt,root)"
 -- The 'tvbuf' is a Tvb object, 'pktinfo' is a Pinfo object, and 'root' is a TreeItem object.
 -- Whenever Wireshark dissects a packet that our Proto is hooked into, it will call
 -- this function and pass it these arguments for the packet it's dissecting.
-function dns.dissector(tvbuf,pktinfo,root)
-    dprint2("dns.dissector called")
+function protocol.dissector(tvbuf,pktinfo,root)
+    dprint2("protocol.dissector called")
 
     -- set the protocol column to show our protocol name
     pktinfo.cols.protocol:set("SFMR")
 
     -- We want to check that the packet size is rational during dissection, so let's get the length of the
     -- packet buffer (Tvb).
-    -- Because DNS has no additional payload data other than itself, and it rides on UDP without padding,
-    -- we can use tvb:len() or tvb:reported_len() here; but I prefer tvb:reported_length_remaining() as it's safer.
     local pktlen = tvbuf:reported_length_remaining()
 
     -- We start by adding our protocol to the dissection display tree.
     -- A call to tree:add() returns the child created, so we can add more "under" it using that return value.
     -- The second argument is how much of the buffer/packet this added tree item covers/represents - in this
-    -- case (DNS protocol) that's the remainder of the packet.
-    local tree = root:add(dns, tvbuf:range(0,pktlen))
+    -- case (multicast routing protocol) that's the remainder of the packet.
+    local tree = root:add(protocol, tvbuf:range(0,pktlen))
 
     -- now let's check it's not too short
-    if pktlen < DNS_HDR_LEN then
+    if pktlen < PROTOCOL_HDR_LEN then
         -- since we're going to add this protocol to a specific UDP port, we're going to
         -- assume packets in this port are our protocol, so the packet being too short is an error
         -- the old way: tree:add_expert_info(PI_MALFORMED, PI_ERROR, "packet too short")
@@ -291,8 +286,9 @@ function dns.dissector(tvbuf,pktinfo,root)
     
     
 
-    -- Now let's add our transaction id under our dns protocol tree we just created.
-    -- The transaction id starts at offset 0, for 2 bytes length.
+    -- Now let's process the Protocol common Header.
+    -- The BootTime starts at offset 0, for 4 bytes length
+    -- The version and message type are the next fields to process, both starting at offset 4, for 1 byte length.
     tree:add(pf_boot_time, tvbuf:range(0,4))
     local version_and_type = tvbuf:range(4,1)
     local type = version_and_type:bitfield(4,4)
@@ -322,18 +318,21 @@ function dns.dissector(tvbuf,pktinfo,root)
     elseif msg_type == "INTEREST" or msg_type == "NO_INTEREST" or msg_type == "I_AM_NO_LONGER_UPSTREAM" then
       queries_tree:add(pf_tree_source, tvbuf:range(pos, 4))
       queries_tree:add(pf_tree_group, tvbuf:range(pos + 4, 4))
-      queries_tree:add(pf_sequence_number, tvbuf:range(pos + 8, 4))      
+      queries_tree:add(pf_sequence_number, tvbuf:range(pos + 8, 4))
+      pos = pos + 12
     elseif msg_type == "ACK" then
       queries_tree:add(pf_tree_source, tvbuf:range(pos, 4))
       queries_tree:add(pf_tree_group, tvbuf:range(pos + 4, 4))   
       queries_tree:add(pf_neighbor_boot_time, tvbuf:range(pos + 8, 4))
-      queries_tree:add(pf_sequence_number, tvbuf:range(pos + 12, 4))   
+      queries_tree:add(pf_sequence_number, tvbuf:range(pos + 12, 4))
+      pos = pos + 16
     elseif msg_type == "I_AM_UPSTREAM" then
       queries_tree:add(pf_tree_source, tvbuf:range(pos, 4))
       queries_tree:add(pf_tree_group, tvbuf:range(pos + 4, 4))   
       queries_tree:add(pf_sequence_number, tvbuf:range(pos + 8, 4))      
       queries_tree:add(pf_assert_metric_preference, tvbuf:range(pos + 12, 4))
       queries_tree:add(pf_assert_metric, tvbuf:range(pos + 16, 4))
+      pos = pos + 20
    elseif msg_type == "SYNC" then
       queries_tree:add(pf_my_snapshot_sequence_number, tvbuf:range(pos, 4))
       queries_tree:add(pf_neighbor_snapshot_sequence_number, tvbuf:range(pos + 4, 4))
@@ -344,7 +343,7 @@ function dns.dissector(tvbuf,pktinfo,root)
       pos = pos + 16
       local pktlen_remaining = pktlen - pos
       while pktlen_remaining > 0 do
-            local tree_info = queries_tree:add("Tree (".. string.format("%s",tvbuf:range(pos, 4):ipv4()) .. "," .. string.format("%s",tvbuf:range(pos + 4, 4):ipv4()) .. ")")    
+            local tree_info = queries_tree:add("Tree (".. string.format("%s",tvbuf:range(pos, 4):ipv4()) .. ", " .. string.format("%s",tvbuf:range(pos + 4, 4):ipv4()) .. ")")    
             tree_info:add(pf_tree_source, tvbuf:range(pos, 4))
             tree_info:add(pf_tree_group, tvbuf:range(pos + 4, 4))   
             tree_info:add(pf_assert_metric_preference, tvbuf:range(pos + 8, 4))
@@ -360,7 +359,7 @@ end
 ----------------------------------------
 -- we want to have our protocol dissection invoked for a specific IP Protocol Number,
 -- so get the IP dissector table and add our protocol to it
-DissectorTable.get("ip.proto"):add(default_settings.proto, dns)
+DissectorTable.get("ip.proto"):add(default_settings.proto_number, protocol)
 
 
 -- We're done!
