@@ -63,6 +63,8 @@ class MyDaemon(Daemon):
                     connection.sendall(pickle.dumps(Main.list_neighbors()))
                 elif 'list_state' in args and args.list_state:
                     connection.sendall(pickle.dumps(Main.list_state()))
+                elif 'list_neighbors_state' in args and args.list_neighbors_state:
+                    connection.sendall(pickle.dumps(Main.list_neighbors_state()))
                 elif 'list_sequence_numbers' in args and args.list_sequence_numbers:
                     connection.sendall(pickle.dumps(Main.list_sequence_numbers()))
                 elif 'add_interface' in args and args.add_interface:
@@ -107,6 +109,7 @@ if __name__ == "__main__":
     group.add_argument("-li", "--list_interfaces", action="store_true", default=False, help="List All Interfaces")
     group.add_argument("-ln", "--list_neighbors", action="store_true", default=False, help="List All Neighbors")
     group.add_argument("-ls", "--list_state", action="store_true", default=False, help="List state of IGMP and Multicast Routing Protocol")
+    group.add_argument("-lns", "--list_neighbors_state", action="store_true", default=False, help="List Upstream and Interest state of all neighbors")
     group.add_argument("-lsn", "--list_sequence_numbers", action="store_true", default=False, help="List Sequence Numbers")
     group.add_argument("-mr", "--multicast_routes", action="store_true", default=False, help="List Multicast Routing table")
     group.add_argument("-fid", "--flood_initial_data", action="store_true", default=False, help="Flood initial data packets")

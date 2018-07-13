@@ -98,3 +98,6 @@ class AssertMetric(Metric):
 
     def get_ip(self):
         return str(self._ip_address)
+
+    def __str__(self):
+        return "Metric Preference: " + str(self.metric_preference) + "; Metric: " + str(self.route_metric)

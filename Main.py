@@ -105,6 +105,24 @@ def list_sequence_numbers():
     table_txt += str(t)
     return str(table_txt)
 
+def list_neighbors_state():
+    interfaces_list = interfaces.values()
+    t = PrettyTable(['Interface', 'Neighbor', 'Tree', 'RPC Upstream State'])
+    for interface in interfaces_list:
+        for neighbor in interface.get_neighbors():
+            for (tree_id, tree_state) in neighbor.tree_metric_state.copy().items():
+                t.add_row([interface.interface_name, neighbor.ip, tree_id, tree_state])
+    table_txt = "Upstream state:\n" + str(t)
+
+    t = PrettyTable(['Interface', 'Neighbor', 'Tree', 'Interest State'])
+    for interface in interfaces_list:
+        for neighbor in interface.get_neighbors():
+            for (tree_id, tree_state) in neighbor.tree_state.copy().items():
+                t.add_row([interface.interface_name, neighbor.ip, tree_id, tree_state])
+    table_txt += "\n\n\nInterest state:\n" + str(t)
+    return str(table_txt)
+
+
 
 def list_routing_state():
     routing_entries = []

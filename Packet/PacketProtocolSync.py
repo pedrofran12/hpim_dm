@@ -166,7 +166,6 @@ class PacketNewProtocolSync:
         for t in self.upstream_trees:
             msg += t.bytes()
 
-        print("A ENVIAR SYNC:", self.my_snapshot_sn, self.neighbor_snapshot_sn, self.neighbor_boot_time, self.master_flag, self.more_flag)
         return msg
 
     def __len__(self):
@@ -183,7 +182,6 @@ class PacketNewProtocolSync:
         more_flag = (flags_and_sync_sn & 0x4FFFFFFF) >> 30
         data = data[PacketNewProtocolSync.PIM_HDR_INSTALL_WITHOUT_TREES_LEN:]
         sync_msg = PacketNewProtocolSync(my_snapshot_sn, neighbor_snapshot_sn, sync_sn, [], master_flag=master_flag, more_flag=more_flag, neighbor_boot_time=neighbor_boot_time)
-        print("A RECEBER SYNC:", my_snapshot_sn, neighbor_snapshot_sn, neighbor_boot_time, master_flag, more_flag)
         while data != b'':
             tree_msg = PacketNewProtocolSyncEntry.parse_bytes(data)
 
