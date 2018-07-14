@@ -252,7 +252,7 @@ class TreeInterfaceDownstream(TreeInterface):
     # Override
     def delete(self):
         super().delete()
-        self.cancel_message()
+        #self.cancel_message()
         self._my_assert_rpc = None
 
     def is_downstream(self):

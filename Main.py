@@ -5,6 +5,7 @@ import sys
 import logging, logging.handlers
 from TestLogger import RootFilter
 
+from tree import globals
 from Kernel import Kernel
 import UnicastRouting
 
@@ -26,6 +27,7 @@ def add_igmp_interface(interface_name):
 def remove_interface(interface_name, pim=False, igmp=False):
     kernel.remove_interface(interface_name, pim=pim, igmp=igmp)
 
+
 def list_neighbors():
     interfaces_list = interfaces.values()
     t = PrettyTable(['Interface', 'Neighbor IP', 'State', 'Hello Hold Time', "BootTime", "NeighborSnapshotSN", "Uptime"])
@@ -39,6 +41,7 @@ def list_neighbors():
                 [interface.interface_name, neighbor.ip, neighbor.neighbor_state.__name__, neighbor.hello_hold_time, neighbor.time_of_boot, neighbor.neighbor_snapshot_sn, time.strftime("%H:%M:%S", time.gmtime(uptime))])
     print(t)
     return str(t)
+
 
 def list_enabled_interfaces():
     global interfaces
@@ -81,7 +84,6 @@ def list_igmp_state():
     return str(t)
 
 
-
 def list_sequence_numbers():
     t = PrettyTable(['Interface', 'BootTime', 'InterfaceSN'])
     for (interface_name, interface_obj) in interfaces.copy().items():
@@ -105,6 +107,7 @@ def list_sequence_numbers():
     table_txt += str(t)
     return str(table_txt)
 
+
 def list_neighbors_state():
     interfaces_list = interfaces.values()
     t = PrettyTable(['Interface', 'Neighbor', 'Tree', 'RPC Upstream State'])
@@ -121,7 +124,6 @@ def list_neighbors_state():
                 t.add_row([interface.interface_name, neighbor.ip, tree_id, tree_state])
     table_txt += "\n\n\nInterest state:\n" + str(t)
     return str(table_txt)
-
 
 
 def list_routing_state():
@@ -158,6 +160,12 @@ def list_routing_state():
 
             t.add_row([ip, group, tree_state, interface_name, prune_state, assert_state, local_membership, is_forwarding])
     return str(t)
+
+
+def change_initial_flood_setting():
+    globals.INITIAL_FLOOD_ENABLED ^= True
+    kernel.recheck_all_trees_in_all_interfaces()
+    return "Flood is enabled?: " + str(globals.INITIAL_FLOOD_ENABLED)
 
 
 def stop():

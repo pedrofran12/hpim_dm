@@ -71,10 +71,7 @@ class MyDaemon(Daemon):
                     Main.add_protocol_interface(args.add_interface[0])
                     connection.shutdown(socket.SHUT_RDWR)
                 elif 'flood_initial_data' in args and args.flood_initial_data:
-                    from tree import globals
-                    globals.INITIAL_FLOOD_ENABLED ^= True
-                    Main.kernel.recheck_all_trees_in_all_interfaces()
-                    connection.sendall(pickle.dumps("Flood is enabled?: " + str(globals.INITIAL_FLOOD_ENABLED)))
+                    connection.sendall(pickle.dumps(Main.change_initial_flood_setting()))
                 elif 'add_interface_igmp' in args and args.add_interface_igmp:
                     Main.add_igmp_interface(args.add_interface_igmp[0])
                     connection.shutdown(socket.SHUT_RDWR)

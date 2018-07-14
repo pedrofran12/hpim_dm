@@ -122,7 +122,7 @@ class InterfaceProtocol(Interface):
 
     def get_sequence_number(self):
         with self.sequencer_lock:
-            self.sequencer+=1
+            self.sequencer += 1
 
             if self.sequencer == InterfaceProtocol.MAX_SEQUENCE_NUMBER:
                 self.time_of_boot = int(time.time())
@@ -268,6 +268,9 @@ class InterfaceProtocol(Interface):
     def did_all_neighbors_acked(self, neighbors_that_acked:set):
         #with self.neighbors_lock:
         return neighbors_that_acked >= self.neighbors.keys()
+
+    def is_neighbor(self, neighbor_ip):
+        return neighbor_ip in self.neighbors
 
     '''
     def get_neighbor(self, ip):
@@ -514,19 +517,6 @@ class InterfaceProtocol(Interface):
                     #Main.kernel.get_routing_entry(source_group, create_if_not_existent=False).recv_ack_msg(self.vif_index, packet)
 
 
-    '''
-    PKT_FUNCTIONS = {
-        "HELLO": receive_hello,
-        "INTEREST": receive_interest,
-        "NO_INTEREST": receive_no_interest,
-        "I_AM_UPSTREAM": receive_i_am_upstream,
-        "I_AM_NO_LONGER_UPSTREAM": receive_i_am_no_longer_upstream,
-        "ACK": receive_ack,
-
-        "SYNC": receive_sync,
-    }
-    '''
-
     PKT_FUNCTIONS = {
         PacketProtocolHello.PIM_TYPE:            receive_hello,
         PacketProtocolHelloSync.PIM_TYPE:        receive_sync,
@@ -587,10 +577,10 @@ class InterfaceProtocol(Interface):
             if tree in self.reliable_transmission_buffer:
                 self.reliable_transmission_buffer[tree].cancel_all_messages()
 
-    def cancel_interest_message(self, tree):
+    def cancel_interest_message(self, tree, neighbor_ip):
         with self.reliable_transmission_lock:
             if tree in self.reliable_transmission_buffer:
-                self.reliable_transmission_buffer[tree].cancel_message_unicast()
+                self.reliable_transmission_buffer[tree].cancel_message_unicast(neighbor_ip)
 
     def cancel_upstream_message(self, tree):
         with self.reliable_transmission_lock:

@@ -165,7 +165,7 @@ class TreeInterfaceUpstream(TreeInterface):
         self.socket_is_enabled = False
         self.socket_pkt.close()
         super().delete()
-        self.cancel_message()
+        #self.cancel_message()
 
     def is_downstream(self):
         return False
