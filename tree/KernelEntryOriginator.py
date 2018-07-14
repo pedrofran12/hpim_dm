@@ -143,29 +143,9 @@ class KernelEntryOriginator:
         print("recv data")
         self.interface_state[index].recv_data_msg()
 
-
     ###############################################################
-    # Check tree state (Active or Inactive or Unknown)
+    # Code related with tree state
     ###############################################################
-    '''
-    def check_interface_state(self):
-        root_interface = self.interface_state[self.inbound_interface_index]
-        if root_interface.has_upstream_neighbors():
-            self._tree_state.transition_to_active(self)
-        else:
-            for (index, interface) in self.interface_state.items():
-                if index != self.inbound_interface_index and interface.has_upstream_neighbors():
-                    self._tree_state.transition_to_inactive(self)
-                    return
-        self._tree_state.transition_to_unknown(self)
-    '''
-
-
-    #################
-    # MINHAS ALTERACOES
-    # TODO
-    # TODO
-    # TODO
     def sat_expires(self):
         self.sat_is_running = False
         self.check_tree_state()
@@ -223,9 +203,6 @@ class KernelEntryOriginator:
                 return None
             else:
                 return self.interface_state[vif_index].get_sync_state()
-
-    def are_there_upstream_nodes(self):
-        return not all(value is None for value in self._upstream_interface_state.values())
 
     ###############################################################
     # Unicast Changes to RPF
@@ -372,15 +349,18 @@ class KernelEntryOriginator:
                 return
 
             interest_state = False
+            upstream_state = None
             interface_name = Main.kernel.vif_index_to_name_dic.get(index, None)
             if interface_name in Main.kernel.protocol_interface:
                 (interest_state, upstream_state) = Main.kernel.protocol_interface.get(interface_name).get_tree_state(
                     (self.source_ip, self.group_ip))
 
             self._interest_interface_state[index] = interest_state
-            self._upstream_interface_state[index] = None
+            self._upstream_interface_state[index] = upstream_state
 
-            self.interface_state[index] = TreeInterfaceDownstream(self, index, self._rpc, interest_state=interest_state,
+            self.interface_state[index] = TreeInterfaceDownstream(self, index, self._rpc,
+                                                                  best_upstream_router=upstream_state,
+                                                                  interest_state=interest_state,
                                                                   was_root=False, previous_tree_state=self._tree_state,
                                                                   current_tree_state=self._tree_state)
 

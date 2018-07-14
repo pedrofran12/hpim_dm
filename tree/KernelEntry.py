@@ -168,12 +168,9 @@ class KernelEntry:
         print("recv data")
         self.interface_state[index].recv_data_msg()
 
-
-
-
-    #################
-    # Check state of interfaces
-    #################
+    ###############################################################
+    # Code related with tree state
+    ###############################################################
     def check_interface_state(self, index, upstream_state, interest_state):
         print("ENTROU CHECK INTERFACE STATE")
         self._upstream_interface_state[index] = upstream_state
@@ -199,7 +196,6 @@ class KernelEntry:
         self.interface_state[index].check_igmp_state()
         print("SAI CHECK IGMP STATE")
 
-
     def is_tree_active(self):
         with self.CHANGE_STATE_LOCK:
             return self._tree_state == ActiveTree
@@ -218,9 +214,6 @@ class KernelEntry:
                 return None
             else:
                 return self.interface_state[vif_index].get_sync_state()
-
-    def are_there_upstream_nodes(self):
-        return not all(value is None for value in self._upstream_interface_state.values())
 
     ###############################################################
     # Unicast Changes to RPF
@@ -378,15 +371,18 @@ class KernelEntry:
                 return
 
             interest_state = False
+            upstream_state = None
             interface_name = Main.kernel.vif_index_to_name_dic.get(index, None)
             if interface_name in Main.kernel.protocol_interface:
                 (interest_state, upstream_state) = Main.kernel.protocol_interface.get(interface_name).get_tree_state(
                     (self.source_ip, self.group_ip))
 
             self._interest_interface_state[index] = interest_state
-            self._upstream_interface_state[index] = None
+            self._upstream_interface_state[index] = upstream_state
 
-            self.interface_state[index] = TreeInterfaceDownstream(self, index, self._rpc, interest_state=interest_state,
+            self.interface_state[index] = TreeInterfaceDownstream(self, index, self._rpc,
+                                                                  best_upstream_router=upstream_state,
+                                                                  interest_state=interest_state,
                                                                   was_root=False, previous_tree_state=self._tree_state,
                                                                   current_tree_state=self._tree_state)
 

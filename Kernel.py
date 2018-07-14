@@ -312,37 +312,6 @@ class Kernel:
                 for interface in self.protocol_interface.values():
                     interface.remove_tree_state(kernel_entry.source_ip, kernel_entry.group_ip)
 
-            '''
-            for interface in self.protocol_interface.values():
-                interest_state = False
-                upstream_state = None
-                for n in list(interface.neighbors.values()):
-                    (neighbor_interest_state, neighbor_upstream_state) = n.get_tree_state(tree=(source_ip, group_ip))
-                    if not interest_state and neighbor_interest_state:
-                        interest_state = neighbor_interest_state
-
-                    if neighbor_upstream_state is not None:
-                        if upstream_state is None:
-                            upstream_state = neighbor_upstream_state
-                        elif neighbor_upstream_state.is_better_than(upstream_state):
-                            upstream_state = neighbor_upstream_state
-
-                tree_is_not_unknown = upstream_state is not None
-                if tree_is_not_unknown:
-                    if source_ip in self.routing:
-                        if group_ip in self.routing[source_ip]:
-                            kernel_entry = self.routing[source_ip][group_ip]
-                        else:
-                            kernel_entry = KernelEntry(source_ip, group_ip)
-                            self.routing[source_ip][group_ip] = kernel_entry
-                    else:
-                        kernel_entry = KernelEntry(source_ip, group_ip)
-                        self.routing[source_ip] = {group_ip: kernel_entry}
-                    kernel_entry.check_interface_state(interface.vif_index, upstream_state, interest_state)
-                '''
-
-
-
     def exit(self):
         self.running = False
 
@@ -448,9 +417,6 @@ class Kernel:
         except:
             return False
 
-
-
-
     ''' useless in PIM-DM... useful in PIM-SM
     def igmpmsg_wholepacket_handler(self, ip_src, ip_dst):
         #kernel_entry = self.routing[(ip_src, ip_dst)]
@@ -458,29 +424,6 @@ class Kernel:
         self.get_routing_entry(source_group_pair, create_if_not_existent=True).recv_data_msg()
         #kernel_entry.recv_data_msg(iif)
     '''
-
-
-    '''
-    def get_routing_entry(self, source_group: tuple, create_if_not_existent=True):
-        ip_src = source_group[0]
-        ip_dst = source_group[1]
-        with self.rwlock.genRlock():
-            if ip_src in self.routing and ip_dst in self.routing[ip_src]:
-                return self.routing[ip_src][ip_dst]
-
-        with self.rwlock.genWlock():
-            if ip_src in self.routing and ip_dst in self.routing[ip_src]:
-                return self.routing[ip_src][ip_dst]
-            elif create_if_not_existent:
-                kernel_entry = KernelEntry(ip_src, ip_dst)
-                if ip_src not in self.routing:
-                    self.routing[ip_src] = {}
-
-                self.routing[ip_src][ip_dst] = kernel_entry
-                return kernel_entry
-            else:
-                return None
-        '''
 
     # notify KernelEntries about changes at the unicast routing table
     def notify_unicast_changes(self, subnet):
@@ -491,10 +434,6 @@ class Kernel:
                     continue
                 for group_ip in list(self.routing[source_ip].keys()):
                     self.routing[source_ip][group_ip].network_update()
-
-
-
-
 
     def recv_install_or_uninstall_msg(self, source_group, interface: "InterfaceProtocol"):
         ip_src = source_group[0]
@@ -517,7 +456,6 @@ class Kernel:
                 interface.remove_tree_state(ip_src, ip_dst)
         print("SAIU RCV_INSTALL")
 
-
     def recv_interest_msg(self, source_group, interface: "InterfaceProtocol"):
         ip_src = source_group[0]
         ip_dst = source_group[1]
@@ -531,8 +469,6 @@ class Kernel:
             (interest_state, upstream_state) = interface.get_tree_state(source_group)
             self.routing[ip_src][ip_dst].check_interest_state(interface.vif_index, interest_state)
         print("SAIU RECV_INTEREST")
-
-
 
     def create_entry(self, ip_src, ip_dst):
         is_directly_connected = self.is_directly_connected(ip_src)
@@ -557,59 +493,6 @@ class Kernel:
             self.routing[ip_src][ip_dst] = KernelEntryOriginator(ip_src, ip_dst, upstream_state_dict, interest_state_dict)
         elif ip_dst not in self.routing[ip_src]:
             self.routing[ip_src][ip_dst] = KernelEntry(ip_src, ip_dst, upstream_state_dict, interest_state_dict)
-
-
-    # notify about changes at the interface (IP)
-    '''
-    def notify_interface_change(self, interface_name):
-        with self.interface_lock:
-            # check if interface was already added
-            if interface_name not in self.vif_name_to_index_dic:
-                return
-
-            print("trying to change ip")
-            pim_interface = self.pim_interface.get(interface_name)
-            if pim_interface:
-                old_ip = pim_interface.get_ip()
-                pim_interface.change_interface()
-                new_ip = pim_interface.get_ip()
-                if old_ip != new_ip:
-                    self.vif_dic[new_ip] = self.vif_dic.pop(old_ip)
-
-            igmp_interface = self.igmp_interface.get(interface_name)
-            if igmp_interface:
-                igmp_interface.change_interface()
-    '''
-
-    # Neighbor removal at interface vif_index
-    '''
-    def remove_tree(self, source, group):
-        print("ENTROU REMV_ENTRY")
-        with self.rwlock.genWlock():
-            if source in self.routing and group in self.routing[source]:
-                #self.routing[source][group].delete()
-                self.routing[source][group].remove_entry()
-    '''
-    '''
-    # Neighbor removal at interface vif_index
-    def interface_neighbor_removal(self, vif_index, other_neighbors_remain):
-        with self.rwlock.genRlock():
-            for groups_dict in self.routing.values():
-                for entry in groups_dict.values():
-                    entry.neighbor_removal(vif_index, other_neighbors_remain)
-    '''
-    '''
-    def new_neighbor(self, interface):
-        trees_to_sync = {}
-        vif_index = interface.vif_index
-        with self.rwlock.genWlock():
-            for (ip_src, src_dict) in self.routing.items():
-                for (ip_dst, kernel_entry) in self.routing[ip_src].items():
-                    tree = kernel_entry.get_interface_sync_state(vif_index)
-                    if tree is not None:
-                        trees_to_sync[(ip_src, ip_dst)] = tree
-            return trees_to_sync
-    '''
 
     def snapshot_multicast_routing_table(self, interface):
         trees_to_sync = {}
@@ -661,127 +544,3 @@ class Kernel:
     def recheck_all_trees_in_all_interfaces(self):
         for i in self.protocol_interface.values():
             self.recheck_all_trees(i)
-
-    '''
-        list_of_trees = []
-        pat = PacketProtocolActiveTrees()
-        with self.rwlock.genRlock():
-            for source_ip in self.routing.keys():
-                for group_ip in list(self.routing[source_ip].keys()):
-                    list_of_trees.append({"SOURCE": source_ip, "GROUP": group_ip})
-
-
-            if len(list_of_trees) == 0:
-                return
-
-            # TODO MELHORAR A ADICAO DE ARVORES
-            pat.trees = list_of_trees
-            pckt = Packet(payload=PacketProtocolHeader(payload=pat))
-            interface.send_reliably(data=pckt, group_ip=neighbor_ip)
-        return
-    '''
-
-    '''
-    def receive_active_trees(self, trees):
-        trees_to_confirm = set()
-        for tree in trees:
-            # first check if tree directly connected
-            (source, _) = tree
-            root_interface = self.protocol_interface[self.vif_index_to_name_dic[self.vif_dic[UnicastRouting.check_rpf(source)]]]  # type: InterfaceProtocol
-            netifaces_interface = netifaces.ifaddresses(root_interface.interface_name)[netifaces.AF_INET][0]
-            if ipaddress.ip_address(source) in ipaddress.ip_interface(netifaces_interface['addr'] + '/' + netifaces_interface['netmask']).network:
-                self.get_routing_entry(tree, create_if_not_existent=True)
-                continue
-
-            trees_to_confirm.add(tree)
-        self.flood_confirm_tree(trees_to_confirm)
-    '''
-    '''
-    def flood_confirm_tree(self, trees):
-        with self.rwlock.genRlock():
-            for tree in trees:
-                (source, group) = tree
-                print("tree:", source, group)
-                if source in self.routing and group in self.routing[source]:
-                    # check if I already know tree
-                    continue
-                pkt_confirm = PacketProtocolConfirm(source, group)
-                pkt = PacketProtocolHeader(payload=pkt_confirm)
-                for interface in self.protocol_interface.values():
-                    interface.send(pkt)
-
-    def receive_confirm(self, packet):
-        recv_interface = packet.interface
-        pkt_confirm = packet.payload.payload
-        source = pkt_confirm.source
-        group = pkt_confirm.group
-
-        root_interface = self.protocol_interface[self.vif_index_to_name_dic[self.vif_dic[UnicastRouting.check_rpf(source)]]] # type: InterfaceProtocol
-
-        netifaces_interface = netifaces.ifaddresses(root_interface.interface_name)[netifaces.AF_INET][0]
-        if ipaddress.ip_address(source) in ipaddress.ip_interface(netifaces_interface['addr'] + '/' + netifaces_interface['netmask']).network:
-            if source in self.routing and group in self.routing[source]:
-                pkt_set_tree = PacketProtocolSetTree(source, group)
-                pkt = PacketProtocolHeader(payload=pkt_set_tree)
-            else:
-                pkt_remove_tree = PacketProtocolRemoveTree(source, group)
-                pkt = PacketProtocolHeader(payload=pkt_remove_tree)
-            recv_interface.send_reliably(Packet(payload=pkt))
-        else:
-            # TODO SEND CONFIRM RELIABLY
-            #root_interface.send(packet.payload)
-            #root_interface.send(Packet(payload=packet.payload))
-            pkt = PacketProtocolHeader(payload=pkt_confirm)
-            root_interface.send_reliably(Packet(payload=pkt))
-
-
-    def receive_remove_tree(self, packet):
-        recv_interface = packet.interface
-        pkt_remove = packet.payload.payload
-        source = pkt_remove.source
-        group = pkt_remove.group
-
-        # todo melhoria: comparar pelo ip do rpf
-        root_interface = self.protocol_interface[self.vif_index_to_name_dic[self.vif_dic[UnicastRouting.check_rpf(source)]]] # type: InterfaceProtocol
-        if recv_interface != root_interface:
-            return
-
-
-        self.remove_tree(source, group)
-        # todo lock de interfaces
-        for interface in self.protocol_interface.values():
-            if interface == recv_interface:
-                continue
-
-            pkt = PacketProtocolHeader(payload=pkt_remove)
-            interface.send_reliably(Packet(payload=pkt))
-
-    def receive_set_tree(self, packet):
-        recv_interface = packet.interface
-        pkt_set_tree = packet.payload.payload
-        source = pkt_set_tree.source
-        group = pkt_set_tree.group
-
-        # todo melhoria: comparar pelo ip do rpf
-        root_interface = self.protocol_interface[self.vif_index_to_name_dic[self.vif_dic[UnicastRouting.check_rpf(source)]]] # type: InterfaceProtocol
-        if recv_interface != root_interface:
-            return
-
-        tree = self.get_routing_entry((source, group), create_if_not_existent=True)
-        # todo lock de interfaces
-        for interface in self.protocol_interface.values():
-            if interface == recv_interface:
-                continue
-
-            pkt = PacketProtocolHeader(payload=pkt_set_tree)
-            interface.send_reliably(Packet(payload=pkt))
-
-    '''
-    '''
-    # When new neighbor connects try to resend last state refresh msg (if AssertWinner)
-    def new_or_reset_neighbor(self, vif_index, neighbor_ip):
-        with self.rwlock.genRlock():
-            for groups_dict in self.routing.values():
-                for entry in groups_dict.values():
-                    entry.new_or_reset_neighbor(vif_index, neighbor_ip)
-    '''
