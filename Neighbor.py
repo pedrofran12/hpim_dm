@@ -1,6 +1,7 @@
 from threading import Timer
 import time
 from utils import HELLO_HOLD_TIME_NO_TIMEOUT, HELLO_HOLD_TIME_TIMEOUT, TYPE_CHECKING
+from tree.metric import AssertMetric
 from tree import globals
 if globals.MSG_FORMAT == "BINARY":
     from Packet.PacketProtocolAck import PacketNewProtocolAck as PacketProtocolAck
@@ -32,6 +33,7 @@ class NeighborState():
         neighbor.last_sequence_number.clear()
         neighbor.current_sync_sn = 0
         neighbor.neighbor_snapshot_sn = 0
+        neighbor.checkpoint_sn = 0
         #
 
         my_snapshot_mrt = neighbor.my_snapshot_multicast_routing_table[0:5]
@@ -221,6 +223,7 @@ class Unknown(NeighborState):
             neighbor.last_sequence_number.clear()
             neighbor.current_sync_sn = 0
             neighbor.neighbor_snapshot_sn = 0
+            neighbor.checkpoint_sn = 0
             #
 
             Master.recv_sync(neighbor, tree_state, my_snapshot_sn, neighbor_snapshot_sn, sync_sn, master_bit, more_bit)
@@ -232,12 +235,14 @@ class Neighbor:
     RETRANSMISSION_TIMEOUT = 10
     GARBAGE_COLLECT_TIMEOUT = 120
 
-    def __init__(self, contact_interface: "InterfaceProtocol", ip, hello_hold_time: int, neighbor_time_of_boot=0, my_interface_boot_time = 0):
+    def __init__(self, contact_interface: "InterfaceProtocol", ip, hello_hold_time: int, neighbor_time_of_boot=0,
+                 my_interface_boot_time = 0):
         if hello_hold_time == HELLO_HOLD_TIME_TIMEOUT:
             raise Exception
         self.contact_interface = contact_interface
         self.ip = ip
         self.time_of_boot = neighbor_time_of_boot
+        self.neighbor_snapshot_sn = 0
 
         self.neighbor_liveness_timer = None
         self.hello_hold_time = None
@@ -252,11 +257,13 @@ class Neighbor:
 
         # Control if received control packets should be processed
         # Used to detect msg retransmissions and out of order reception
-        self.neighbor_snapshot_sn = 0
         self.last_sequence_number = {}
 
         self.sync_timer = None
         self.neighbor_state = Unknown
+
+        # checkpoint sn
+        self.checkpoint_sn = 0
 
         # Information of my snapshot
         self.my_snapshot_boot_time = my_interface_boot_time
@@ -300,22 +307,14 @@ class Neighbor:
         self.neighbor_state = state
         if state == Updated:
             import Main
-            #Main.kernel.recv_ack_sync(self.ip, self.my_snapshot_trees, self.my_snapshot_sequencer, self.contact_interface)
-            self.contact_interface.neighbor_finished_synchronization(self.ip, self.my_snapshot_boot_time, self.my_snapshot_sequencer)
             Main.kernel.recheck_all_trees(self.contact_interface)
-            self.contact_interface.set_are_synchronizing()
-            # inform about ack... nao sei se é aqui
-        else:
-            self.contact_interface.set_are_synchronizing()
-
 
     def install_tree_state(self, tree_state:list):
-        #self.tree_state.clear()
-        #self.tree_metric_state.clear()
-        #self.last_sequence_number.clear()
         for t in tree_state:
-            from tree.metric import AssertMetric
             tree_id = (t.source, t.group)
+            if self.last_sequence_number.get(tree_id, 0) > self.neighbor_snapshot_sn:
+                continue
+
             self.tree_metric_state[tree_id] = AssertMetric(metric_preference=t.metric_preference, route_metric=t.metric, ip_address=self.ip)
 
     def remove_tree_state(self, source, group):
@@ -346,6 +345,7 @@ class Neighbor:
         self.my_snapshot_boot_time = my_snapshot_bt
         self.my_snapshot_sequencer = my_snapshot_sn
         self.my_snapshot_multicast_routing_table = list(my_snapshot_mrt.values())
+        self.contact_interface.neighbor_start_synchronization(self.ip, my_snapshot_bt, my_snapshot_sn)
 
     def recv_hello(self, boot_time, holdtime, checkpoint_sn):
         if boot_time < self.time_of_boot:
@@ -364,8 +364,10 @@ class Neighbor:
             self.set_hello_hold_time(holdtime)
 
     def set_checkpoint_sn(self, checkpoint_sn):
-        if checkpoint_sn > self.neighbor_snapshot_sn:
-            self.neighbor_snapshot_sn = checkpoint_sn
+        #if checkpoint_sn > self.neighbor_snapshot_sn:
+        #    self.neighbor_snapshot_sn = checkpoint_sn
+        if checkpoint_sn > self.checkpoint_sn:
+            self.checkpoint_sn = checkpoint_sn
 
             to_remove = {k for k,v in self.last_sequence_number.items() if v <= checkpoint_sn}
             for k in to_remove:
@@ -377,7 +379,6 @@ class Neighbor:
         elif boot_time > self.time_of_boot or own_interface_boot_time > self.my_snapshot_boot_time:
             self.time_of_boot = boot_time
             self.neighbor_snapshot_sn = 0
-            #self.start_sync_process(True)
             self.neighbor_state.new_neighbor_or_adjacency_reset(self)
             return
 
@@ -392,17 +393,13 @@ class Neighbor:
             upstream_state = self.tree_metric_state.get(tree, None)
             interest_state = False
             if upstream_state is None:
-                #interest_state = self.tree_state.get(tree, True)
                 interest_state = self.tree_state.get(tree, globals.INITIAL_FLOOD_ENABLED)
             print("INTEREST NEIGHBOR ", self.ip, ":", interest_state)
             print("UPSTREAM NEIGHBOR ", self.ip, ":", upstream_state)
             return (interest_state, upstream_state)
 
+    # decide if should process control packet
     def recv_reliable_packet(self, sn, tree, boot_time):
-        if self.neighbor_state != Updated:
-            # do not interpret message during sync
-            return False
-
         if boot_time < self.time_of_boot:
             return False
         elif boot_time > self.time_of_boot:
@@ -411,16 +408,26 @@ class Neighbor:
             self.start_sync_process()
             return False
 
+        #if self.neighbor_state != Updated:
+            # do not interpret message during sync
+            #return False
+        if self.neighbor_state == Unknown or self.current_sync_sn == 0:
+            #do not interpret control message without having the guarantee of
+            # correct <NeighborBootTime; NeighborSnapshotSN> pair
+            return False
+
         last_received_sn = self.last_sequence_number.get(tree, 0)
 
-        if sn <= self.neighbor_snapshot_sn:
+        if sn <= self.neighbor_snapshot_sn or sn <= self.checkpoint_sn:
             # dont deliver to application
             print("RCVD ", sn)
             print("NSSN ", self.neighbor_snapshot_sn)
             return False
         elif sn >= last_received_sn:
             (source, group) = tree
-            ack = PacketProtocolAck(source, group, sn, boot_time)
+            ack = PacketProtocolAck(source, group, sn, neighbor_boot_time=boot_time,
+                                    neighbor_snapshot_sn=self.neighbor_snapshot_sn,
+                                    my_snapshot_sn=self.my_snapshot_sequencer)
             ph = PacketProtocolHeader(ack, boot_time=self.contact_interface.time_of_boot)
             packet = Packet(payload=ph)
             self.contact_interface.send(packet, self.ip)
@@ -435,6 +442,19 @@ class Neighbor:
         print("RCVD ", sn)
         print("LAST TREE SN ", last_received_sn)
         return False
+
+    # decide if should process ack packet
+    def recv_ack(self, my_boot_time, neighbor_boot_time, my_snapshot_sn, neighbor_snapshot):
+        if neighbor_boot_time < self.time_of_boot:
+            return False
+        elif neighbor_boot_time > self.time_of_boot:
+            self.time_of_boot = neighbor_boot_time
+            self.neighbor_snapshot_sn = 0
+            self.start_sync_process()
+            return False
+
+        return self.neighbor_state != Unknown and self.current_sync_sn > 0 and self.my_snapshot_boot_time == my_boot_time and self.time_of_boot == neighbor_boot_time and\
+               self.my_snapshot_sequencer == my_snapshot_sn and self.neighbor_snapshot_sn == neighbor_snapshot
 
     ################################################################################################
 

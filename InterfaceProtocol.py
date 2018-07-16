@@ -1,5 +1,6 @@
 import random
 from Interface import Interface
+from Neighbor import Neighbor
 import Main
 import traceback
 from tree.globals import MSG_FORMAT
@@ -48,23 +49,15 @@ class InterfaceProtocol(Interface):
 
 
     def __init__(self, interface_name: str, vif_index:int):
-        # generation id
-        #self.generation_id = random.getrandbits(32)
+        # Generate BootTime
         self.time_of_boot = int(time.time())
 
         # Regulate transmission of Hello messages
         self.hello_timer = None
 
-        # Synchronization period (discover active trees)
-        #self.synchronization_period = Timer(2 * InterfaceProtocol.HELLO_PERIOD, self.synchronization_period_ended)
-        #self.synchronization_period.start()
-        #self.trees_discovered_during_synchronization = set()
-
         # protocol neighbors
         self._had_neighbors = False
         self.neighbors = {}
-        self.neighbors_are_synchronizing = False
-        #self.neighbors_lock = RWLockWrite()
         self.neighbors_lock = RLock()
 
         # reliable transmission buffer
@@ -113,12 +106,8 @@ class InterfaceProtocol(Interface):
             packet = ReceivedPacket(raw_bytes, self)
             self.PKT_FUNCTIONS[packet.payload.get_pim_type()](self, packet)
 
-
     def send(self, data: Packet, group_ip: str=MCAST_GRP):
-        if self.neighbors_are_synchronizing and data.payload.get_pim_type() in ("I_AM_UPSTREAM", "I_AM_NO_LONGER_UPSTREAM"):
-            return
         super().send(data=data.bytes(), group_ip=group_ip)
-
 
     def get_sequence_number(self):
         with self.sequencer_lock:
@@ -160,14 +149,6 @@ class InterfaceProtocol(Interface):
 
                     print("A SAIR CHECK_SN")
                     return (time_of_boot, checkpoint_sn)
-
-    def set_are_synchronizing(self):
-        with self.neighbors_lock:
-            for n in self.neighbors.values():
-                if n.is_syncing():
-                    self.neighbors_are_synchronizing = True
-                    return
-            self.neighbors_are_synchronizing = False
 
     #########################
     # Check neighbor status
@@ -316,15 +297,10 @@ class InterfaceProtocol(Interface):
     ###########################################
     def new_neighbor(self, neighbor_ip, boot_time, detected_via_non_sync_msg=True):
         with self.neighbors_lock:
-            from Neighbor import Neighbor
-
             self.neighbors[neighbor_ip] = Neighbor(self, neighbor_ip, 120, boot_time, self.time_of_boot)
-            self.set_are_synchronizing()
 
             if detected_via_non_sync_msg:
                 self.neighbors[neighbor_ip].start_sync_process()
-            #self.neighbors[neighbor_ip].start_sync_process(new_neighbor=force_sync_process)
-
 
     def receive_hello(self, packet):
         ip = packet.ip_header.ip_src
@@ -362,7 +338,6 @@ class InterfaceProtocol(Interface):
 
         with self.neighbors_lock:
             if ip not in self.neighbors:
-                #self.neighbors[ip] = Neighbor(self, ip, 0, 30, boot_time)
                 self.new_neighbor(ip, boot_time, detected_via_non_sync_msg=False)
 
             self.neighbors[ip].recv_sync(upstream_trees, my_sn, neighbor_sn, boot_time, sync_sn, master_flag, more_flag, my_boot_time)
@@ -435,7 +410,7 @@ class InterfaceProtocol(Interface):
         boot_time = packet.payload.boot_time
         pkt_jt = packet.payload.payload # type: PacketProtocolUpstream
 
-        # Process Install msg
+        # Process IamUpstream msg
         source_group = (pkt_jt.source, pkt_jt.group)
         sequence_number = pkt_jt.sequence_number
 
@@ -464,7 +439,7 @@ class InterfaceProtocol(Interface):
         boot_time = packet.payload.boot_time
         pkt_jt = packet.payload.payload
 
-        # Process Uninstall msg
+        # Process IamNoLongerUpstream msg
         source_group = (pkt_jt.source, pkt_jt.group)
         sequence_number = pkt_jt.sequence_number
 
@@ -488,33 +463,36 @@ class InterfaceProtocol(Interface):
 
     def receive_ack(self, packet):
         neighbor_source_ip = packet.ip_header.ip_src
-        boot_time = packet.payload.boot_time
+        neighbor_boot_time = packet.payload.boot_time
         pkt_ack = packet.payload.payload  # type: PacketProtocolAck
 
         # Process Ack msg
         source_group = (pkt_ack.source, pkt_ack.group)
         my_boot_time = pkt_ack.neighbor_boot_time
+        my_snapshot_sn = pkt_ack.neighbor_snapshot_sn
+        neighbor_snapshot_sn = pkt_ack.my_snapshot_sn
         sequence_number = pkt_ack.sequence_number
 
         print("RECEBI ACK")
 
         # check neighbor existence
         with self.neighbors_lock:
-            neighbor = self.neighbors.get(neighbor_source_ip, None)
+            neighbor = self.neighbors.get(neighbor_source_ip, None) # type: Neighbor
             if neighbor is None:
-                self.new_neighbor(neighbor_source_ip, boot_time)
+                self.new_neighbor(neighbor_source_ip, neighbor_boot_time)
                 return
 
             with self.sequencer_lock:
                 with self.reliable_transmission_lock:
-                    if my_boot_time != self.time_of_boot:
+                    if not neighbor.recv_ack(my_boot_time, neighbor_boot_time, my_snapshot_sn, neighbor_snapshot_sn):
                         return
 
-                    #Main.kernel.recv_ack_msg(source_group, self, packet)
+                    #if my_boot_time != self.time_of_boot:
+                    #    return
+
                     reliable_transmission = self.reliable_transmission_buffer.get(source_group, None)
                     if reliable_transmission is not None:
                         reliable_transmission.receive_ack(neighbor_source_ip, my_boot_time, sequence_number)
-                    #Main.kernel.get_routing_entry(source_group, create_if_not_existent=False).recv_ack_msg(self.vif_index, packet)
 
 
     PKT_FUNCTIONS = {
@@ -531,12 +509,21 @@ class InterfaceProtocol(Interface):
     ########################################################################
     # Message Transmission
     ########################################################################
+    def get_reliable_message_transmission(self, tree):
+        with self.reliable_transmission_lock:
+            reliable_msg_transmission = self.reliable_transmission_buffer.get(tree, None)
+
+            if reliable_msg_transmission is None:
+                reliable_msg_transmission = ReliableMessageTransmission(self)
+                self.reliable_transmission_buffer[tree] = reliable_msg_transmission
+
+            return reliable_msg_transmission
+
     def send_i_am_upstream(self, source, group, rpc):
         tree = (source, group)
         with self.sequencer_lock:
             with self.reliable_transmission_lock:
                 self.get_reliable_message_transmission(tree).send_i_am_upstream(source, group, rpc)
-
 
     def send_i_am_no_longer_upstream(self, source, group):
         tree = (source, group)
@@ -556,21 +543,10 @@ class InterfaceProtocol(Interface):
             with self.reliable_transmission_lock:
                 self.get_reliable_message_transmission(tree).send_no_interest(source, group, dst)
 
-    def neighbor_finished_synchronization(self, neighbor_ip, my_snapshot_bt, my_snapshot_sn):
+    def neighbor_start_synchronization(self, neighbor_ip, my_snapshot_bt, my_snapshot_sn):
         with self.reliable_transmission_lock:
             for rmt in self.reliable_transmission_buffer.values():
                 rmt.receive_ack(neighbor_ip, my_snapshot_bt, my_snapshot_sn)
-
-    def get_reliable_message_transmission(self, tree):
-        with self.reliable_transmission_lock:
-            reliable_msg_transmission = self.reliable_transmission_buffer.get(tree, None)
-
-            if reliable_msg_transmission is None:
-                reliable_msg_transmission = ReliableMessageTransmission(self)
-                self.reliable_transmission_buffer[tree] = reliable_msg_transmission
-
-            return reliable_msg_transmission
-
 
     def cancel_all_messages(self, tree):
         with self.reliable_transmission_lock:

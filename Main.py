@@ -92,10 +92,10 @@ def list_sequence_numbers():
         t.add_row([interface_name, interface_boot_time, interface_sn])
     table_txt = str(t) + "\n\n\n"
 
-    t = PrettyTable(['Neighbor', 'BootTime', 'NeighborSnapshotSN'])
+    t = PrettyTable(['Neighbor', 'BootTime', 'NeighborSnapshotSN', 'NeighborCheckpointSN'])
     for interface in interfaces.values():
         for neighbor in interface.get_neighbors():
-            t.add_row([neighbor.ip, neighbor.time_of_boot, neighbor.neighbor_snapshot_sn])
+            t.add_row([neighbor.ip, neighbor.time_of_boot, neighbor.neighbor_snapshot_sn, neighbor.checkpoint_sn])
     table_txt += str(t) + "\n\n"
 
     t = PrettyTable(['Neighbor', 'Tree', 'LastSN'])

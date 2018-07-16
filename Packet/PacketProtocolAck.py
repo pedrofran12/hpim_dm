@@ -1,7 +1,5 @@
 import struct
 import socket
-from Packet.PacketPimEncodedUnicastAddress import PacketPimEncodedUnicastAddress
-from Packet.PacketPimJoinPruneMulticastGroup import PacketPimJoinPruneMulticastGroup
 
 ###########################################################################################################
 # JSON FORMAT
@@ -9,16 +7,20 @@ from Packet.PacketPimJoinPruneMulticastGroup import PacketPimJoinPruneMulticastG
 class PacketProtocolAck:
     PIM_TYPE = "ACK"
 
-    def __init__(self, source, group, sequence_number, neighbor_boot_time=0):
+    def __init__(self, source, group, sequence_number, neighbor_boot_time=0, neighbor_snapshot_sn=0, my_snapshot_sn=0):
         self.source = source
         self.group = group
         self.neighbor_boot_time = neighbor_boot_time
+        self.neighbor_snapshot_sn = neighbor_snapshot_sn
+        self.my_snapshot_sn = my_snapshot_sn
         self.sequence_number = sequence_number
 
     def bytes(self) -> bytes:
         msg = {"SOURCE": self.source,
                "GROUP": self.group,
                "NEIGHBOR_BOOT_TIME": self.neighbor_boot_time,
+               "NEIGHBOR_SNAPSHOT_SN": self.neighbor_snapshot_sn,
+               "MY_SNAPSHOT_SN": self.my_snapshot_sn,
                "SN": self.sequence_number
                }
 
@@ -33,7 +35,9 @@ class PacketProtocolAck:
         group = data["GROUP"]
         sn = data["SN"]
         nbt = data["NEIGHBOR_BOOT_TIME"]
-        return cls(source, group, sn, nbt)
+        nssn = data["NEIGHBOR_SNAPSHOT_SN"]
+        mssn = data["MY_SNAPSHOT_SN"]
+        return cls(source, group, sn, nbt, nssn, mssn)
 
 
 ###########################################################################################################
@@ -49,16 +53,20 @@ class PacketProtocolAck:
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                       Neighbor BootTime                       |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                       NeighborSnapshotSN                      |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                          MySnapshotSN                         |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                     Neighbor Sequence Number                  |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 '''
 class PacketNewProtocolAck:
     PIM_TYPE = 6
 
-    PIM_HDR_ACK = "! 4s 4s L L"
+    PIM_HDR_ACK = "! 4s 4s L L L L"
     PIM_HDR_ACK_LEN = struct.calcsize(PIM_HDR_ACK)
 
-    def __init__(self, source_ip, group_ip, sequence_number, neighbor_boot_time=0):
+    def __init__(self, source_ip, group_ip, sequence_number, neighbor_boot_time=0, neighbor_snapshot_sn=0, my_snapshot_sn=0):
         if type(source_ip) not in (str, bytes) or type(group_ip) not in (str, bytes):
             raise Exception
         if type(source_ip) is bytes:
@@ -70,10 +78,13 @@ class PacketNewProtocolAck:
         self.group = group_ip
         self.neighbor_boot_time = neighbor_boot_time
         self.sequence_number = sequence_number
+        self.neighbor_snapshot_sn = neighbor_snapshot_sn
+        self.my_snapshot_sn = my_snapshot_sn
 
     def bytes(self) -> bytes:
         msg = struct.pack(PacketNewProtocolAck.PIM_HDR_ACK, socket.inet_aton(self.source),
-                          socket.inet_aton(self.group), self.neighbor_boot_time, self.sequence_number)
+                          socket.inet_aton(self.group), self.neighbor_boot_time, self.neighbor_snapshot_sn,
+                          self.my_snapshot_sn, self.sequence_number)
 
         return msg
 
@@ -82,6 +93,6 @@ class PacketNewProtocolAck:
 
     @classmethod
     def parse_bytes(cls, data: bytes):
-        (tree_source, tree_group, neighbor_boot_time, sn) = struct.unpack(PacketNewProtocolAck.PIM_HDR_ACK,
-                                                   data[:PacketNewProtocolAck.PIM_HDR_ACK_LEN])
-        return cls(tree_source, tree_group, sn, neighbor_boot_time)
+        (tree_source, tree_group, neighbor_boot_time, neighbor_snapshot_sn, my_snapshot_sn, sn) =\
+            struct.unpack(PacketNewProtocolAck.PIM_HDR_ACK, data[:PacketNewProtocolAck.PIM_HDR_ACK_LEN])
+        return cls(tree_source, tree_group, sn, neighbor_boot_time, neighbor_snapshot_sn, my_snapshot_sn)
