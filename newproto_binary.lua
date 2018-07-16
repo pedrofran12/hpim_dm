@@ -324,8 +324,10 @@ function protocol.dissector(tvbuf,pktinfo,root)
       queries_tree:add(pf_tree_source, tvbuf:range(pos, 4))
       queries_tree:add(pf_tree_group, tvbuf:range(pos + 4, 4))   
       queries_tree:add(pf_neighbor_boot_time, tvbuf:range(pos + 8, 4))
-      queries_tree:add(pf_sequence_number, tvbuf:range(pos + 12, 4))
-      pos = pos + 16
+      queries_tree:add(pf_neighbor_snapshot_sequence_number, tvbuf:range(pos + 12, 4))
+      queries_tree:add(pf_my_snapshot_sequence_number, tvbuf:range(pos + 16, 4))
+      queries_tree:add(pf_sequence_number, tvbuf:range(pos + 20, 4))
+      pos = pos + 24
     elseif msg_type == "I_AM_UPSTREAM" then
       queries_tree:add(pf_tree_source, tvbuf:range(pos, 4))
       queries_tree:add(pf_tree_group, tvbuf:range(pos + 4, 4))   
