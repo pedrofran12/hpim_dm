@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
-from Daemon.Daemon import Daemon
-import Main
-import _pickle as pickle
-import socket
-import sys
 import os
+import sys
+import socket
 import argparse
 import traceback
+import _pickle as pickle
+from Daemon.Daemon import Daemon
+import Main
 
 
 def client_socket(data_to_send):
@@ -95,27 +95,41 @@ class MyDaemon(Daemon):
                 connection.close()
 
 
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='New Protocol')
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("-start", "--start", action="store_true", default=False, help="Start Protocol")
-    group.add_argument("-stop", "--stop", action="store_true", default=False, help="Stop Protocol")
-    group.add_argument("-restart", "--restart", action="store_true", default=False, help="Restart Protocol")
-    group.add_argument("-li", "--list_interfaces", action="store_true", default=False, help="List All Interfaces")
-    group.add_argument("-ln", "--list_neighbors", action="store_true", default=False, help="List All Neighbors")
-    group.add_argument("-ls", "--list_state", action="store_true", default=False, help="List state of IGMP and Multicast Routing Protocol")
-    group.add_argument("-lns", "--list_neighbors_state", action="store_true", default=False, help="List Upstream and Interest state of all neighbors")
-    group.add_argument("-lsn", "--list_sequence_numbers", action="store_true", default=False, help="List Sequence Numbers")
-    group.add_argument("-mr", "--multicast_routes", action="store_true", default=False, help="List Multicast Routing table")
-    group.add_argument("-fid", "--flood_initial_data", action="store_true", default=False, help="Flood initial data packets")
-    group.add_argument("-ai", "--add_interface", nargs=1, metavar='INTERFACE_NAME', help="Add Protocol interface")
-    group.add_argument("-aiigmp", "--add_interface_igmp", nargs=1, metavar='INTERFACE_NAME', help="Add IGMP interface")
-    group.add_argument("-ri", "--remove_interface", nargs=1, metavar='INTERFACE_NAME', help="Remove Protocol interface")
-    group.add_argument("-riigmp", "--remove_interface_igmp", nargs=1, metavar='INTERFACE_NAME', help="Remove IGMP interface")
-    group.add_argument("-v", "--verbose", action="store_true", default=False, help="Verbose (print all debug messages)")
-    group.add_argument("-t", "--test", nargs=2, metavar=('ROUTER_NAME', 'SERVER_LOG_IP'), help="Tester... send log information to SERVER_LOG_IP. Set the router name to ROUTER_NAME")
+    group.add_argument("-start", "--start", action="store_true", default=False,
+                       help="Start Protocol")
+    group.add_argument("-stop", "--stop", action="store_true", default=False,
+                       help="Stop Protocol")
+    group.add_argument("-restart", "--restart", action="store_true", default=False,
+                       help="Restart Protocol")
+    group.add_argument("-li", "--list_interfaces", action="store_true", default=False,
+                       help="List All Interfaces")
+    group.add_argument("-ln", "--list_neighbors", action="store_true", default=False,
+                       help="List All Neighbors")
+    group.add_argument("-ls", "--list_state", action="store_true", default=False,
+                       help="List state of IGMP and Multicast Routing Protocol")
+    group.add_argument("-lns", "--list_neighbors_state", action="store_true", default=False,
+                       help="List Upstream and Interest state of all neighbors")
+    group.add_argument("-lsn", "--list_sequence_numbers", action="store_true", default=False,
+                       help="List Sequence Numbers")
+    group.add_argument("-mr", "--multicast_routes", action="store_true", default=False,
+                       help="List Multicast Routing table")
+    group.add_argument("-fid", "--flood_initial_data", action="store_true", default=False,
+                       help="Flood initial data packets")
+    group.add_argument("-ai", "--add_interface", nargs=1, metavar='INTERFACE_NAME',
+                       help="Add Protocol interface")
+    group.add_argument("-aiigmp", "--add_interface_igmp", nargs=1, metavar='INTERFACE_NAME',
+                       help="Add IGMP interface")
+    group.add_argument("-ri", "--remove_interface", nargs=1, metavar='INTERFACE_NAME',
+                       help="Remove Protocol interface")
+    group.add_argument("-riigmp", "--remove_interface_igmp", nargs=1, metavar='INTERFACE_NAME',
+                       help="Remove IGMP interface")
+    group.add_argument("-v", "--verbose", action="store_true", default=False,
+                       help="Verbose (print all debug messages)")
+    group.add_argument("-t", "--test", nargs=2, metavar=('ROUTER_NAME', 'SERVER_LOG_IP'),
+                       help="Tester... send log information to SERVER_LOG_IP. Set the router name to ROUTER_NAME")
     args = parser.parse_args()
 
     print(parser.parse_args())

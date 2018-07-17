@@ -1,8 +1,9 @@
-from threading import Timer
 import time
+from threading import Timer
 from utils import HELLO_HOLD_TIME_NO_TIMEOUT, HELLO_HOLD_TIME_TIMEOUT, TYPE_CHECKING
 from tree.metric import AssertMetric
 from tree import globals
+from Packet.Packet import Packet
 if globals.MSG_FORMAT == "BINARY":
     from Packet.PacketProtocolAck import PacketNewProtocolAck as PacketProtocolAck
     from Packet.PacketProtocolSync import PacketNewProtocolSync as PacketProtocolHelloSync
@@ -11,7 +12,6 @@ else:
     from Packet.PacketProtocolAck import PacketProtocolAck
     from Packet.PacketProtocolSync import PacketProtocolHelloSync
     from Packet.PacketProtocolHeader import PacketProtocolHeader
-from Packet.Packet import Packet
 
 if TYPE_CHECKING:
     from InterfaceProtocol import InterfaceProtocol
@@ -43,7 +43,8 @@ class NeighborState():
         pkt_s = PacketProtocolHelloSync(my_snapshot_sn, 0,
                                         sync_sn=neighbor.current_sync_sn,
                                         upstream_trees=my_snapshot_mrt, master_flag=True,
-                                        more_flag=my_more_bit, neighbor_boot_time=neighbor.time_of_boot)
+                                        more_flag=my_more_bit,
+                                        neighbor_boot_time=neighbor.time_of_boot)
         pkt = Packet(payload=PacketProtocolHeader(pkt_s, neighbor.my_snapshot_boot_time))
         neighbor.contact_interface.send(pkt, neighbor.ip)
         neighbor.set_sync_timer()
@@ -72,7 +73,8 @@ class Updated(NeighborState):
 
         if master_bit and neighbor.my_snapshot_sequencer == my_snapshot_sn:
             pkt_s = PacketProtocolHelloSync(my_snapshot_sn, neighbor_snapshot_sn, sync_sn=sync_sn,
-                                            master_flag=False, more_flag=False, neighbor_boot_time=neighbor.time_of_boot)
+                                            master_flag=False, more_flag=False,
+                                            neighbor_boot_time=neighbor.time_of_boot)
             pkt = Packet(payload=PacketProtocolHeader(pkt_s, neighbor.my_snapshot_boot_time))
             neighbor.send(pkt)
             neighbor.set_hello_hold_time(DEFAULT_HELLO_HOLD_TIME_DURING_SYNC)
@@ -98,7 +100,8 @@ class Master(NeighborState):
             print("ENTROU MASTER")
             neighbor.install_tree_state(tree_state)
 
-            my_snapshot_mrt = neighbor.my_snapshot_multicast_routing_table[neighbor.current_sync_sn*5:(neighbor.current_sync_sn+1)*5]
+            my_snapshot_mrt = neighbor.my_snapshot_multicast_routing_table[neighbor.current_sync_sn*5:
+                                                                           (neighbor.current_sync_sn+1)*5]
             my_more_bit = len(neighbor.my_snapshot_multicast_routing_table) > neighbor.current_sync_sn*5
             my_snapshot_sn = neighbor.my_snapshot_sequencer
             neighbor_sn = neighbor.neighbor_snapshot_sn
@@ -160,7 +163,8 @@ class Slave(NeighborState):
                 print("HERE2")
                 neighbor.set_sync_state(Master)
                 neighbor.current_sync_sn = 0
-                Master.recv_sync(neighbor, tree_state, my_snapshot_sn, neighbor_snapshot_sn, sync_sn, master_bit, more_bit)
+                Master.recv_sync(neighbor, tree_state, my_snapshot_sn, neighbor_snapshot_sn, sync_sn, master_bit,
+                                 more_bit)
             else:
                 Slave.sync_timer_expires(neighbor)
         elif not master_bit and neighbor.my_snapshot_sequencer == my_snapshot_sn:
@@ -178,7 +182,8 @@ class Slave(NeighborState):
                 neighbor.current_sync_sn += 1
                 neighbor.install_tree_state(tree_state)
 
-                my_snapshot_mrt = neighbor.my_snapshot_multicast_routing_table[neighbor.current_sync_sn*5:(neighbor.current_sync_sn+1)*5]
+                my_snapshot_mrt = neighbor.my_snapshot_multicast_routing_table[neighbor.current_sync_sn*5:
+                                                                               (neighbor.current_sync_sn+1)*5]
                 my_more_bit = len(neighbor.my_snapshot_multicast_routing_table) > neighbor.current_sync_sn*5
                 my_snapshot_sn = neighbor.my_snapshot_sequencer
                 neighbor_sn = neighbor.neighbor_snapshot_sn
@@ -193,8 +198,8 @@ class Slave(NeighborState):
 
     @staticmethod
     def sync_timer_expires(neighbor):
-        my_snapshot_mrt = neighbor.my_snapshot_multicast_routing_table[
-                          neighbor.current_sync_sn * 5:(neighbor.current_sync_sn + 1) * 5]
+        my_snapshot_mrt = neighbor.my_snapshot_multicast_routing_table[neighbor.current_sync_sn * 5:
+                                                                       (neighbor.current_sync_sn + 1) * 5]
         my_more_bit = len(neighbor.my_snapshot_multicast_routing_table) > neighbor.current_sync_sn * 5
         my_snapshot_sn = neighbor.my_snapshot_sequencer
         neighbor_sn = neighbor.neighbor_snapshot_sn
@@ -235,8 +240,8 @@ class Neighbor:
     RETRANSMISSION_TIMEOUT = 10
     GARBAGE_COLLECT_TIMEOUT = 120
 
-    def __init__(self, contact_interface: "InterfaceProtocol", ip, hello_hold_time: int, neighbor_time_of_boot=0,
-                 my_interface_boot_time = 0):
+    def __init__(self, contact_interface: "InterfaceProtocol", ip, hello_hold_time: int, neighbor_time_of_boot: int,
+                 my_interface_boot_time: int):
         if hello_hold_time == HELLO_HOLD_TIME_TIMEOUT:
             raise Exception
         self.contact_interface = contact_interface
@@ -309,7 +314,7 @@ class Neighbor:
             import Main
             Main.kernel.recheck_all_trees(self.contact_interface)
 
-    def install_tree_state(self, tree_state:list):
+    def install_tree_state(self, tree_state: list):
         for t in tree_state:
             tree_id = (t.source, t.group)
             if self.last_sequence_number.get(tree_id, 0) > self.neighbor_snapshot_sn:
@@ -369,7 +374,7 @@ class Neighbor:
         if checkpoint_sn > self.checkpoint_sn:
             self.checkpoint_sn = checkpoint_sn
 
-            to_remove = {k for k,v in self.last_sequence_number.items() if v <= checkpoint_sn}
+            to_remove = {k for k, v in self.last_sequence_number.items() if v <= checkpoint_sn}
             for k in to_remove:
                 self.last_sequence_number.pop(k)
 
@@ -453,7 +458,8 @@ class Neighbor:
             self.start_sync_process()
             return False
 
-        return self.neighbor_state != Unknown and self.current_sync_sn > 0 and self.my_snapshot_boot_time == my_boot_time and self.time_of_boot == neighbor_boot_time and\
+        return self.neighbor_state != Unknown and self.current_sync_sn > 0 and \
+               self.my_snapshot_boot_time == my_boot_time and self.time_of_boot == neighbor_boot_time and\
                self.my_snapshot_sequencer == my_snapshot_sn and self.neighbor_snapshot_sn == neighbor_snapshot
 
     ################################################################################################

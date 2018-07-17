@@ -4,7 +4,8 @@ from utils import checksum
 from Packet.PacketProtocolHello import PacketProtocolHello, PacketNewProtocolHello
 from Packet.PacketProtocolSetTree import PacketProtocolUpstream, PacketNewProtocolUpstream
 from Packet.PacketProtocolRemoveTree import PacketProtocolNoLongerUpstream, PacketNewProtocolNoLongerUpstream
-from Packet.PacketProtocolInterest import PacketProtocolInterest, PacketProtocolNoInterest, PacketNewProtocolInterest, PacketNewProtocolNoInterest
+from Packet.PacketProtocolInterest import PacketProtocolInterest, PacketProtocolNoInterest, PacketNewProtocolInterest,\
+    PacketNewProtocolNoInterest
 from Packet.PacketProtocolAck import PacketProtocolAck, PacketNewProtocolAck
 from Packet.PacketProtocolSync import PacketProtocolHelloSync, PacketNewProtocolSync
 
@@ -24,7 +25,7 @@ class PacketProtocolHeader(PacketPayload):
                      "ACK": PacketProtocolAck,
 
                      "SYNC": PacketProtocolHelloSync,
-                     }
+                    }
 
     def __init__(self, payload, boot_time=0):
         self.payload = payload
@@ -35,7 +36,6 @@ class PacketProtocolHeader(PacketPayload):
 
     def bytes(self) -> bytes:
         # obter mensagem e criar checksum
-        pim_type = self.get_pim_type()
         data = {"TYPE": self.get_pim_type(),
                 "BOOT_TIME": self.boot_time,
                 "DATA": self.payload.bytes()}
@@ -49,14 +49,14 @@ class PacketProtocolHeader(PacketPayload):
     def parse_bytes(data: bytes):
         msg = json.loads(data.decode())
 
-        type = msg["TYPE"]
-        print("TYPE", type)
+        pkt_type = msg["TYPE"]
+        print("TYPE", pkt_type)
 
         id_reliable = msg["BOOT_TIME"]
 
         pim_payload = msg["DATA"]
         print("DATA", pim_payload)
-        pim_payload = PacketProtocolHeader.PIM_MSG_TYPES[type].parse_bytes(pim_payload)
+        pim_payload = PacketProtocolHeader.PIM_MSG_TYPES[pkt_type].parse_bytes(pim_payload)
         return PacketProtocolHeader(pim_payload, id_reliable)
 
 
@@ -85,7 +85,7 @@ class PacketNewProtocolHeader(PacketPayload):
                      PacketNewProtocolInterest.PIM_TYPE: PacketNewProtocolInterest,
                      PacketNewProtocolNoInterest.PIM_TYPE: PacketNewProtocolNoInterest,
                      PacketNewProtocolAck.PIM_TYPE: PacketNewProtocolAck,
-                     }
+                    }
 
     def __init__(self, payload, boot_time=0):
         self.payload = payload

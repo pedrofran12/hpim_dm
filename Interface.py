@@ -70,7 +70,7 @@ class Interface(metaclass=ABCMeta):
         ifr = self.interface_name + '\x00'*(32-len(self.interface_name))
         try:
             ifs = ioctl(s, SIOCGIFMTU, ifr)
-            mtu = struct.unpack('<H',ifs[16:18])[0]
+            mtu = struct.unpack('<H', ifs[16:18])[0]
         except:
             traceback.print_exc()
             raise

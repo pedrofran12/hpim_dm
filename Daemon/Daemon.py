@@ -1,6 +1,10 @@
 """Generic linux daemon base class for python 3.x."""
 
-import sys, os, time, atexit, signal
+import sys
+import os
+import time
+import atexit
+import signal
 
 class Daemon:
     """A generic Daemon class.

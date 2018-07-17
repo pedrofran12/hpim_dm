@@ -8,15 +8,15 @@ import logging
 import Main
 
 
-class TreeInterfaceUpstream(TreeInterface):
+class TreeInterfaceUpstreamOriginator(TreeInterface):
     LOGGER = logging.getLogger('protocol.KernelEntry.RootInterface')
 
-    def __init__(self, kernel_entry, interface_id, best_upstream_router):
+    def __init__(self, kernel_entry, interface_id, best_upstream_router, current_tree_state):
         extra_dict_logger = kernel_entry.kernel_entry_logger.extra.copy()
         extra_dict_logger['vif'] = interface_id
         extra_dict_logger['interfacename'] = Main.kernel.vif_index_to_name_dic[interface_id]
-        logger = logging.LoggerAdapter(TreeInterfaceUpstream.LOGGER, extra_dict_logger)
-        TreeInterface.__init__(self, kernel_entry, interface_id, best_upstream_router, logger)
+        logger = logging.LoggerAdapter(TreeInterfaceUpstreamOriginator.LOGGER, extra_dict_logger)
+        TreeInterface.__init__(self, kernel_entry, interface_id, best_upstream_router, current_tree_state, logger)
 
         # Originator state
         self._source_active_timer = None
@@ -25,7 +25,7 @@ class TreeInterfaceUpstream(TreeInterface):
 
         # TODO TESTE SOCKET RECV DATA PCKTS
         self.socket_is_enabled = True
-        (s,g) = self.get_tree_id()
+        (s, g) = self.get_tree_id()
         interface_name = self.get_interface_name()
         self.socket_pkt = DataPacketsSocket.get_s_g_bpf_filter_code(s, g, interface_name)
 
@@ -75,21 +75,7 @@ class TreeInterfaceUpstream(TreeInterface):
         if self.is_S_directly_conn():
             self.set_source_active_timer()
             if self.is_tree_inactive():
-                #self._kernel_entry.change_tree_to_active_state()
                 self._kernel_entry.sat_running()
-
-
-    ############################################
-    # Tree transitions
-    ############################################
-    def tree_transition_to_active(self):
-        return
-
-    def tree_transition_to_inactive(self):
-        return
-
-    def tree_transition_to_unknown(self):
-        return
 
 
     ###########################################
@@ -98,25 +84,11 @@ class TreeInterfaceUpstream(TreeInterface):
     def send_my_interest(self):
         return
 
-    def node_is_out_tree(self, force=False):
+    def node_is_out_tree(self):
         return
 
-    def node_is_in_tree(self, force=False):
+    def node_is_in_tree(self):
         return
-
-    ###########################################
-    # Changes to RPF'(s)
-    ###########################################
-    # caused by unicast routing table:
-    '''
-    def change_on_unicast_routing(self, interface_change=False):
-        self.change_rpf(self.is_node_in_tree(), interface_change)
-    
-        if self.is_S_directly_conn():
-            self._graft_prune_state.sourceIsNowDirectConnect(self)
-        else:
-            self._originator_state.SourceNotConnected(self)
-    '''
 
     ####################################################################
     #Override

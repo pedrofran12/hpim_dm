@@ -1,8 +1,9 @@
-import netifaces
-import time
-from prettytable import PrettyTable
 import sys
-import logging, logging.handlers
+import time
+import logging
+import logging.handlers
+from prettytable import PrettyTable
+import netifaces
 from TestLogger import RootFilter
 
 from tree import globals
@@ -44,8 +45,6 @@ def list_neighbors():
 
 
 def list_enabled_interfaces():
-    global interfaces
-
     t = PrettyTable(['Interface', 'IP', 'Protocol/IGMP Enabled', 'IGMP State'])
     for interface in netifaces.interfaces():
         try:

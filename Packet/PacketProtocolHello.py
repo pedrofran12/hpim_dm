@@ -29,7 +29,7 @@ class PacketProtocolHello:
     def parse_bytes(data: dict):
         pim_payload = PacketProtocolHello()
         for (key, value) in data.items():
-            option = PacketProtocolHelloOptions.parse_bytes((key,value))
+            option = PacketProtocolHelloOptions.parse_bytes((key, value))
             pim_payload.add_option(option)
         return pim_payload
 

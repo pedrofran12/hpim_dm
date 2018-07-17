@@ -1,8 +1,8 @@
-from pyroute2 import IPDB, IPRoute
 import socket
-import Main
 import ipaddress
 from threading import RLock
+from pyroute2 import IPDB, IPRoute
+import Main
 
 def get_route(ip_dst: str):
     return UnicastRouting.get_route(ip_dst)
@@ -90,7 +90,7 @@ class UnicastRouting(object):
             attrs = msg["attrs"]
             print(attrs)
             for (key, value) in attrs:
-                print((key,value))
+                print((key, value))
                 if key == "RTA_DST":
                     network_address = value
                     break
@@ -119,7 +119,6 @@ class UnicastRouting(object):
     
             Main.kernel.notify_interface_change(interface_name)
             '''
-            pass
         else:
             UnicastRouting.lock.release()
 

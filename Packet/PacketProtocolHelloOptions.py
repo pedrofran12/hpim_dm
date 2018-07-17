@@ -13,8 +13,8 @@ class PacketProtocolHelloOptions(metaclass=ABCMeta):
     |              Type             |
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     '''
-    def __init__(self, type: str):
-        self.type = type
+    def __init__(self, hello_type: str):
+        self.type = hello_type
 
     @abstractmethod
     def bytes(self) -> bytes:
@@ -25,10 +25,10 @@ class PacketProtocolHelloOptions(metaclass=ABCMeta):
         return 0
 
     @staticmethod
-    def parse_bytes(data: tuple, type:int = None):
-        type = data[0]
+    def parse_bytes(data: tuple, hello_type: int = None):
+        hello_type = data[0]
         data = data[1]
-        return JSON_MSG_TYPES.get(type, PacketProtocolHelloUnknown).parse_bytes(data, type)
+        return JSON_MSG_TYPES.get(hello_type, PacketProtocolHelloUnknown).parse_bytes(data, hello_type)
 
 
 class PacketProtocolHelloHoldtime(PacketProtocolHelloOptions):
@@ -41,15 +41,15 @@ class PacketProtocolHelloHoldtime(PacketProtocolHelloOptions):
     '''
 
     def __init__(self, holdtime: int or float):
-        super().__init__(type="HOLDTIME")
+        super().__init__(hello_type="HOLDTIME")
         self.holdtime = int(holdtime)
 
     def bytes(self) -> dict:
         return {"HOLDTIME": self.holdtime}
 
     @staticmethod
-    def parse_bytes(data, type:int = None):
-        if type is None:
+    def parse_bytes(data, hello_type: int = None):
+        if hello_type is None:
             raise Exception
         holdtime = data
         return PacketProtocolHelloHoldtime(holdtime=holdtime)
@@ -65,15 +65,15 @@ class PacketProtocolHelloCheckpointSN(PacketProtocolHelloOptions):
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     '''
     def __init__(self, checkpoint_sn: int):
-        super().__init__(type="CHECKPOINT_SN")
+        super().__init__(hello_type="CHECKPOINT_SN")
         self.checkpoint_sn = checkpoint_sn
 
     def bytes(self) -> dict:
         return {"CHECKPOINT_SN": self.checkpoint_sn}
 
     @staticmethod
-    def parse_bytes(data, type:int = None):
-        if type is None:
+    def parse_bytes(data, hello_type: int = None):
+        if hello_type is None:
             raise Exception
         checkpoint_sn = data
         return PacketProtocolHelloCheckpointSN(checkpoint_sn=checkpoint_sn)
@@ -87,21 +87,21 @@ class PacketProtocolHelloUnknown(PacketProtocolHelloOptions):
     |                            Unknown                            |
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     '''
-    def __init__(self, type):
-        super().__init__(type=type)
+    def __init__(self, hello_type):
+        super().__init__(hello_type=hello_type)
 
     def bytes(self) -> bytes:
         raise Exception
 
     @staticmethod
-    def parse_bytes(data, type:int = None):
-        if type is None:
+    def parse_bytes(data, hello_type: int = None):
+        if hello_type is None:
             raise Exception
-        return PacketProtocolHelloUnknown(type)
+        return PacketProtocolHelloUnknown(hello_type)
 
 
 JSON_MSG_TYPES = {"HOLDTIME": PacketProtocolHelloHoldtime,
-                 "CHECKPOINT_SN": PacketProtocolHelloCheckpointSN,
+                  "CHECKPOINT_SN": PacketProtocolHelloCheckpointSN,
                  }
 
 
@@ -117,8 +117,8 @@ class PacketNewProtocolHelloOptions(metaclass=ABCMeta):
     |              Type             |             Length            |
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     '''
-    def __init__(self, type: int, length: int):
-        self.type = type
+    def __init__(self, hello_type: int, length: int):
+        self.type = hello_type
         self.length = length
 
     def bytes(self) -> bytes:
@@ -128,14 +128,14 @@ class PacketNewProtocolHelloOptions(metaclass=ABCMeta):
         return self.PIM_HDR_OPTS_LEN + self.length
 
     @staticmethod
-    def parse_bytes(data: bytes, type:int = None, length:int = None):
-        (type, length) = struct.unpack(PacketNewProtocolHelloOptions.PIM_HDR_OPTS,
+    def parse_bytes(data: bytes, hello_type: int = None, length: int = None):
+        (hello_type, length) = struct.unpack(PacketNewProtocolHelloOptions.PIM_HDR_OPTS,
                                         data[:PacketNewProtocolHelloOptions.PIM_HDR_OPTS_LEN])
-        #print("TYPE:", type)
+        #print("hello_type:", type)
         #print("LENGTH:", length)
         data = data[PacketNewProtocolHelloOptions.PIM_HDR_OPTS_LEN:]
         #return PIM_MSG_TYPES[type](data)
-        return NEW_PROTOCOL_MSG_TYPES.get(type, PacketNewProtocolHelloUnknown).parse_bytes(data, type, length)
+        return NEW_PROTOCOL_MSG_TYPES.get(hello_type, PacketNewProtocolHelloUnknown).parse_bytes(data, hello_type, length)
 
 
 class PacketNewProtocolHelloHoldtime(PacketNewProtocolHelloOptions):
@@ -150,15 +150,15 @@ class PacketNewProtocolHelloHoldtime(PacketNewProtocolHelloOptions):
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     '''
     def __init__(self, holdtime: int or float):
-        super().__init__(type=1, length=2)
+        super().__init__(hello_type=1, length=2)
         self.holdtime = int(holdtime)
 
     def bytes(self) -> bytes:
         return super().bytes() + struct.pack(self.PIM_HDR_OPT, self.holdtime)
 
     @staticmethod
-    def parse_bytes(data: bytes, type:int = None, length:int = None):
-        if type is None or length is None:
+    def parse_bytes(data: bytes, hello_type: int = None, length: int = None):
+        if hello_type is None or length is None:
             raise Exception
         (holdtime, ) = struct.unpack(PacketNewProtocolHelloHoldtime.PIM_HDR_OPT,
                                      data[:PacketNewProtocolHelloHoldtime.PIM_HDR_OPT_LEN])
@@ -178,15 +178,15 @@ class PacketNewProtocolHelloCheckpointSN(PacketNewProtocolHelloOptions):
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     '''
     def __init__(self, checkpoint_sn: int):
-        super().__init__(type=2, length=4)
+        super().__init__(hello_type=2, length=4)
         self.checkpoint_sn = checkpoint_sn
 
     def bytes(self) -> bytes:
         return super().bytes() + struct.pack(self.PIM_HDR_OPT, self.checkpoint_sn)
 
     @staticmethod
-    def parse_bytes(data: bytes, type:int = None, length:int = None):
-        if type is None or length is None:
+    def parse_bytes(data: bytes, hello_type: int = None, length: int = None):
+        if hello_type is None or length is None:
             raise Exception
         (checkpoint_sn, ) = struct.unpack(PacketNewProtocolHelloCheckpointSN.PIM_HDR_OPT,
                                      data[:PacketNewProtocolHelloCheckpointSN.PIM_HDR_OPT_LEN])
@@ -205,18 +205,18 @@ class PacketNewProtocolHelloUnknown(PacketNewProtocolHelloOptions):
     |                            Unknown                            |
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     '''
-    def __init__(self, type, length):
-        super().__init__(type=type, length=length)
+    def __init__(self, hello_type, length):
+        super().__init__(hello_type=hello_type, length=length)
         #print("PIM Hello Option Unknown... TYPE=", type, "LENGTH=", length)
 
     def bytes(self) -> bytes:
         raise Exception
 
     @staticmethod
-    def parse_bytes(data: bytes, type:int = None, length:int = None):
-        if type is None or length is None:
+    def parse_bytes(data: bytes, hello_type: int = None, length: int = None):
+        if hello_type is None or length is None:
             raise Exception
-        return PacketNewProtocolHelloUnknown(type, length)
+        return PacketNewProtocolHelloUnknown(hello_type, length)
 
 
 NEW_PROTOCOL_MSG_TYPES = {1: PacketNewProtocolHelloHoldtime,

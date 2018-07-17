@@ -1,6 +1,6 @@
 from threading import Timer, RLock
-from Packet.Packet import Packet
 from tree.globals import MSG_FORMAT, MESSAGE_RETRANSMISSION_TIME
+from Packet.Packet import Packet
 if MSG_FORMAT == "BINARY":
     from Packet.PacketProtocolHeader import PacketNewProtocolHeader as PacketProtocolHeader
     from Packet.PacketProtocolSetTree import PacketNewProtocolUpstream as PacketProtocolUpstream

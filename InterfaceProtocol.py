@@ -1,9 +1,19 @@
 import random
+import traceback
+from threading import Timer, RLock
+import socket
+import time
+import netifaces
+
 from Interface import Interface
 from Neighbor import Neighbor
 import Main
-import traceback
 from tree.globals import MSG_FORMAT
+from utils import HELLO_HOLD_TIME_TIMEOUT
+from ReliableMsgTransmission import ReliableMessageTransmission
+
+from Packet.Packet import Packet
+from Packet.ReceivedPacket import ReceivedPacket
 if MSG_FORMAT == "BINARY":
     from Packet.PacketProtocolHelloOptions import PacketNewProtocolHelloHoldtime as PacketProtocolHelloHoldtime, \
         PacketNewProtocolHelloCheckpointSN as PacketProtocolHelloCheckpointSN
@@ -27,17 +37,6 @@ else:
     from Packet.PacketProtocolRemoveTree import PacketProtocolNoLongerUpstream
     from Packet.PacketProtocolAck import PacketProtocolAck
 
-from Packet.ReceivedPacket import ReceivedPacket
-from Packet.Packet import Packet
-from utils import HELLO_HOLD_TIME_TIMEOUT
-from threading import Timer, RLock
-
-from ReliableMsgTransmission import ReliableMessageTransmission
-
-import socket
-import netifaces
-import time
-
 
 class InterfaceProtocol(Interface):
     MCAST_GRP = '224.0.0.13'
@@ -48,7 +47,7 @@ class InterfaceProtocol(Interface):
     TRIGGERED_HELLO_PERIOD = 5
 
 
-    def __init__(self, interface_name: str, vif_index:int):
+    def __init__(self, interface_name: str, vif_index: int):
         # Generate BootTime
         self.time_of_boot = int(time.time())
 
@@ -97,7 +96,6 @@ class InterfaceProtocol(Interface):
         #super()._enable()
         self.force_send_hello()
 
-
     def get_ip(self):
         return self.ip_interface
 
@@ -122,30 +120,17 @@ class InterfaceProtocol(Interface):
             return (self.time_of_boot, self.sequencer)
 
     def get_checkpoint_sn(self):
-        ongoing_sync_or_ongoing_reliable_transmission = False
-        checkpoint_sn = 0
-        # TODO VERIFICAR LOCK
         print("A ENTRAR CHECK_SN")
         with self.neighbors_lock:
             with self.sequencer_lock:
                 with self.reliable_transmission_lock:
                     time_of_boot = self.time_of_boot
-                    for n in list(self.neighbors.values()):
-                        (neighbor_boot_time, neighbor_checkpoint_sn) = n.get_checkpoint_sn()
-                        if not ongoing_sync_or_ongoing_reliable_transmission and neighbor_boot_time == time_of_boot or \
-                                ongoing_sync_or_ongoing_reliable_transmission and neighbor_boot_time == time_of_boot and checkpoint_sn > neighbor_checkpoint_sn:
-                            ongoing_sync_or_ongoing_reliable_transmission = True
-                            checkpoint_sn = neighbor_checkpoint_sn
+                    checkpoint_sn = self.sequencer
 
                     for rt in self.reliable_transmission_buffer.values():
                         (msg_boot_time, msg_checkpoint_sn) = rt.get_sequence_number()
-                        if not ongoing_sync_or_ongoing_reliable_transmission and msg_boot_time==time_of_boot or \
-                                ongoing_sync_or_ongoing_reliable_transmission and msg_boot_time==time_of_boot and checkpoint_sn > msg_checkpoint_sn:
-                            ongoing_sync_or_ongoing_reliable_transmission = True
+                        if msg_boot_time == time_of_boot and checkpoint_sn > msg_checkpoint_sn:
                             checkpoint_sn = msg_checkpoint_sn
-
-                    if not ongoing_sync_or_ongoing_reliable_transmission:
-                        checkpoint_sn = self.sequencer
 
                     print("A SAIR CHECK_SN")
                     return (time_of_boot, checkpoint_sn)
@@ -194,12 +179,10 @@ class InterfaceProtocol(Interface):
         # send pim_hello timeout message
         pim_payload = PacketProtocolHello()
         pim_payload.add_option(PacketProtocolHelloHoldtime(holdtime=HELLO_HOLD_TIME_TIMEOUT))
-        #pim_payload.add_option(PacketProtocolHelloGenerationID(self.generation_id))
         ph = PacketProtocolHeader(pim_payload, boot_time=self.time_of_boot)
         packet = Packet(payload=ph)
         self.send(packet)
 
-        #Main.kernel.interface_change_number_of_neighbors()
         super().remove()
         self.clear_reliable_transmission()
 
@@ -246,32 +229,22 @@ class InterfaceProtocol(Interface):
             return self.neighbors.values()
 
 
-    def did_all_neighbors_acked(self, neighbors_that_acked:set):
-        #with self.neighbors_lock:
+    def did_all_neighbors_acked(self, neighbors_that_acked: set):
         return neighbors_that_acked >= self.neighbors.keys()
 
     def is_neighbor(self, neighbor_ip):
         return neighbor_ip in self.neighbors
-
-    '''
-    def get_neighbor(self, ip):
-        with self.neighbors_lock.genRlock():
-            return self.neighbors.get(ip)
-    '''
 
     def remove_neighbor(self, ip):
         with self.neighbors_lock:
             if ip not in self.neighbors:
                 return
             self.neighbors.pop(ip)
-            #del self.neighbors[ip]
 
             # verifiar todas as arvores
             print("REMOVER ANTES RECHECK")
             Main.kernel.recheck_all_trees(self)
             print("REMOVER DEPOIS RECHECK")
-            #other_neighbors_remain = len(self.neighbors) > 0
-            #Main.kernel.interface_neighbor_removal(self.vif_index, other_neighbors_remain)
 
     '''
     def change_interface(self):

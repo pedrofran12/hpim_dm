@@ -1,20 +1,22 @@
 from abc import ABCMeta, abstractmethod
 import Main
 from threading import RLock
-
 from .metric import AssertMetric, Metric
 from .local_membership import LocalMembership
 import logging
 
 class TreeInterface(metaclass=ABCMeta):
-    def __init__(self, kernel_entry, interface_id, best_upstream_router, logger: logging.LoggerAdapter):
+    def __init__(self, kernel_entry, interface_id, best_upstream_router, current_tree_state, logger: logging.LoggerAdapter):
         self._kernel_entry = kernel_entry
         self._interface_id = interface_id
         self.logger = logger
 
         self._best_upstream_router = best_upstream_router # current assert winner
 
+        self.current_tree_state = current_tree_state # current tree state
+
         # Local Membership State
+        self._igmp_lock = RLock()
         try:
             interface_name = Main.kernel.vif_index_to_name_dic[interface_id]
             igmp_interface = Main.igmp_interfaces[interface_name]  # type: InterfaceIGMP
@@ -24,8 +26,6 @@ class TreeInterface(metaclass=ABCMeta):
         except:
             self._local_membership_state = LocalMembership.NoInfo
 
-
-        self._igmp_lock = RLock()
 
     ###########################################
     # Recv packets
@@ -56,26 +56,16 @@ class TreeInterface(metaclass=ABCMeta):
         if self.get_interface() is not None:
             self.get_interface().send_no_interest(source, group, best_upstream_neighbor)
 
-    def cancel_message(self):
-        if self.get_interface() is not None:
-            self.get_interface().cancel_interest_message(self.get_tree_id())
-
-
     def is_tree_active(self):
-        return self._kernel_entry.is_tree_active()
+        return self.current_tree_state.is_active()
 
     def is_tree_inactive(self):
-        return self._kernel_entry.is_tree_inactive()
+        return self.current_tree_state.is_inactive()
 
     def is_tree_unknown(self):
-        return self._kernel_entry.is_tree_unknown()
+        return self.current_tree_state.is_unknown()
 
     #############################################################
-    '''
-    def has_upstream_neighbors(self):
-        return len(self._upstream_routers) > 0 or self.is_S_directly_conn()
-    '''
-
     @abstractmethod
     def is_forwarding(self):
         pass
@@ -101,7 +91,6 @@ class TreeInterface(metaclass=ABCMeta):
         self._kernel_entry.evaluate_in_tree_change()
 
 
-
     ############################################################
     # Assert Winner state
     ############################################################
@@ -119,13 +108,20 @@ class TreeInterface(metaclass=ABCMeta):
 
 
     ##########################################################
-    #
+    # Tree transitions
     ##########################################################
-    def transition_to_active(self):
-        return
+    def tree_transition_to_active(self):
+        from .KernelEntry import ActiveTree
+        self.current_tree_state = ActiveTree
 
-    def transition_to_inactive(self):
-        return
+    def tree_transition_to_inactive(self):
+        from .KernelEntry import InactiveTree
+        self.current_tree_state = InactiveTree
+
+    def tree_transition_to_unknown(self):
+        from .KernelEntry import UnknownTree
+        self.current_tree_state = UnknownTree
+
 
     #############################################################
     # Local Membership (IGMP)
@@ -175,21 +171,6 @@ class TreeInterface(metaclass=ABCMeta):
         ip = netifaces.ifaddresses(if_name)[netifaces.AF_INET][0]['addr']
         return ip
 
-    '''
-    def neighbors_lock(self):
-        interface = self.get_interface()
-        if interface is not None:
-            return self.get_interface().neighbors_lock
-        else:
-            return Main.kernel.interface_lock
-    '''
-
-    def number_of_neighbors(self):
-        try:
-            return len(self.get_interface().neighbors)
-        except:
-            return 0
-
     def get_tree_id(self):
         return (self._kernel_entry.source_ip, self._kernel_entry.group_ip)
 
@@ -202,19 +183,6 @@ class TreeInterface(metaclass=ABCMeta):
     @abstractmethod
     def is_downstream(self):
         raise NotImplementedError()
-
-
-    '''
-    # obtain ip of RPF'(S)
-    def get_neighbor_RPF(self):
-        ''''''
-        RPF'(S)
-        ''''''
-        if self.i_am_assert_loser():
-            return self._assert_winner_metric.get_ip()
-        else:
-            return self._kernel_entry.rpf_node
-    '''
 
     def is_S_directly_conn(self):
         return self._kernel_entry.rpf_node == self._kernel_entry.source_ip
@@ -229,12 +197,7 @@ class TreeInterface(metaclass=ABCMeta):
         return
 
     ###################################################
-    # ASSERT
+    # RPC Change
     ###################################################
-    def my_rpc_metric(self):
-        rpc = self._kernel_entry._rpc # type: Metric
-        return AssertMetric(rpc.metric_preference, rpc.route_metric, self.get_ip())
-        #return AssertMetric.spt_assert_metric(self)
-
     def notify_rpc_change(self, new_rpc):
         return

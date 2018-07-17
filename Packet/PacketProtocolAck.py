@@ -22,7 +22,7 @@ class PacketProtocolAck:
                "NEIGHBOR_SNAPSHOT_SN": self.neighbor_snapshot_sn,
                "MY_SNAPSHOT_SN": self.my_snapshot_sn,
                "SN": self.sequence_number
-               }
+              }
 
         return msg
 

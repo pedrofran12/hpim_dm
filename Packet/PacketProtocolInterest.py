@@ -1,7 +1,5 @@
 import struct
 import socket
-from Packet.PacketPimEncodedUnicastAddress import PacketPimEncodedUnicastAddress
-from Packet.PacketPimJoinPruneMulticastGroup import PacketPimJoinPruneMulticastGroup
 
 ###########################################################################################################
 # JSON FORMAT
@@ -18,7 +16,7 @@ class PacketProtocolInterest:
         msg = {"SOURCE": self.source,
                "GROUP": self.group,
                "SN": self.sequence_number
-               }
+              }
 
         return msg
 
@@ -82,8 +80,9 @@ class PacketNewProtocolInterest:
 
     @classmethod
     def parse_bytes(cls, data: bytes):
-        (tree_source, tree_group, sn) = struct.unpack(PacketNewProtocolInterest.PIM_HDR_INTEREST,
-                                                   data[:PacketNewProtocolInterest.PIM_HDR_INTEREST_LEN])
+        (tree_source, tree_group, sn) = struct.unpack(
+            PacketNewProtocolInterest.PIM_HDR_INTEREST,
+            data[:PacketNewProtocolInterest.PIM_HDR_INTEREST_LEN])
         return cls(tree_source, tree_group, sn)
 
 

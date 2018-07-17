@@ -9,13 +9,6 @@ class PacketProtocolNoLongerUpstream(PacketProtocolInterest):
     def __init__(self, source, group, sequence_number):
         super().__init__(source, group, sequence_number)
 
-    @classmethod
-    def parse_bytes(cls, data: bytes):
-        source = data["SOURCE"]
-        group = data["GROUP"]
-        sn = data["SN"]
-        return cls(source, group, sn)
-
 
 ###########################################################################################################
 # BINARY FORMAT

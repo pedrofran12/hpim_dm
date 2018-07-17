@@ -15,7 +15,7 @@ class PacketProtocolHelloSyncEntry():
                "GROUP": self.group,
                "METRIC": self.metric,
                "METRIC_PREFERENCE": self.metric_preference,
-        }
+              }
 
         return msg
 
@@ -54,7 +54,7 @@ class PacketProtocolHelloSync():
                "TREES": trees,
                "MASTER_FLAG": self.master_flag,
                "MORE_FLAG": self.more_flag,
-               }
+              }
 
         return msg
 
@@ -118,8 +118,9 @@ class PacketNewProtocolSyncEntry():
 
     @staticmethod
     def parse_bytes(data: bytes):
-        (source, group, metric_preference, metric) = struct.unpack(PacketNewProtocolSyncEntry.PIM_HDR_SYNC_ENTRY,
-                                                               data[:PacketNewProtocolSyncEntry.PIM_HDR_SYNC_ENTRY_LEN])
+        (source, group, metric_preference, metric) = struct.unpack(
+            PacketNewProtocolSyncEntry.PIM_HDR_SYNC_ENTRY,
+            data[:PacketNewProtocolSyncEntry.PIM_HDR_SYNC_ENTRY_LEN])
         return PacketNewProtocolSyncEntry(source, group, metric_preference, metric)
 
 
@@ -181,7 +182,8 @@ class PacketNewProtocolSync:
         master_flag = flags_and_sync_sn >> 31
         more_flag = (flags_and_sync_sn & 0x4FFFFFFF) >> 30
         data = data[PacketNewProtocolSync.PIM_HDR_INSTALL_WITHOUT_TREES_LEN:]
-        sync_msg = PacketNewProtocolSync(my_snapshot_sn, neighbor_snapshot_sn, sync_sn, [], master_flag=master_flag, more_flag=more_flag, neighbor_boot_time=neighbor_boot_time)
+        sync_msg = PacketNewProtocolSync(my_snapshot_sn, neighbor_snapshot_sn, sync_sn, [], master_flag=master_flag,
+                                         more_flag=more_flag, neighbor_boot_time=neighbor_boot_time)
         while data != b'':
             tree_msg = PacketNewProtocolSyncEntry.parse_bytes(data)
 

@@ -1,4 +1,3 @@
-from Packet.PacketProtocolInterest import PacketProtocolInterest
 import struct
 import socket
 
@@ -21,7 +20,7 @@ class PacketProtocolUpstream():
                "METRIC": self.metric,
                "METRIC_PREFERENCE": self.metric_preference,
                "SN": self.sequence_number
-               }
+              }
 
         return msg
 

@@ -19,7 +19,7 @@ class TreeState:
 
     @staticmethod
     def transition_to_active(kernel_entry: 'KernelEntry'):
-        if kernel_entry._tree_state == ActiveTree:
+        if kernel_entry.is_tree_active():
             return
         kernel_entry._tree_state = ActiveTree
         for interface in kernel_entry.interface_state.values():
@@ -29,7 +29,7 @@ class TreeState:
 
     @staticmethod
     def transition_to_inactive(kernel_entry: 'KernelEntry'):
-        if kernel_entry._tree_state == InactiveTree:
+        if kernel_entry.is_tree_inactive():
             return
         kernel_entry._tree_state = InactiveTree
         for interface in kernel_entry.interface_state.values():
@@ -39,7 +39,7 @@ class TreeState:
 
     @staticmethod
     def transition_to_unknown(kernel_entry: 'KernelEntry'):
-        if kernel_entry._tree_state == UnknownTree:
+        if kernel_entry.is_tree_unknown():
             return
         kernel_entry._tree_state = UnknownTree
         for interface in kernel_entry.interface_state.values():

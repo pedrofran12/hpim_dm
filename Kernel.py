@@ -3,7 +3,6 @@ import struct
 from threading import RLock, Thread
 import traceback
 import ipaddress
-import netifaces
 import UnicastRouting
 
 from RWLock.RWLock import RWLockWrite
@@ -11,9 +10,7 @@ import Main
 
 from InterfaceProtocol import InterfaceProtocol
 from InterfaceIGMP import InterfaceIGMP
-from tree.KernelEntry import KernelEntry
-from tree.KernelEntryOriginator import KernelEntryOriginator
-from Packet.Packet import Packet
+from tree.KernelEntry import KernelEntry, KernelEntryOriginator, KernelEntryNonOriginator
 from tree import globals
 
 class Kernel:
@@ -190,7 +187,7 @@ class Kernel:
         if thread is not None:
             thread.join()
 
-    def remove_interface(self, interface_name, igmp:bool=False, pim:bool=False):
+    def remove_interface(self, interface_name, igmp: bool = False, pim: bool = False):
         thread = None
         with self.rwlock.genWlock():
             ip_interface = None
@@ -397,14 +394,12 @@ class Kernel:
         return
 
     def is_directly_connected(self, ip):
-
         try:
             unicast_route = UnicastRouting.get_route(ip)
             next_hop = unicast_route["gateway"]
             multipaths = unicast_route["multipath"]
 
             rpf_node = next_hop if next_hop is not None else ip
-            import ipaddress
             highest_ip = ipaddress.ip_address("0.0.0.0")
             for m in multipaths:
                 if m["gateway"] is None:
@@ -492,7 +487,7 @@ class Kernel:
         if ip_dst not in self.routing[ip_src] and is_directly_connected:
             self.routing[ip_src][ip_dst] = KernelEntryOriginator(ip_src, ip_dst, upstream_state_dict, interest_state_dict)
         elif ip_dst not in self.routing[ip_src]:
-            self.routing[ip_src][ip_dst] = KernelEntry(ip_src, ip_dst, upstream_state_dict, interest_state_dict)
+            self.routing[ip_src][ip_dst] = KernelEntryNonOriginator(ip_src, ip_dst, upstream_state_dict, interest_state_dict)
 
     def snapshot_multicast_routing_table(self, interface):
         trees_to_sync = {}
