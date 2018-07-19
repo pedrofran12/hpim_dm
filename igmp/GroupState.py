@@ -2,13 +2,22 @@ from threading import Timer
 from .wrapper import NoMembersPresent
 from utils import GroupMembershipInterval, LastMemberQueryInterval, TYPE_CHECKING
 from threading import Lock
+import logging
 
 if TYPE_CHECKING:
     from .RouterState import RouterState
 
 
 class GroupState(object):
+    LOGGER = logging.getLogger('protocol.igmp.RouterState.GroupState')
+
     def __init__(self, router_state: 'RouterState', group_ip: str):
+        #logger
+        extra_dict_logger = router_state.router_state_logger.extra.copy()
+        extra_dict_logger['tree'] = '(*,' + group_ip + ')'
+        self.group_state_logger = logging.LoggerAdapter(GroupState.LOGGER, extra_dict_logger)
+
+        #timers and state
         self.router_state = router_state
         self.group_ip = group_ip
         self.state = NoMembersPresent
@@ -24,6 +33,13 @@ class GroupState(object):
 
     def print_state(self):
         return self.state.print_state()
+
+    ###########################################
+    # Set state
+    ###########################################
+    def set_state(self, state):
+        self.state = state
+        self.group_state_logger.debug("change membership state to: " + state.print_state())
 
     ###########################################
     # Set timers

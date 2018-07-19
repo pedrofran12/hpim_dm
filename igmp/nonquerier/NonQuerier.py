@@ -12,11 +12,13 @@ class NonQuerier:
 
     @staticmethod
     def general_query_timeout(router_state: 'RouterState'):
+        router_state.router_state_logger.debug('NonQuerier state: general_query_timeout')
         # do nothing
         return
 
     @staticmethod
     def other_querier_present_timeout(router_state: 'RouterState'):
+        router_state.router_state_logger.debug('NonQuerier state: other_querier_present_timeout')
         #change state to Querier
         router_state.change_interface_state(querier=True)
 
@@ -29,6 +31,7 @@ class NonQuerier:
 
     @staticmethod
     def receive_query(router_state: 'RouterState', packet: ReceivedPacket):
+        router_state.router_state_logger.debug('NonQuerier state: receive_query')
         source_ip = packet.ip_header.ip_src
 
         # if source ip of membership query not lower than the ip of the received interface => ignore

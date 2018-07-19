@@ -1,6 +1,7 @@
 from Packet.PacketIGMPHeader import PacketIGMPHeader
 from Packet.ReceivedPacket import ReceivedPacket
 from threading import Timer
+import logging
 from utils import Membership_Query, QueryResponseInterval, QueryInterval, OtherQuerierPresentInterval, TYPE_CHECKING
 from .querier.Querier import Querier
 from .nonquerier.NonQuerier import NonQuerier
@@ -12,7 +13,15 @@ if TYPE_CHECKING:
 
 
 class RouterState(object):
+    ROUTER_STATE_LOGGER = logging.getLogger('protocol.igmp.RouterState')
+
     def __init__(self, interface: 'InterfaceIGMP'):
+        #logger
+        logger_extra = dict()
+        logger_extra['vif'] = interface.vif_index
+        logger_extra['interfacename'] = interface.interface_name
+        self.router_state_logger = logging.LoggerAdapter(RouterState.ROUTER_STATE_LOGGER, logger_extra)
+
         # interface of the router connected to the network
         self.interface = interface
 
@@ -75,8 +84,10 @@ class RouterState(object):
     def change_interface_state(self, querier: bool):
         if querier:
             self.interface_state = Querier
+            self.router_state_logger.debug('change querier state to -> Querier')
         else:
             self.interface_state = NonQuerier
+            self.router_state_logger.debug('change querier state to -> NonQuerier')
 
     ############################################
     # group state methods
