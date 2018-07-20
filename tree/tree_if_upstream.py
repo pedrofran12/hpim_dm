@@ -11,7 +11,7 @@ import Main
 class TreeInterfaceUpstream(TreeInterface):
     LOGGER = logging.getLogger('protocol.KernelEntry.RootInterface')
 
-    def __init__(self, kernel_entry, interface_id, best_upstream_router, was_non_root=False, previous_tree_state=None, current_tree_state=None):
+    def __init__(self, kernel_entry, interface_id, best_upstream_router, was_non_root, previous_tree_state, current_tree_state):
         extra_dict_logger = kernel_entry.kernel_entry_logger.extra.copy()
         extra_dict_logger['vif'] = interface_id
         extra_dict_logger['interfacename'] = Main.kernel.vif_index_to_name_dic[interface_id]
@@ -103,24 +103,18 @@ class TreeInterfaceUpstream(TreeInterface):
     ###########################################
     def send_my_interest(self):
         if self.is_node_in_tree() and not self.is_S_directly_conn():
-            #self._message_state.send_new_interest(self)
             self.send_interest()
         elif not self.is_S_directly_conn():
-            #self._message_state.send_new_no_interest(self)
             self.send_no_interest()
 
     # event 5
     def node_is_out_tree(self):
-        #if not self.is_S_directly_conn() and (self._was_in_tree or force) and self._best_upstream_router is not None:
         if self.is_tree_active() and not self.is_S_directly_conn() and self._best_upstream_router is not None:
-            #self._upstream_state.transition_to_it_or_ot_and_active_tree(self)
             SFMRRootState.transition_to_it_or_ot_and_active_tree(self)
 
     # event 5
     def node_is_in_tree(self):
-        #if not self.is_S_directly_conn() and (not self._was_in_tree or force) and self._best_upstream_router is not None:
         if self.is_tree_active() and not self.is_S_directly_conn() and self._best_upstream_router is not None:
-            #self._upstream_state.transition_to_it_or_ot_and_active_tree(self)
             SFMRRootState.transition_to_it_or_ot_and_active_tree(self)
 
     ####################################################################

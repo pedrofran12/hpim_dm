@@ -16,7 +16,7 @@ class KernelEntry:
     KERNEL_LOGGER = logging.getLogger('protocol.KernelEntry')
 
     def __init__(self, source_ip: str, group_ip: str, upstream_state_dic, interest_state_dic):
-        self.kernel_entry_logger = logging.LoggerAdapter(KernelEntry.KERNEL_LOGGER, {'tree': '(' + source_ip + ',' + group_ip + ')'})
+        self.kernel_entry_logger = logging.LoggerAdapter(self.KERNEL_LOGGER, {'tree': '(' + source_ip + ',' + group_ip + ')'})
         self.kernel_entry_logger.debug('Create KernelEntry')
 
         self.source_ip = source_ip
@@ -131,6 +131,10 @@ class KernelEntry:
     def is_tree_unknown(self):
         return self._tree_state.is_unknown()
 
+    def set_tree_state(self, tree_state):
+        self.kernel_entry_logger.debug('tree transitions to ' + tree_state.__name__)
+        self._tree_state = tree_state
+
     ###############################################################
     # Unicast Changes to RPF
     ###############################################################
@@ -210,9 +214,8 @@ class KernelEntry:
                 self.change()
                 self.evaluate_in_tree_change()
 
-class KernelEntryNonOriginator(KernelEntry):
-    KERNEL_LOGGER = logging.getLogger('protocol.KernelEntry')
 
+class KernelEntryNonOriginator(KernelEntry):
     def __init__(self, source_ip: str, group_ip: str, upstream_state_dic, interest_state_dic):
         super().__init__(source_ip, group_ip, upstream_state_dic, interest_state_dic)
 
@@ -247,6 +250,7 @@ class KernelEntryNonOriginator(KernelEntry):
             upstream_state = self._upstream_interface_state.get(self.inbound_interface_index, None)
             self.interface_state[self.inbound_interface_index] = TreeInterfaceUpstream(self, self.inbound_interface_index,
                                                                                        upstream_state,
+                                                                                       was_non_root=False,
                                                                                        previous_tree_state=UnknownTree,
                                                                                        current_tree_state=self._tree_state)
 
@@ -271,13 +275,13 @@ class KernelEntryNonOriginator(KernelEntry):
         if self._upstream_interface_state.get(self.inbound_interface_index, None) is not None:
             # tree is Active
             print("PARA ACTIVE")
-            self._tree_state = ActiveTree
+            self.set_tree_state(ActiveTree)
         elif not all(value is None for value in self._upstream_interface_state.values()):
             print("PARA INACTIVE")
-            self._tree_state = InactiveTree
+            self.set_tree_state(InactiveTree)
         else:
             print("PARA UNKNOWN")
-            self._tree_state = UnknownTree
+            self.set_tree_state(UnknownTree)
 
     ###############################################################
     # Unicast Changes to RPF

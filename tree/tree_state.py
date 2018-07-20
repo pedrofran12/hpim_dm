@@ -21,7 +21,7 @@ class TreeState:
     def transition_to_active(kernel_entry: 'KernelEntry'):
         if kernel_entry.is_tree_active():
             return
-        kernel_entry._tree_state = ActiveTree
+        kernel_entry.set_tree_state(ActiveTree)
         for interface in kernel_entry.interface_state.values():
             interface.tree_transition_to_active()
         kernel_entry.change()
@@ -31,7 +31,7 @@ class TreeState:
     def transition_to_inactive(kernel_entry: 'KernelEntry'):
         if kernel_entry.is_tree_inactive():
             return
-        kernel_entry._tree_state = InactiveTree
+        kernel_entry.set_tree_state(InactiveTree)
         for interface in kernel_entry.interface_state.values():
             interface.tree_transition_to_inactive()
         kernel_entry.change()
@@ -41,7 +41,7 @@ class TreeState:
     def transition_to_unknown(kernel_entry: 'KernelEntry'):
         if kernel_entry.is_tree_unknown():
             return
-        kernel_entry._tree_state = UnknownTree
+        kernel_entry.set_tree_state(UnknownTree)
         for interface in kernel_entry.interface_state.values():
             interface.tree_transition_to_unknown()
         kernel_entry.remove_entry()

@@ -1,5 +1,5 @@
-from ..wrapper import MembersPresent
 from utils import TYPE_CHECKING
+from ..wrapper import MembersPresent
 
 if TYPE_CHECKING:
     from ..GroupState import GroupState

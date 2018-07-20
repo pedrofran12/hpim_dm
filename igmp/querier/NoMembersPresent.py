@@ -1,6 +1,6 @@
+from utils import TYPE_CHECKING
 from ..wrapper import MembersPresent
 from ..wrapper import Version1MembersPresent
-from utils import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..GroupState import GroupState
 

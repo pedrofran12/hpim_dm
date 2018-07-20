@@ -1,12 +1,13 @@
-from Packet.PacketIGMPHeader import PacketIGMPHeader
-from Packet.ReceivedPacket import ReceivedPacket
 from threading import Timer
 import logging
+
+from Packet.PacketIGMPHeader import PacketIGMPHeader
+from Packet.ReceivedPacket import ReceivedPacket
 from utils import Membership_Query, QueryResponseInterval, QueryInterval, OtherQuerierPresentInterval, TYPE_CHECKING
+from RWLock.RWLock import RWLockWrite
 from .querier.Querier import Querier
 from .nonquerier.NonQuerier import NonQuerier
 from .GroupState import GroupState
-from RWLock.RWLock import RWLockWrite
 
 if TYPE_CHECKING:
     from InterfaceIGMP import InterfaceIGMP

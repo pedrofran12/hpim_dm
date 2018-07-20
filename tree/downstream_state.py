@@ -21,11 +21,11 @@ class SFMRDownstreamStateABC(metaclass=ABCMeta):
 class SFMRDownstreamInterested(SFMRDownstreamStateABC):
     @staticmethod
     def in_tree(interface: 'TreeInterfaceDownstream') -> None:
-        interface.downstream_logger.debug('IT, DI -> DI')
+        interface.downstream_logger.debug('DownstreamInterest -> DownstreamInterest')
 
     @staticmethod
     def out_tree(interface: 'TreeInterfaceDownstream') -> None:
-        interface.downstream_logger.debug('OT, DI -> NDI')
+        interface.downstream_logger.debug('DownstreamInterest -> NoDownstreamInterest')
         interface.set_downstream_node_interest_state(SFMRPruneState.NDI)
 
     def __str__(self):
@@ -35,12 +35,12 @@ class SFMRDownstreamInterested(SFMRDownstreamStateABC):
 class SFMRNoDownstreamInterested(SFMRDownstreamStateABC):
     @staticmethod
     def in_tree(interface: 'TreeInterfaceDownstream') -> None:
-        interface.downstream_logger.debug('IT, NDI -> DI')
+        interface.downstream_logger.debug('NoDownstreamInterest -> DownstreamInterest')
         interface.set_downstream_node_interest_state(SFMRPruneState.DI)
 
     @staticmethod
     def out_tree(interface: 'TreeInterfaceDownstream') -> None:
-        interface.downstream_logger.debug('OT, NDI -> NDI')
+        interface.downstream_logger.debug('NoDownstreamInterest -> NoDownstreamInterest')
 
     def __str__(self):
         return 'NDI'

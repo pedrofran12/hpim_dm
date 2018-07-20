@@ -1,6 +1,6 @@
 from Packet.PacketIGMPHeader import PacketIGMPHeader
-from ..wrapper import Version1MembersPresent, CheckingMembership, NoMembersPresent
 from utils import Membership_Query, LastMemberQueryInterval, TYPE_CHECKING
+from ..wrapper import Version1MembersPresent, CheckingMembership, NoMembersPresent
 if TYPE_CHECKING:
     from ..GroupState import GroupState
 

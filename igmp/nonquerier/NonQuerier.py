@@ -1,8 +1,8 @@
+from ipaddress import IPv4Address
 from utils import Membership_Query, QueryResponseInterval, LastMemberQueryCount, TYPE_CHECKING
 from Packet.PacketIGMPHeader import PacketIGMPHeader
 from Packet.ReceivedPacket import ReceivedPacket
 from . import NoMembersPresent, MembersPresent, CheckingMembership
-from ipaddress import IPv4Address
 
 if TYPE_CHECKING:
     from ..RouterState import RouterState

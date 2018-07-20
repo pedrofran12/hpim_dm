@@ -1,8 +1,9 @@
-from threading import Timer
-from .wrapper import NoMembersPresent
-from utils import GroupMembershipInterval, LastMemberQueryInterval, TYPE_CHECKING
-from threading import Lock
 import logging
+from threading import Lock
+from threading import Timer
+
+from utils import GroupMembershipInterval, LastMemberQueryInterval, TYPE_CHECKING
+from .wrapper import NoMembersPresent
 
 if TYPE_CHECKING:
     from .RouterState import RouterState

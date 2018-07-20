@@ -4,25 +4,30 @@ if TYPE_CHECKING:
     from .tree_if_downstream import TreeInterfaceDownstream
 
 
-class SFMRNonRootStateABCNEW():
+class SFMRNonRootState:
     @staticmethod
     def interfaces_roles_dont_change_and_tree_transitions_to_active_state(interface: 'TreeInterfaceDownstream') -> None:
+        interface.logger.debug('interfaces_roles_dont_change_and_tree_transitions_to_active_state')
         interface.send_i_am_upstream()
 
     @staticmethod
     def interfaces_roles_change_and_tree_remains_or_transitions_to_active_state(interface: 'TreeInterfaceDownstream') -> None:
+        interface.logger.debug('interfaces_roles_change_and_tree_remains_or_transitions_to_active_state')
         interface.send_i_am_upstream()
 
     @staticmethod
     def tree_transitions_from_active_to_inactive_and_best_upstream_neighbor_is_null(interface: 'TreeInterfaceDownstream'):
+        interface.logger.debug('tree_transitions_from_active_to_inactive_and_best_upstream_neighbor_is_null')
         interface.send_i_am_no_longer_upstream()
 
     @staticmethod
     def tree_transitions_from_active_to_unknown(interface: 'TreeInterfaceDownstream'):
+        interface.logger.debug('tree_transitions_from_active_to_unknown')
         interface.send_i_am_no_longer_upstream()
 
     @staticmethod
     def tree_transitions_from_active_to_inactive_and_best_upstream_neighbor_is_not_null(interface: 'TreeInterfaceDownstream'):
+        interface.logger.debug('tree_transitions_from_active_to_inactive_and_best_upstream_neighbor_is_not_null')
         interface.send_i_am_no_longer_upstream()
         interface.send_no_interest()
 
@@ -38,10 +43,12 @@ class SFMRNonRootStateABCNEW():
 
     @staticmethod
     def tree_remains_inactive_and_best_upstream_router_reelected(interface: 'TreeInterfaceDownstream'):
+        interface.logger.debug('interfaces_roles_dont_change_and_tree_transitions_to_active_state')
         interface.send_no_interest()
 
     @staticmethod
     def tree_transitions_from_unknown_to_inactive_and_best_upstream_is_not_null(interface: 'TreeInterfaceDownstream'):
+        interface.logger.debug('tree_transitions_from_unknown_to_inactive_and_best_upstream_is_not_null')
         interface.send_no_interest()
 
 
@@ -53,4 +60,5 @@ class SFMRNonRootStateABCNEW():
 
     @staticmethod
     def tree_is_active_and_my_rpc_changes(interface: 'TreeInterfaceDownstream') -> None:
+        interface.logger.debug('tree_is_active_and_my_rpc_changes')
         interface.send_i_am_upstream()
