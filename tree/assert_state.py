@@ -13,11 +13,17 @@ class SFMRAssertWinner(SFMRAssertABC):
     def is_assert_winner():
         return True
 
+    def __str__(self):
+        return "AssertWinner"
+
 
 class SFMRAssertLoser(SFMRAssertABC):
     @staticmethod
     def is_assert_winner():
         return False
+
+    def __str__(self):
+        return "AssertLoser"
 
 
 class AssertState():

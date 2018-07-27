@@ -128,6 +128,3 @@ class TreeInterfaceUpstream(TreeInterface):
         self.socket_pkt.close()
         super().delete()
         #self.cancel_message()
-
-    def is_downstream(self):
-        return False

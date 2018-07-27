@@ -119,7 +119,7 @@ def list_neighbors_state():
     t = PrettyTable(['Interface', 'Neighbor', 'Tree', 'Interest State'])
     for interface in interfaces_list:
         for neighbor in interface.get_neighbors():
-            for (tree_id, tree_state) in neighbor.tree_state.copy().items():
+            for (tree_id, tree_state) in neighbor.tree_interest_state.copy().items():
                 t.add_row([interface.interface_name, neighbor.ip, tree_id, tree_state])
     table_txt += "\n\n\nInterest state:\n" + str(t)
     return str(table_txt)
@@ -137,16 +137,16 @@ def list_routing_state():
         ip = entry.source_ip
         group = entry.group_ip
         upstream_if_index = entry.inbound_interface_index
-        tree_state = entry._tree_state.__name__
+        tree_state = str(entry._tree_state)
 
         for index in vif_indexes:
             interface_state = entry.interface_state[index]
             interface_name = kernel.vif_index_to_name_dic[index]
-            local_membership = type(interface_state._local_membership_state).__name__
+            local_membership = str(interface_state._local_membership_state)
             try:
                 if index != upstream_if_index:
-                    assert_state = type(interface_state._assert_state).__name__
-                    prune_state = type(interface_state._downstream_node_interest_state).__name__
+                    assert_state = str(interface_state._assert_state)
+                    prune_state = str(interface_state._downstream_node_interest_state)
                     is_forwarding = interface_state.is_forwarding()
                 else:
                     assert_state = "--"

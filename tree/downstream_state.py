@@ -29,7 +29,7 @@ class SFMRDownstreamInterested(SFMRDownstreamStateABC):
         interface.set_downstream_node_interest_state(SFMRPruneState.NDI)
 
     def __str__(self):
-        return 'DI'
+        return 'DownstreamInterest'
 
 
 class SFMRNoDownstreamInterested(SFMRDownstreamStateABC):
@@ -43,7 +43,7 @@ class SFMRNoDownstreamInterested(SFMRDownstreamStateABC):
         interface.downstream_logger.debug('NoDownstreamInterest -> NoDownstreamInterest')
 
     def __str__(self):
-        return 'NDI'
+        return 'NoDownstreamInterest'
 
 
 class SFMRPruneState():

@@ -3,6 +3,7 @@ import traceback
 from threading import Timer, RLock
 import socket
 import time
+import logging
 import netifaces
 
 from Interface import Interface
@@ -46,8 +47,12 @@ class InterfaceProtocol(Interface):
     HELLO_PERIOD = 30
     TRIGGERED_HELLO_PERIOD = 5
 
+    LOGGER = logging.getLogger('protocol.Interface')
 
     def __init__(self, interface_name: str, vif_index: int):
+        self.interface_logger = logging.LoggerAdapter(InterfaceProtocol.LOGGER, {'vif': vif_index,
+                                                                                 'interfacename': interface_name})
+
         # Generate BootTime
         self.time_of_boot = int(time.time())
 
@@ -284,6 +289,9 @@ class InterfaceProtocol(Interface):
         checkpoint_sn = 0
         if "CHECKPOINT_SN" in options:
             checkpoint_sn = options["CHECKPOINT_SN"].checkpoint_sn
+        self.interface_logger.debug('Received Hello message with HelloHoldTime: ' + str(hello_hold_time) +
+                                    '; CheckpointSN: ' + str(checkpoint_sn) + ' from neighbor ' + ip)
+
         with self.neighbors_lock:
             if ip in self.neighbors:
                 self.neighbors[ip].recv_hello(boot_time, hello_hold_time, checkpoint_sn)
@@ -309,6 +317,15 @@ class InterfaceProtocol(Interface):
         master_flag = pkt_hs.master_flag
         more_flag = pkt_hs.more_flag
 
+        self.interface_logger.debug('Received Sync message with BootTime: ' + str(boot_time) +
+                                    '; NeighborBootTime: ' + str(my_boot_time) +
+                                    '; MySnapshotSN: ' + str(neighbor_sn) +
+                                    '; NeighborSnapshotSN: ' + str(my_sn) +
+                                    '; SyncSN: ' + str(sync_sn) +
+                                    '; Master flag: ' + str(master_flag) +
+                                    '; More flag: ' + str(more_flag) +
+                                    ' from neighbor ' + ip)
+
         with self.neighbors_lock:
             if ip not in self.neighbors:
                 self.new_neighbor(ip, boot_time, detected_via_non_sync_msg=False)
@@ -327,6 +344,11 @@ class InterfaceProtocol(Interface):
         source_group = (pkt_jt.source, pkt_jt.group)
         sequence_number = pkt_jt.sequence_number
 
+        self.interface_logger.debug('Received Interest message with BootTime: ' + str(boot_time) +
+                                    '; Tree: ' + str(source_group) +
+                                    '; SN: ' + str(sequence_number) +
+                                    ' from neighbor ' + neighbor_source_ip)
+
         # check neighbor existence
         with self.neighbors_lock:
             neighbor = self.neighbors.get(neighbor_source_ip, None)
@@ -337,13 +359,12 @@ class InterfaceProtocol(Interface):
             try:
                 if neighbor.recv_reliable_packet(sequence_number, source_group, boot_time):
                     if source_group not in neighbor.tree_metric_state:
-                        neighbor.tree_state[source_group] = True
+                        neighbor.tree_interest_state[source_group] = True
                         Main.kernel.recv_interest_msg(source_group, self)
                     else:
-                        neighbor.tree_state[source_group] = True
-                        #neighbor.tree_metric_state[source_group] = None
+                        neighbor.tree_interest_state[source_group] = True
                         neighbor.tree_metric_state.pop(source_group, None)
-                        Main.kernel.recv_install_or_uninstall_msg(source_group, self)
+                        Main.kernel.recv_upstream_msg(source_group, self)
             except:
                 traceback.print_exc()
 
@@ -357,6 +378,11 @@ class InterfaceProtocol(Interface):
         source_group = (pkt_jt.source, pkt_jt.group)
         sequence_number = pkt_jt.sequence_number
 
+        self.interface_logger.debug('Received NoInterest message with BootTime: ' + str(boot_time) +
+                                    '; Tree: ' + str(source_group) +
+                                    '; SN: ' + str(sequence_number) +
+                                    ' from neighbor ' + neighbor_source_ip)
+
         # check neighbor existence
         with self.neighbors_lock:
             neighbor = self.neighbors.get(neighbor_source_ip, None)
@@ -367,13 +393,12 @@ class InterfaceProtocol(Interface):
             try:
                 if neighbor.recv_reliable_packet(sequence_number, source_group, boot_time):
                     if source_group not in neighbor.tree_metric_state:
-                        neighbor.tree_state[source_group] = False
+                        neighbor.tree_interest_state[source_group] = False
                         Main.kernel.recv_interest_msg(source_group, self)
                     else:
-                        neighbor.tree_state[source_group] = False
-                        #neighbor.tree_metric_state[source_group] = None
+                        neighbor.tree_interest_state[source_group] = False
                         neighbor.tree_metric_state.pop(source_group, None)
-                        Main.kernel.recv_install_or_uninstall_msg(source_group, self)
+                        Main.kernel.recv_upstream_msg(source_group, self)
             except:
                 traceback.print_exc()
 
@@ -391,6 +416,13 @@ class InterfaceProtocol(Interface):
         metric = pkt_jt.metric
         received_metric = AssertMetric(metric_preference=metric_preference, route_metric=metric, ip_address=neighbor_source_ip)
 
+        self.interface_logger.debug('Received IamUpstream message with BootTime: ' + str(boot_time) +
+                                    '; Tree: ' + str(source_group) +
+                                    '; SN: ' + str(sequence_number) +
+                                    '; MetricPreference: ' + str(metric_preference) +
+                                    '; Metric: ' + str(metric) +
+                                    ' from neighbor ' + neighbor_source_ip)
+
         # check neighbor existence
         with self.neighbors_lock:
             neighbor = self.neighbors.get(neighbor_source_ip, None)
@@ -400,10 +432,9 @@ class InterfaceProtocol(Interface):
 
             try:
                 if neighbor.recv_reliable_packet(sequence_number, source_group, boot_time):
-                    #neighbor.tree_state[source_group] = False
-                    neighbor.tree_state.pop(source_group, None)
+                    neighbor.tree_interest_state.pop(source_group, None)
                     neighbor.tree_metric_state[source_group] = received_metric
-                    Main.kernel.recv_install_or_uninstall_msg(source_group, self)
+                    Main.kernel.recv_upstream_msg(source_group, self)
             except:
                 traceback.print_exc()
 
@@ -416,6 +447,11 @@ class InterfaceProtocol(Interface):
         source_group = (pkt_jt.source, pkt_jt.group)
         sequence_number = pkt_jt.sequence_number
 
+        self.interface_logger.debug('Received IamNoLongerUpstream message with BootTime: ' + str(boot_time) +
+                                    '; Tree: ' + str(source_group) +
+                                    '; SN: ' + str(sequence_number) +
+                                    ' from neighbor ' + neighbor_source_ip)
+
         # check neighbor existence
         with self.neighbors_lock:
             neighbor = self.neighbors.get(neighbor_source_ip, None)
@@ -425,11 +461,9 @@ class InterfaceProtocol(Interface):
 
             try:
                 if neighbor.recv_reliable_packet(sequence_number, source_group, boot_time):
-                    #neighbor.tree_state[source_group] = True
-                    neighbor.tree_state.pop(source_group, None)
-                    #neighbor.tree_metric_state[source_group] = None
+                    neighbor.tree_interest_state.pop(source_group, None)
                     neighbor.tree_metric_state.pop(source_group, None)
-                    Main.kernel.recv_install_or_uninstall_msg(source_group, self)
+                    Main.kernel.recv_upstream_msg(source_group, self)
             except:
                 traceback.print_exc()
 
@@ -446,7 +480,14 @@ class InterfaceProtocol(Interface):
         neighbor_snapshot_sn = pkt_ack.my_snapshot_sn
         sequence_number = pkt_ack.sequence_number
 
-        print("RECEBI ACK")
+        self.interface_logger.debug('Received Ack message with BootTime: ' + str(neighbor_boot_time) +
+                                    '; NeighborBootTime: ' + str(my_boot_time) +
+                                    '; MySnapshotSN: ' + str(neighbor_snapshot_sn) +
+                                    '; NeighborSnapshotSN: ' + str(my_snapshot_sn) +
+                                    '; Tree: ' + str(source_group) +
+                                    '; SN: ' + str(sequence_number) +
+                                    ' from neighbor ' + neighbor_source_ip)
+
 
         # check neighbor existence
         with self.neighbors_lock:

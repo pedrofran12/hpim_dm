@@ -1,9 +1,11 @@
-from abc import ABCMeta, abstractmethod
-import Main
-from threading import RLock
-from .metric import AssertMetric, Metric
-from .local_membership import LocalMembership
 import logging
+from threading import RLock
+from abc import ABCMeta, abstractmethod
+
+import Main
+from .tree_state import TreeState
+from .local_membership import LocalMembership
+
 
 class TreeInterface(metaclass=ABCMeta):
     def __init__(self, kernel_entry, interface_id, best_upstream_router, current_tree_state, logger: logging.LoggerAdapter):
@@ -111,16 +113,13 @@ class TreeInterface(metaclass=ABCMeta):
     # Tree transitions
     ##########################################################
     def tree_transition_to_active(self):
-        from .KernelEntry import ActiveTree
-        self.current_tree_state = ActiveTree
+        self.current_tree_state = TreeState.Active
 
     def tree_transition_to_inactive(self):
-        from .KernelEntry import InactiveTree
-        self.current_tree_state = InactiveTree
+        self.current_tree_state = TreeState.Inactive
 
     def tree_transition_to_unknown(self):
-        from .KernelEntry import UnknownTree
-        self.current_tree_state = UnknownTree
+        self.current_tree_state = TreeState.Unknown
 
 
     #############################################################
@@ -179,10 +178,6 @@ class TreeInterface(metaclass=ABCMeta):
 
     def get_state_lock(self):
         return self._kernel_entry.CHANGE_STATE_LOCK
-
-    @abstractmethod
-    def is_downstream(self):
-        raise NotImplementedError()
 
     def is_S_directly_conn(self):
         return self._kernel_entry.rpf_node == self._kernel_entry.source_ip

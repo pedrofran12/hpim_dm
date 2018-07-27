@@ -107,6 +107,3 @@ class TreeInterfaceUpstreamOriginator(TreeInterface):
         super().delete()
         self.clear_source_active_timer()
         self._source_active_timer = None
-
-    def is_downstream(self):
-        return False

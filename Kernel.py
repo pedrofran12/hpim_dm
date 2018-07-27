@@ -430,13 +430,11 @@ class Kernel:
                 for group_ip in list(self.routing[source_ip].keys()):
                     self.routing[source_ip][group_ip].network_update()
 
-    def recv_install_or_uninstall_msg(self, source_group, interface: "InterfaceProtocol"):
+    def recv_upstream_msg(self, source_group, interface: "InterfaceProtocol"):
         ip_src = source_group[0]
         ip_dst = source_group[1]
 
-        interest_state = False
-        upstream_state = None
-        print("ENTROU RCV_INSTALL")
+        print("ENTROU RCV_UPSTREAM")
         with self.rwlock.genWlock():
             (interest_state, upstream_state) = interface.get_tree_state(source_group)
             tree_is_not_unknown = upstream_state is not None
@@ -449,7 +447,7 @@ class Kernel:
                 self.routing[ip_src][ip_dst].check_interface_state(interface.vif_index, upstream_state, interest_state)
             else:
                 interface.remove_tree_state(ip_src, ip_dst)
-        print("SAIU RCV_INSTALL")
+        print("SAIU RCV_UPSTREAM")
 
     def recv_interest_msg(self, source_group, interface: "InterfaceProtocol"):
         ip_src = source_group[0]

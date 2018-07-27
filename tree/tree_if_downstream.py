@@ -26,13 +26,13 @@ class TreeInterfaceDownstream(TreeInterface):
             self._downstream_node_interest_state = SFMRPruneState.DI
         else:
             self._downstream_node_interest_state = SFMRPruneState.NDI
-        self.downstream_logger.debug(str(self._downstream_node_interest_state))
+        self.downstream_logger.debug('Downstream interest state transitions to ' + str(self._downstream_node_interest_state))
 
         # Assert Winner State
         self._assert_state = AssertState.Winner
+        self.assert_logger.debug('Assert state transitions to ' + str(self._assert_state))
         self._my_assert_rpc = AssertMetric(rpc.metric_preference, rpc.route_metric, self.get_ip())
         self.calculate_assert_winner()
-        self.assert_logger.debug(str(self._assert_state))
 
         # Deal with messages according to tree state and interface role change
         # Event 1
@@ -89,7 +89,7 @@ class TreeInterfaceDownstream(TreeInterface):
         with self.get_state_lock():
             if new_state != self._assert_state:
                 self._assert_state = new_state
-                self.assert_logger.debug(str(new_state))
+                self.assert_logger.debug('Assert state transitions to ' + str(new_state))
 
                 self.change_tree()
                 self.evaluate_in_tree()
@@ -101,7 +101,7 @@ class TreeInterfaceDownstream(TreeInterface):
         with self.get_state_lock():
             if new_state != self._downstream_node_interest_state:
                 self._downstream_node_interest_state = new_state
-                self.downstream_logger.debug(str(new_state))
+                self.downstream_logger.debug('Downstream interest state transitions to ' + str(new_state))
 
                 self.change_tree()
                 self.evaluate_in_tree()
@@ -182,7 +182,6 @@ class TreeInterfaceDownstream(TreeInterface):
     def is_in_tree(self):
         return self.igmp_has_members() or self.are_downstream_nodes_interested()
 
-
     def are_downstream_nodes_interested(self):
         return self._downstream_node_interest_state == SFMRPruneState.DI
 
@@ -192,15 +191,8 @@ class TreeInterfaceDownstream(TreeInterface):
         #self.cancel_message()
         self._my_assert_rpc = None
 
-    def is_downstream(self):
-        return True
-
     def is_assert_winner(self):
         return self._assert_state is not None and self._assert_state.is_assert_winner()
-
-    def assert_winner_nlt_expires(self):
-        self._assert_state.aw_failure(self)
-
 
     def notify_rpc_change(self, new_rpc: Metric):
         if new_rpc == self._my_assert_rpc:

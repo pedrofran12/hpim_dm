@@ -1,5 +1,9 @@
 import time
+import logging
+import ipaddress
 from threading import Timer
+
+import Main
 from utils import HELLO_HOLD_TIME_NO_TIMEOUT, HELLO_HOLD_TIME_TIMEOUT, TYPE_CHECKING
 from tree.metric import AssertMetric
 from tree import globals
@@ -28,7 +32,7 @@ class NeighborState():
         neighbor.start_snapshot()
 
         # Remove all info from neighbor (if already knew it)
-        neighbor.tree_state.clear()
+        neighbor.tree_interest_state.clear()
         neighbor.tree_metric_state.clear()
         neighbor.last_sequence_number.clear()
         neighbor.current_sync_sn = 0
@@ -156,7 +160,6 @@ class Slave(NeighborState):
 
         if sync_sn == 0 and master_bit:
             print("HERE1")
-            import ipaddress
             my_ip = ipaddress.ip_address(neighbor.contact_interface.get_ip())
             neighbor_ip = ipaddress.ip_address(neighbor.ip)
             if my_ip < neighbor_ip:
@@ -223,7 +226,7 @@ class Unknown(NeighborState):
             neighbor.start_snapshot()
 
             # Remove all info from neighbor (if already knew it)
-            neighbor.tree_state.clear()
+            neighbor.tree_interest_state.clear()
             neighbor.tree_metric_state.clear()
             neighbor.last_sequence_number.clear()
             neighbor.current_sync_sn = 0
@@ -237,13 +240,16 @@ class Unknown(NeighborState):
 
 
 class Neighbor:
-    RETRANSMISSION_TIMEOUT = 10
-    GARBAGE_COLLECT_TIMEOUT = 120
+    LOGGER = logging.getLogger('protocol.Interface.Neighbor')
 
     def __init__(self, contact_interface: "InterfaceProtocol", ip, hello_hold_time: int, neighbor_time_of_boot: int,
                  my_interface_boot_time: int):
         if hello_hold_time == HELLO_HOLD_TIME_TIMEOUT:
             raise Exception
+        logger_info = dict(contact_interface.interface_logger.extra)
+        logger_info['neighbor_ip'] = ip
+        self.neighbor_logger = logging.LoggerAdapter(self.LOGGER, logger_info)
+
         self.contact_interface = contact_interface
         self.ip = ip
         self.time_of_boot = neighbor_time_of_boot
@@ -257,7 +263,7 @@ class Neighbor:
         self.current_sync_sn = 0
 
         # Tree Database storage
-        self.tree_state = {}
+        self.tree_interest_state = {}
         self.tree_metric_state = {}
 
         # Control if received control packets should be processed
@@ -266,6 +272,7 @@ class Neighbor:
 
         self.sync_timer = None
         self.neighbor_state = Unknown
+        self.neighbor_logger.debug('Neighbor state Transitions to ' + self.neighbor_state.__name__)
 
         # checkpoint sn
         self.checkpoint_sn = 0
@@ -310,8 +317,12 @@ class Neighbor:
             return
 
         self.neighbor_state = state
+        self.neighbor_logger.debug('Neighbor state Transitions to ' + state.__name__ +
+                                   ' with MyBootTime=' + str(self.my_snapshot_boot_time) +
+                                   '; MySnapshotSN=' + str(self.my_snapshot_sequencer) +
+                                   '; NeighborBootTime=' + str(self.time_of_boot) +
+                                   '; NeighborSnapshotSN=' + str(self.neighbor_snapshot_sn))
         if state == Updated:
-            import Main
             Main.kernel.recheck_all_trees(self.contact_interface)
 
     def install_tree_state(self, tree_state: list):
@@ -320,18 +331,16 @@ class Neighbor:
             if self.last_sequence_number.get(tree_id, 0) > self.neighbor_snapshot_sn:
                 continue
 
-            self.tree_metric_state[tree_id] = AssertMetric(metric_preference=t.metric_preference, route_metric=t.metric, ip_address=self.ip)
+            self.tree_metric_state[tree_id] = AssertMetric(metric_preference=t.metric_preference,
+                                                           route_metric=t.metric, ip_address=self.ip)
 
     def remove_tree_state(self, source, group):
-        self.tree_state.pop((source, group), None)
+        self.tree_interest_state.pop((source, group), None)
 
     def get_known_trees(self):
         a = set(self.tree_metric_state.keys())
-        b = set(self.tree_state.keys())
+        b = set(self.tree_interest_state.keys())
         return a.union(b)
-
-    def is_syncing(self):
-        return self.neighbor_state == Slave or self.neighbor_state == Master
 
     ######################################################################
     # Send Messages
@@ -398,7 +407,7 @@ class Neighbor:
             upstream_state = self.tree_metric_state.get(tree, None)
             interest_state = False
             if upstream_state is None:
-                interest_state = self.tree_state.get(tree, globals.INITIAL_FLOOD_ENABLED)
+                interest_state = self.tree_interest_state.get(tree, globals.INITIAL_FLOOD_ENABLED)
             print("INTEREST NEIGHBOR ", self.ip, ":", interest_state)
             print("UPSTREAM NEIGHBOR ", self.ip, ":", upstream_state)
             return (interest_state, upstream_state)
@@ -480,12 +489,13 @@ class Neighbor:
     def remove(self):
         with self.contact_interface.neighbors_lock:
             print('HELLO TIMER EXPIRED... remove neighbor')
+            self.neighbor_logger.debug('Removing neighbor ' + self.ip)
             if self.neighbor_liveness_timer is not None:
                 self.neighbor_liveness_timer.cancel()
 
             self.clear_sync_timer()
 
-            self.tree_state.clear()
+            self.tree_interest_state.clear()
             self.tree_metric_state.clear()
             self.last_sequence_number.clear()
 

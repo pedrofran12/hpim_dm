@@ -9,7 +9,7 @@ from .tree_if_upstream_originator import TreeInterfaceUpstreamOriginator
 from .tree_if_downstream import TreeInterfaceDownstream
 from .metric import AssertMetric, Metric
 from .tree_interface import TreeInterface
-from .tree_state import ActiveTree, InactiveTree, UnknownTree
+from .tree_state import TreeState
 
 
 class KernelEntry:
@@ -21,7 +21,7 @@ class KernelEntry:
 
         self.source_ip = source_ip
         self.group_ip = group_ip
-        self._tree_state = UnknownTree
+        self._tree_state = TreeState.Unknown
 
         self._interest_interface_state = interest_state_dic
         self._upstream_interface_state = upstream_state_dic
@@ -117,7 +117,7 @@ class KernelEntry:
 
     def get_interface_sync_state(self, vif_index):
         with self.CHANGE_STATE_LOCK:
-            if self._tree_state != ActiveTree or vif_index not in self.interface_state:
+            if not self.is_tree_active() or vif_index not in self.interface_state:
                 return None
             else:
                 return self.interface_state[vif_index].get_sync_state()
@@ -132,8 +132,9 @@ class KernelEntry:
         return self._tree_state.is_unknown()
 
     def set_tree_state(self, tree_state):
-        self.kernel_entry_logger.debug('tree transitions to ' + tree_state.__name__)
-        self._tree_state = tree_state
+        with self.CHANGE_STATE_LOCK:
+            self.kernel_entry_logger.debug('Tree transitions to ' + str(tree_state))
+            self._tree_state = tree_state
 
     ###############################################################
     # Unicast Changes to RPF
@@ -160,7 +161,7 @@ class KernelEntry:
 
     def change(self):
         with self._multicast_change:
-            if self._tree_state != UnknownTree:
+            if not self.is_tree_unknown():
                 Main.kernel.set_multicast_route(self)
 
     def remove_entry(self):
@@ -239,7 +240,7 @@ class KernelEntryNonOriginator(KernelEntry):
                                                                           best_upstream_router=upstream_state,
                                                                           interest_state=interest_state,
                                                                           was_root=False,
-                                                                          previous_tree_state=UnknownTree,
+                                                                          previous_tree_state=TreeState.Unknown,
                                                                           current_tree_state=self._tree_state)
 
                 except:
@@ -251,7 +252,7 @@ class KernelEntryNonOriginator(KernelEntry):
             self.interface_state[self.inbound_interface_index] = TreeInterfaceUpstream(self, self.inbound_interface_index,
                                                                                        upstream_state,
                                                                                        was_non_root=False,
-                                                                                       previous_tree_state=UnknownTree,
+                                                                                       previous_tree_state=TreeState.Unknown,
                                                                                        current_tree_state=self._tree_state)
 
         self.change()
@@ -275,13 +276,13 @@ class KernelEntryNonOriginator(KernelEntry):
         if self._upstream_interface_state.get(self.inbound_interface_index, None) is not None:
             # tree is Active
             print("PARA ACTIVE")
-            self.set_tree_state(ActiveTree)
+            self.set_tree_state(TreeState.Active)
         elif not all(value is None for value in self._upstream_interface_state.values()):
             print("PARA INACTIVE")
-            self.set_tree_state(InactiveTree)
+            self.set_tree_state(TreeState.Inactive)
         else:
             print("PARA UNKNOWN")
-            self.set_tree_state(UnknownTree)
+            self.set_tree_state(TreeState.Unknown)
 
     ###############################################################
     # Unicast Changes to RPF
@@ -334,10 +335,10 @@ class KernelEntryNonOriginator(KernelEntry):
                 non_root_was_upstream = old_downstream_interface.get_sync_state() is not None
 
                 new_tree_state = self._tree_state
-                if self._tree_state.is_active() and root_upstream_state is None:
-                    new_tree_state = InactiveTree
-                elif self._tree_state.is_inactive() and root_upstream_state is not None:
-                    new_tree_state = ActiveTree
+                if self.is_tree_active() and root_upstream_state is None:
+                    new_tree_state = TreeState.Inactive
+                elif self.is_tree_inactive() and root_upstream_state is not None:
+                    new_tree_state = TreeState.Active
 
                 # change type of interfaces
                 new_downstream_interface = TreeInterfaceDownstream(self, self.inbound_interface_index, self._rpc, non_root_upstream_state, non_root_interest_state, was_root=True, previous_tree_state=self._tree_state, current_tree_state=new_tree_state)
@@ -345,7 +346,6 @@ class KernelEntryNonOriginator(KernelEntry):
                 new_upstream_interface = TreeInterfaceUpstream(self, new_inbound_interface_index, root_upstream_state, was_non_root=True, previous_tree_state=self._tree_state, current_tree_state=new_tree_state)
                 self.interface_state[new_inbound_interface_index] = new_upstream_interface
                 self.inbound_interface_index = new_inbound_interface_index
-
 
                 self.check_tree_state()
 
@@ -376,7 +376,7 @@ class KernelEntryOriginator(KernelEntry):
     def __init__(self, source_ip: str, group_ip: str, upstream_state_dic, interest_state_dic):
         super().__init__(source_ip, group_ip, upstream_state_dic, interest_state_dic)
         self.sat_is_running = True
-        self._tree_state = ActiveTree
+        self._tree_state = TreeState.Active
 
         # decide inbound interface based on rpf check
         self.inbound_interface_index = Main.kernel.vif_dic[self.check_rpf()]
@@ -392,7 +392,7 @@ class KernelEntryOriginator(KernelEntry):
                                                                           best_upstream_router=upstream_state,
                                                                           interest_state=interest_state,
                                                                           was_root=False,
-                                                                          previous_tree_state=UnknownTree,
+                                                                          previous_tree_state=TreeState.Unknown,
                                                                           current_tree_state=self._tree_state)
                 except:
                     import traceback
@@ -488,10 +488,10 @@ class KernelEntryOriginator(KernelEntry):
                 root_upstream_state = self._upstream_interface_state.get(new_inbound_interface_index, None)
 
                 new_tree_state = self._tree_state
-                if self._tree_state.is_active() and root_upstream_state is None:
-                    new_tree_state = InactiveTree
-                elif self._tree_state.is_inactive() and root_upstream_state is not None:
-                    new_tree_state = ActiveTree
+                if self.is_tree_active() and root_upstream_state is None:
+                    new_tree_state = TreeState.Inactive
+                elif self.is_tree_inactive() and root_upstream_state is not None:
+                    new_tree_state = TreeState.Active
 
                 # change type of interfaces
                 new_downstream_interface = TreeInterfaceDownstream(self, self.inbound_interface_index, self._rpc, non_root_upstream_state, non_root_interest_state, was_root=True, previous_tree_state=self._tree_state, current_tree_state=new_tree_state)

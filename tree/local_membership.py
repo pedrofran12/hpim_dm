@@ -13,11 +13,17 @@ class NoInfo(LocalMembershipStateABC):
     def has_members():
         return False
 
+    def __str__(self):
+        return "NoInfo"
+
 
 class Include(LocalMembershipStateABC):
     @staticmethod
     def has_members():
         return True
+
+    def __str__(self):
+        return "Include"
 
 
 class LocalMembership():
