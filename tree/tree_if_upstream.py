@@ -1,11 +1,11 @@
+import logging
+import traceback
+from threading import Thread
+
+import Main
+from . import DataPacketsSocket
 from .tree_interface import TreeInterface
 from .root_state_machine import SFMRRootState
-
-import traceback
-from . import DataPacketsSocket
-import threading
-import logging
-import Main
 
 
 class TreeInterfaceUpstream(TreeInterface):
@@ -39,11 +39,11 @@ class TreeInterfaceUpstream(TreeInterface):
         self.socket_pkt = DataPacketsSocket.get_s_g_bpf_filter_code(s, g, interface_name)
 
         # run receive method in background
-        receive_thread = threading.Thread(target=self.socket_recv)
+        receive_thread = Thread(target=self.socket_recv)
         receive_thread.daemon = True
         receive_thread.start()
 
-        self.logger.debug('Created UpstreamInterface')
+        self.logger.debug('Created RootInterface')
 
 
     def socket_recv(self):
@@ -89,14 +89,9 @@ class TreeInterfaceUpstream(TreeInterface):
     # Tree transitions
     ############################################
     def tree_transition_to_active(self):
-        super().tree_transition_to_active()
-        SFMRRootState.tree_transitions_to_active_state(self)
-
-    def tree_transition_to_inactive(self):
-        super().tree_transition_to_inactive()
-
-    def tree_transition_to_unknown(self):
-        super().tree_transition_to_unknown()
+        if not self.is_tree_active():
+            super().tree_transition_to_active()
+            SFMRRootState.tree_transitions_to_active_state(self)
 
     ###########################################
     # Change to in/out-tree
@@ -127,4 +122,3 @@ class TreeInterfaceUpstream(TreeInterface):
         self.socket_is_enabled = False
         self.socket_pkt.close()
         super().delete()
-        #self.cancel_message()

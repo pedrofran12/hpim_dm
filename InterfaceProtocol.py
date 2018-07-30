@@ -189,6 +189,9 @@ class InterfaceProtocol(Interface):
         self.send(packet)
 
         super().remove()
+        for n in self.neighbors.values():
+            n.remove_neighbor_state()
+        self.neighbors.clear()
         self.clear_reliable_transmission()
 
     def snapshot_multicast_routing_table(self):
@@ -196,12 +199,10 @@ class InterfaceProtocol(Interface):
             with self.sequencer_lock:
                 (snapshot_bt, snapshot_sn) = self.get_sequence_number()
 
-                trees_to_sync = Main.kernel.snapshot_multicast_routing_table(self)  # type: dict
-                #tree_to_sync_in_msg_format = []
+                trees_to_sync = Main.kernel.snapshot_multicast_routing_table(self.vif_index)  # type: dict
                 tree_to_sync_in_msg_format = {}
 
                 for (source_group, state) in trees_to_sync.items():
-                    #tree_to_sync_in_msg_format.append(PacketProtocolHelloSyncEntry(source_group[0], source_group[1], state.metric_preference, state.route_metric))
                     tree_to_sync_in_msg_format[source_group] = PacketProtocolHelloSyncEntry(source_group[0], source_group[1], state.metric_preference, state.route_metric)
 
                 return (snapshot_bt, snapshot_sn, tree_to_sync_in_msg_format)
@@ -248,7 +249,7 @@ class InterfaceProtocol(Interface):
 
             # verifiar todas as arvores
             print("REMOVER ANTES RECHECK")
-            Main.kernel.recheck_all_trees(self)
+            Main.kernel.recheck_all_trees(self.vif_index)
             print("REMOVER DEPOIS RECHECK")
 
     '''

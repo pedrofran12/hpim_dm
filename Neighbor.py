@@ -323,7 +323,7 @@ class Neighbor:
                                    '; NeighborBootTime=' + str(self.time_of_boot) +
                                    '; NeighborSnapshotSN=' + str(self.neighbor_snapshot_sn))
         if state == Updated:
-            Main.kernel.recheck_all_trees(self.contact_interface)
+            Main.kernel.recheck_all_trees(self.contact_interface.vif_index)
 
     def install_tree_state(self, tree_state: list):
         for t in tree_state:
@@ -489,14 +489,17 @@ class Neighbor:
     def remove(self):
         with self.contact_interface.neighbors_lock:
             print('HELLO TIMER EXPIRED... remove neighbor')
-            self.neighbor_logger.debug('Removing neighbor ' + self.ip)
-            if self.neighbor_liveness_timer is not None:
-                self.neighbor_liveness_timer.cancel()
-
-            self.clear_sync_timer()
-
-            self.tree_interest_state.clear()
-            self.tree_metric_state.clear()
-            self.last_sequence_number.clear()
+            self.remove_neighbor_state()
 
             self.contact_interface.remove_neighbor(self.ip)
+
+    def remove_neighbor_state(self):
+        self.neighbor_logger.debug('Removing neighbor ' + self.ip)
+        if self.neighbor_liveness_timer is not None:
+            self.neighbor_liveness_timer.cancel()
+
+        self.clear_sync_timer()
+
+        self.tree_interest_state.clear()
+        self.tree_metric_state.clear()
+        self.last_sequence_number.clear()

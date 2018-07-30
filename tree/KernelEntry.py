@@ -1,5 +1,6 @@
 from abc import abstractmethod
 import logging
+import ipaddress
 from threading import Lock, RLock
 
 import Main
@@ -7,7 +8,7 @@ import UnicastRouting
 from .tree_if_upstream import TreeInterfaceUpstream
 from .tree_if_upstream_originator import TreeInterfaceUpstreamOriginator
 from .tree_if_downstream import TreeInterfaceDownstream
-from .metric import AssertMetric, Metric
+from .metric import Metric
 from .tree_interface import TreeInterface
 from .tree_state import TreeState
 
@@ -34,7 +35,6 @@ class KernelEntry:
         multipaths = unicast_route["multipath"]
 
         self.rpf_node = next_hop if next_hop is not None else source_ip
-        import ipaddress
         highest_ip = ipaddress.ip_address("0.0.0.0")
         for m in multipaths:
             if m["gateway"] is None:
@@ -58,7 +58,7 @@ class KernelEntry:
         self.CHANGE_STATE_LOCK = RLock()
 
         # decide inbound interface based on rpf check
-        self.inbound_interface_index = Main.kernel.vif_dic[self.check_rpf()]
+        self.inbound_interface_index = Main.kernel.vif_dic.get(self.check_rpf(), None)
         self.interface_state = {}  # type: dict(int, TreeInterface)
 
     def is_S_directly_conn(self):
@@ -91,6 +91,8 @@ class KernelEntry:
     # Code related with tree state
     ###############################################################
     def check_interface_state(self, index, upstream_state, interest_state):
+        if index not in self.interface_state or self.is_tree_unknown():
+            return
         print("ENTROU CHECK INTERFACE STATE")
         self._upstream_interface_state[index] = upstream_state
 
@@ -101,6 +103,9 @@ class KernelEntry:
         print("SAI CHECK INTERFACE STATE")
 
     def check_interest_state(self, index, interest_state):
+        if index not in self.interface_state or self.is_tree_unknown():
+            return
+
         current_interest_state = self._interest_interface_state.get(index, None)
         self._interest_interface_state[index] = interest_state
 
@@ -117,7 +122,7 @@ class KernelEntry:
 
     def get_interface_sync_state(self, vif_index):
         with self.CHANGE_STATE_LOCK:
-            if not self.is_tree_active() or vif_index not in self.interface_state:
+            if vif_index not in self.interface_state:
                 return None
             else:
                 return self.interface_state[vif_index].get_sync_state()
@@ -161,7 +166,7 @@ class KernelEntry:
 
     def change(self):
         with self._multicast_change:
-            if not self.is_tree_unknown():
+            if self.inbound_interface_index is not None and not self.is_tree_unknown():
                 Main.kernel.set_multicast_route(self)
 
     def remove_entry(self):
@@ -170,50 +175,32 @@ class KernelEntry:
     def delete_state(self):
         for state in self.interface_state.values():
             state.delete()
+        self.interface_state.clear()
 
     ######################################
     # Interface change
     #######################################
+    @abstractmethod
     def new_interface(self, index):
-        print("NEW_INTERFACE ANTES")
-        with self.CHANGE_STATE_LOCK:
-            print("NEW_INTERFACE DEPOIS")
-            if index in self.interface_state:
-                return
-
-            interest_state = False
-            upstream_state = None
-            interface_name = Main.kernel.vif_index_to_name_dic.get(index, None)
-            if interface_name in Main.kernel.protocol_interface:
-                (interest_state, upstream_state) = Main.kernel.protocol_interface.get(interface_name).get_tree_state(
-                    (self.source_ip, self.group_ip))
-
-            self._interest_interface_state[index] = interest_state
-            self._upstream_interface_state[index] = upstream_state
-
-            self.interface_state[index] = TreeInterfaceDownstream(self, index, self._rpc,
-                                                                  best_upstream_router=upstream_state,
-                                                                  interest_state=interest_state,
-                                                                  was_root=False, previous_tree_state=self._tree_state,
-                                                                  current_tree_state=self._tree_state)
-
-            self.change()
-            self.evaluate_in_tree_change()
+        return
 
     def remove_interface(self, index):
         with self.CHANGE_STATE_LOCK:
+            if index not in self.interface_state:
+                return
+
             #check if removed interface is root interface
             if self.inbound_interface_index == index:
-                self.remove_entry()
-            elif index in self.interface_state:
-                self.interface_state.pop(index).delete()
+                self.inbound_interface_index = None
 
-                # remove cached info about removed interface
-                self._upstream_interface_state.pop(index, None)
-                self._interest_interface_state.pop(index, None)
+            # remove cached info about removed interface
+            self._upstream_interface_state.pop(index, None)
+            self._interest_interface_state.pop(index, None)
 
-                self.change()
-                self.evaluate_in_tree_change()
+            self.interface_state.pop(index).delete()
+            self.change()
+            self.evaluate_in_tree_change()
+            self.check_tree_state()
 
 
 class KernelEntryNonOriginator(KernelEntry):
@@ -221,7 +208,7 @@ class KernelEntryNonOriginator(KernelEntry):
         super().__init__(source_ip, group_ip, upstream_state_dic, interest_state_dic)
 
         # decide inbound interface based on rpf check
-        self.inbound_interface_index = Main.kernel.vif_dic[self.check_rpf()]
+        self.inbound_interface_index = Main.kernel.vif_dic.get(self.check_rpf(), None)
 
         # (S,G) starts OUT-TREE state... later check if node is in-tree via evaluate_in_tree_change()
         self._was_in_tree = False
@@ -249,53 +236,57 @@ class KernelEntryNonOriginator(KernelEntry):
                     continue
             self._was_in_tree = self.is_in_tree()
             upstream_state = self._upstream_interface_state.get(self.inbound_interface_index, None)
-            self.interface_state[self.inbound_interface_index] = TreeInterfaceUpstream(self, self.inbound_interface_index,
-                                                                                       upstream_state,
-                                                                                       was_non_root=False,
-                                                                                       previous_tree_state=TreeState.Unknown,
-                                                                                       current_tree_state=self._tree_state)
+            if self.inbound_interface_index is not None:
+                self.interface_state[self.inbound_interface_index] = \
+                    TreeInterfaceUpstream(self, self.inbound_interface_index, upstream_state, was_non_root=False,
+                                          previous_tree_state=TreeState.Unknown, current_tree_state=self._tree_state)
 
         self.change()
         self.evaluate_in_tree_change()
-        print('Tree created')
+        print('Tree NonOriginator created')
 
 
     def check_tree_state(self):
-        if self._upstream_interface_state.get(self.inbound_interface_index, None) is not None:
-            # tree is Active
-            print("PARA ACTIVE")
-            self._tree_state.transition_to_active(self)
-        elif not all(value is None for value in self._upstream_interface_state.values()):
-            print("PARA INACTIVE")
-            self._tree_state.transition_to_inactive(self)
-        else:
-            print("PARA UNKNOWN")
-            self._tree_state.transition_to_unknown(self)
+        with self.CHANGE_STATE_LOCK:
+            if self.inbound_interface_index is not None and \
+                    len(self.interface_state) > 0 and\
+                    self._upstream_interface_state.get(self.inbound_interface_index, None) is not None:
+                # tree is Active
+                print("PARA ACTIVE")
+                self._tree_state.transition_to_active(self)
+            elif len(self.interface_state) > 0 and \
+                    not all(value is None for value in self._upstream_interface_state.values()):
+                print("PARA INACTIVE")
+                self._tree_state.transition_to_inactive(self)
+            else:
+                print("PARA UNKNOWN")
+                self._tree_state.transition_to_unknown(self)
 
     def first_check_tree_state(self):
-        if self._upstream_interface_state.get(self.inbound_interface_index, None) is not None:
+        if self.inbound_interface_index is not None and \
+                self._upstream_interface_state.get(self.inbound_interface_index, None) is not None:
             # tree is Active
             print("PARA ACTIVE")
             self.set_tree_state(TreeState.Active)
         elif not all(value is None for value in self._upstream_interface_state.values()):
             print("PARA INACTIVE")
+            # tree is Inactive
             self.set_tree_state(TreeState.Inactive)
         else:
             print("PARA UNKNOWN")
+            # tree is Unknown
             self.set_tree_state(TreeState.Unknown)
 
     ###############################################################
     # Unicast Changes to RPF
     ###############################################################
     def network_update(self):
-        # TODO TALVEZ OUTRO LOCK PARA BLOQUEAR ENTRADA DE PACOTES
         with self.CHANGE_STATE_LOCK:
             unicast_route = UnicastRouting.get_route(self.source_ip)
             next_hop = unicast_route["gateway"]
             multipaths = unicast_route["multipath"]
 
             rpf_node = next_hop if next_hop is not None else self.source_ip
-            import ipaddress
             highest_ip = ipaddress.ip_address("0.0.0.0")
             for m in multipaths:
                 if m["gateway"] is None:
@@ -306,6 +297,7 @@ class KernelEntryNonOriginator(KernelEntry):
                     rpf_node = m["gateway"]
 
             print("RPF_NODE:", UnicastRouting.get_route(self.source_ip))
+            self.rpf_node = rpf_node
             print(self.rpf_node == self.source_ip)
             metric_administrative_distance = unicast_route["proto"]
             metric_cost = unicast_route["priority"]
@@ -313,16 +305,13 @@ class KernelEntryNonOriginator(KernelEntry):
             new_rpc = Metric(metric_administrative_distance, metric_cost)
 
             new_inbound_interface_index = Main.kernel.vif_dic.get(self.check_rpf(), None)
-            if new_inbound_interface_index is None:
-                #self.delete()
-                self.remove_entry()
+            if self.is_S_directly_conn():
+                self._tree_state.transition_to_unknown(self)
                 return
             if new_inbound_interface_index != self.inbound_interface_index:
-                self.rpf_node = rpf_node
-
                 # get old interfaces
-                old_upstream_interface = self.interface_state[self.inbound_interface_index]
-                old_downstream_interface = self.interface_state[new_inbound_interface_index]
+                old_upstream_interface = self.interface_state.get(self.inbound_interface_index, None)
+                old_downstream_interface = self.interface_state.get(new_inbound_interface_index, None)
 
                 non_root_interest_state = self._interest_interface_state.get(self.inbound_interface_index, False)
                 non_root_upstream_state = self._upstream_interface_state.get(self.inbound_interface_index, None)
@@ -330,9 +319,10 @@ class KernelEntryNonOriginator(KernelEntry):
                 root_upstream_state = self._upstream_interface_state.get(new_inbound_interface_index, None)
 
                 # remove old interfaces
-                old_upstream_interface.delete()
-                old_downstream_interface.delete()
-                non_root_was_upstream = old_downstream_interface.get_sync_state() is not None
+                if old_upstream_interface is not None:
+                    old_upstream_interface.delete()
+                if old_downstream_interface is not None:
+                    old_downstream_interface.delete()
 
                 new_tree_state = self._tree_state
                 if self.is_tree_active() and root_upstream_state is None:
@@ -341,10 +331,19 @@ class KernelEntryNonOriginator(KernelEntry):
                     new_tree_state = TreeState.Active
 
                 # change type of interfaces
-                new_downstream_interface = TreeInterfaceDownstream(self, self.inbound_interface_index, self._rpc, non_root_upstream_state, non_root_interest_state, was_root=True, previous_tree_state=self._tree_state, current_tree_state=new_tree_state)
-                self.interface_state[self.inbound_interface_index] = new_downstream_interface
-                new_upstream_interface = TreeInterfaceUpstream(self, new_inbound_interface_index, root_upstream_state, was_non_root=True, previous_tree_state=self._tree_state, current_tree_state=new_tree_state)
-                self.interface_state[new_inbound_interface_index] = new_upstream_interface
+                if self.inbound_interface_index is not None:
+                    new_downstream_interface = TreeInterfaceDownstream(self, self.inbound_interface_index, new_rpc,
+                                                                       non_root_upstream_state, non_root_interest_state,
+                                                                       was_root=True,
+                                                                       previous_tree_state=self._tree_state,
+                                                                       current_tree_state=new_tree_state)
+                    self.interface_state[self.inbound_interface_index] = new_downstream_interface
+                if new_inbound_interface_index is not None:
+                    new_upstream_interface = TreeInterfaceUpstream(self, new_inbound_interface_index,
+                                                                   root_upstream_state, was_non_root=True,
+                                                                   previous_tree_state=self._tree_state,
+                                                                   current_tree_state=new_tree_state)
+                    self.interface_state[new_inbound_interface_index] = new_upstream_interface
                 self.inbound_interface_index = new_inbound_interface_index
 
                 self.check_tree_state()
@@ -360,14 +359,108 @@ class KernelEntryNonOriginator(KernelEntry):
     def evaluate_in_tree_change(self):
         with self._lock_test2:
             is_in_tree = self.is_in_tree()
-
-            if self._was_in_tree != is_in_tree:
+            was_in_tree = self._was_in_tree
+            self._was_in_tree = is_in_tree
+            if was_in_tree != is_in_tree and self.inbound_interface_index is not None:
                 if is_in_tree:
                     self.interface_state[self.inbound_interface_index].node_is_in_tree()
                 else:
                     self.interface_state[self.inbound_interface_index].node_is_out_tree()
 
-                self._was_in_tree = is_in_tree
+    #####################################################
+    # New interface configured
+    #####################################################
+    def new_interface(self, index):
+        print("NEW_INTERFACE ANTES")
+        with self.CHANGE_STATE_LOCK:
+            print("NEW_INTERFACE DEPOIS")
+            if index in self.interface_state:
+                return
+
+            inbound_interface_index = Main.kernel.vif_dic.get(self.check_rpf(), None)
+            # new interface is of type non-root
+            if inbound_interface_index != index:
+                interest_state = False
+                upstream_state = None
+                interface_name = Main.kernel.vif_index_to_name_dic.get(index, None)
+                if interface_name in Main.kernel.protocol_interface:
+                    (interest_state, upstream_state) = Main.kernel.protocol_interface.get(interface_name).get_tree_state(
+                        (self.source_ip, self.group_ip))
+
+                self._interest_interface_state[index] = interest_state
+                self._upstream_interface_state[index] = upstream_state
+
+                self.interface_state[index] = TreeInterfaceDownstream(self, index, self._rpc,
+                                                                      best_upstream_router=upstream_state,
+                                                                      interest_state=interest_state,
+                                                                      was_root=False,
+                                                                      previous_tree_state=self._tree_state,
+                                                                      current_tree_state=self._tree_state)
+            # new interface is of type root and there wasnt any root interface previously configured
+            elif inbound_interface_index == index and self.inbound_interface_index is None:
+                self.inbound_interface_index = index
+                interest_state = False
+                upstream_state = None
+                interface_name = Main.kernel.vif_index_to_name_dic.get(index, None)
+                if interface_name in Main.kernel.protocol_interface:
+                    (interest_state, upstream_state) = Main.kernel.protocol_interface.get(
+                        interface_name).get_tree_state(
+                        (self.source_ip, self.group_ip))
+
+                self._interest_interface_state[index] = interest_state
+                self._upstream_interface_state[index] = upstream_state
+
+                self.interface_state[index] = TreeInterfaceUpstream(self, self.inbound_interface_index,
+                                                                    upstream_state, was_non_root=False,
+                                                                    previous_tree_state=self._tree_state,
+                                                                    current_tree_state=self._tree_state)
+            # new interface is of type root and there was a root interface previously configured
+            elif inbound_interface_index == index and self.inbound_interface_index is not None:
+                old_upstream_interface = self.interface_state.get(self.inbound_interface_index, None)
+
+                root_interest_state = False
+                root_upstream_state = None
+                interface_name = Main.kernel.vif_index_to_name_dic.get(index, None)
+                if interface_name in Main.kernel.protocol_interface:
+                    (root_interest_state, root_upstream_state) = Main.kernel.protocol_interface.get(
+                        interface_name).get_tree_state(
+                        (self.source_ip, self.group_ip))
+                self._interest_interface_state[index] = root_interest_state
+                self._upstream_interface_state[index] = root_upstream_state
+
+                non_root_interest_state = self._interest_interface_state.get(self.inbound_interface_index, False)
+                non_root_upstream_state = self._upstream_interface_state.get(self.inbound_interface_index, None)
+
+                new_tree_state = self._tree_state
+                if self.is_tree_active() and root_upstream_state is None:
+                    new_tree_state = TreeState.Inactive
+                elif self.is_tree_inactive() and root_upstream_state is not None:
+                    new_tree_state = TreeState.Active
+
+                # change type of interfaces
+                if self.inbound_interface_index is not None:
+                    new_downstream_interface = TreeInterfaceDownstream(self, self.inbound_interface_index, self._rpc,
+                                                                       non_root_upstream_state, non_root_interest_state,
+                                                                       was_root=True,
+                                                                       previous_tree_state=self._tree_state,
+                                                                       current_tree_state=new_tree_state)
+                    self.interface_state[self.inbound_interface_index] = new_downstream_interface
+                if inbound_interface_index is not None:
+                    new_upstream_interface = TreeInterfaceUpstream(self, inbound_interface_index, root_upstream_state,
+                                                                   was_non_root=True,
+                                                                   previous_tree_state=self._tree_state,
+                                                                   current_tree_state=new_tree_state)
+                    self.interface_state[inbound_interface_index] = new_upstream_interface
+                self.inbound_interface_index = inbound_interface_index
+
+                # remove old interfaces
+                if old_upstream_interface is not None:
+                    old_upstream_interface.delete()
+
+            self.change()
+            self.evaluate_in_tree_change()
+            self.check_tree_state()
+
 
 
 class KernelEntryOriginator(KernelEntry):
@@ -379,7 +472,7 @@ class KernelEntryOriginator(KernelEntry):
         self._tree_state = TreeState.Active
 
         # decide inbound interface based on rpf check
-        self.inbound_interface_index = Main.kernel.vif_dic[self.check_rpf()]
+        self.inbound_interface_index = Main.kernel.vif_dic.get(self.check_rpf(), None)
 
         with self.CHANGE_STATE_LOCK:
             for i in Main.kernel.vif_index_to_name_dic.keys():
@@ -399,23 +492,27 @@ class KernelEntryOriginator(KernelEntry):
                     print(traceback.print_exc())
                     continue
 
-            self.interface_state[self.inbound_interface_index] = \
-                TreeInterfaceUpstreamOriginator(self, self.inbound_interface_index, None, self._tree_state)
+            if self.inbound_interface_index is not None:
+                self.interface_state[self.inbound_interface_index] = \
+                    TreeInterfaceUpstreamOriginator(self, self.inbound_interface_index, self._tree_state)
 
         self.change()
         self.check_tree_state()
-        print('Tree created')
+        print('Tree Originator created')
 
     def check_tree_state(self):
-        if self.sat_is_running:
+        if self.inbound_interface_index is not None and self.sat_is_running and len(self.interface_state) > 0:
             print("PARA ACTIVE")
+            # tree is active
             self._tree_state.transition_to_active(self)
-        elif not self.sat_is_running and all(value is None for value in self._upstream_interface_state.values()):
+        elif len(self.interface_state) == 0 or\
+                (not self.sat_is_running and all(v is None for v in self._upstream_interface_state.values())):
             # tree is unknown
             print("PARA UNKNOWN")
             self._tree_state.transition_to_unknown(self)
-        elif not self.sat_is_running:
+        elif self.inbound_interface_index is None or not self.sat_is_running:
             print("PARA INACTIVE")
+            # tree is inactive
             self._tree_state.transition_to_inactive(self)
 
     ###############################################################
@@ -429,31 +526,16 @@ class KernelEntryOriginator(KernelEntry):
         self.sat_is_running = True
         self.check_tree_state()
 
-    def check_interface_state(self, index, upstream_state, interest_state):
-        if index == self.inbound_interface_index:
-            return
-
-        super().check_interface_state(index, upstream_state, interest_state)
-
-    def check_interest_state(self, index, interest_state):
-        if index == self.inbound_interface_index:
-            return
-
-        super().check_interest_state(index, interest_state)
-
-
     ###############################################################
     # Unicast Changes to RPF
     ###############################################################
     def network_update(self):
-        # TODO TALVEZ OUTRO LOCK PARA BLOQUEAR ENTRADA DE PACOTES
         with self.CHANGE_STATE_LOCK:
             unicast_route = UnicastRouting.get_route(self.source_ip)
             next_hop = unicast_route["gateway"]
             multipaths = unicast_route["multipath"]
 
             rpf_node = next_hop if next_hop is not None else self.source_ip
-            import ipaddress
             highest_ip = ipaddress.ip_address("0.0.0.0")
             for m in multipaths:
                 if m["gateway"] is None:
@@ -464,6 +546,7 @@ class KernelEntryOriginator(KernelEntry):
                     rpf_node = m["gateway"]
 
             print("RPF_NODE:", UnicastRouting.get_route(self.source_ip))
+            self.rpf_node = rpf_node
             print(self.rpf_node == self.source_ip)
             metric_administrative_distance = unicast_route["proto"]
             metric_cost = unicast_route["priority"]
@@ -471,16 +554,13 @@ class KernelEntryOriginator(KernelEntry):
             new_rpc = Metric(metric_administrative_distance, metric_cost)
 
             new_inbound_interface_index = Main.kernel.vif_dic.get(self.check_rpf(), None)
-            if new_inbound_interface_index is None:
-                #self.delete()
-                self.remove_entry()
+            if not self.is_S_directly_conn():
+                self._tree_state.transition_to_unknown(self)
                 return
             if new_inbound_interface_index != self.inbound_interface_index:
-                self.rpf_node = rpf_node
-
                 # get old interfaces
-                old_upstream_interface = self.interface_state[self.inbound_interface_index]
-                old_downstream_interface = self.interface_state[new_inbound_interface_index]
+                old_upstream_interface = self.interface_state.get(self.inbound_interface_index, None)
+                old_downstream_interface = self.interface_state.get(new_inbound_interface_index, None)
 
                 non_root_interest_state = self._interest_interface_state.get(self.inbound_interface_index, False)
                 non_root_upstream_state = self._upstream_interface_state.get(self.inbound_interface_index, None)
@@ -494,15 +574,23 @@ class KernelEntryOriginator(KernelEntry):
                     new_tree_state = TreeState.Active
 
                 # change type of interfaces
-                new_downstream_interface = TreeInterfaceDownstream(self, self.inbound_interface_index, self._rpc, non_root_upstream_state, non_root_interest_state, was_root=True, previous_tree_state=self._tree_state, current_tree_state=new_tree_state)
-                self.interface_state[self.inbound_interface_index] = new_downstream_interface
-                new_upstream_interface = TreeInterfaceUpstreamOriginator(self, new_inbound_interface_index, root_upstream_state, new_tree_state)
-                self.interface_state[new_inbound_interface_index] = new_upstream_interface
+                if self.inbound_interface_index is not None:
+                    new_downstream_interface = TreeInterfaceDownstream(self, self.inbound_interface_index, self._rpc,
+                                                                       non_root_upstream_state, non_root_interest_state,
+                                                                       was_root=True,
+                                                                       previous_tree_state=self._tree_state,
+                                                                       current_tree_state=new_tree_state)
+                    self.interface_state[self.inbound_interface_index] = new_downstream_interface
+                if new_inbound_interface_index is not None:
+                    new_upstream_interface = TreeInterfaceUpstreamOriginator(self, new_inbound_interface_index, new_tree_state)
+                    self.interface_state[new_inbound_interface_index] = new_upstream_interface
                 self.inbound_interface_index = new_inbound_interface_index
 
                 # remove old interfaces
-                old_upstream_interface.delete()
-                old_downstream_interface.delete()
+                if old_upstream_interface is not None:
+                    old_upstream_interface.delete()
+                if old_downstream_interface is not None:
+                    old_downstream_interface.delete()
 
                 self.check_tree_state()
                 self.change()
@@ -513,3 +601,79 @@ class KernelEntryOriginator(KernelEntry):
 
     def evaluate_in_tree_change(self):
         return
+
+    #####################################################
+    # New interface configured
+    #####################################################
+    def new_interface(self, index):
+        print("NEW_INTERFACE ANTES")
+        with self.CHANGE_STATE_LOCK:
+            print("NEW_INTERFACE DEPOIS")
+            if index in self.interface_state:
+                return
+
+            inbound_interface_index = Main.kernel.vif_dic.get(self.check_rpf(), None)
+            if inbound_interface_index != index:
+                interest_state = False
+                upstream_state = None
+                interface_name = Main.kernel.vif_index_to_name_dic.get(index, None)
+                if interface_name in Main.kernel.protocol_interface:
+                    (interest_state, upstream_state) = Main.kernel.protocol_interface.get(interface_name).get_tree_state(
+                        (self.source_ip, self.group_ip))
+
+                self._interest_interface_state[index] = interest_state
+                self._upstream_interface_state[index] = upstream_state
+
+                self.interface_state[index] = TreeInterfaceDownstream(self, index, self._rpc,
+                                                                      best_upstream_router=upstream_state,
+                                                                      interest_state=interest_state,
+                                                                      was_root=False,
+                                                                      previous_tree_state=self._tree_state,
+                                                                      current_tree_state=self._tree_state)
+            elif inbound_interface_index == index and self.inbound_interface_index is None:
+                self.inbound_interface_index = index
+                self.sat_is_running = True
+                self.interface_state[index] = self.interface_state[self.inbound_interface_index] = \
+                    TreeInterfaceUpstreamOriginator(self, self.inbound_interface_index, self._tree_state)
+            elif inbound_interface_index == index and self.inbound_interface_index is not None:
+                old_upstream_interface = self.interface_state.get(self.inbound_interface_index, None)
+
+                root_interest_state = False
+                root_upstream_state = None
+                interface_name = Main.kernel.vif_index_to_name_dic.get(index, None)
+                if interface_name in Main.kernel.protocol_interface:
+                    (root_interest_state, root_upstream_state) = Main.kernel.protocol_interface.get(
+                        interface_name).get_tree_state(
+                        (self.source_ip, self.group_ip))
+
+                non_root_interest_state = self._interest_interface_state.get(self.inbound_interface_index, False)
+                non_root_upstream_state = self._upstream_interface_state.get(self.inbound_interface_index, None)
+
+                # change type of interfaces
+                if self.inbound_interface_index is not None:
+                    new_downstream_interface = TreeInterfaceDownstream(self, self.inbound_interface_index, self._rpc,
+                                                                       non_root_upstream_state, non_root_interest_state,
+                                                                       was_root=True,
+                                                                       previous_tree_state=self._tree_state,
+                                                                       current_tree_state=self._tree_state)
+                    self.interface_state[self.inbound_interface_index] = new_downstream_interface
+                if inbound_interface_index is not None:
+                    self.sat_is_running = True
+                    new_upstream_interface = TreeInterfaceUpstreamOriginator(self, inbound_interface_index,
+                                                                             self._tree_state)
+                    self.interface_state[inbound_interface_index] = new_upstream_interface
+                self.inbound_interface_index = inbound_interface_index
+
+                # remove old interfaces
+                if old_upstream_interface is not None:
+                    old_upstream_interface.delete()
+
+            self.change()
+            self.evaluate_in_tree_change()
+
+    def remove_interface(self, index):
+        with self.CHANGE_STATE_LOCK:
+            super().remove_interface(index)
+            if self.inbound_interface_index is None:
+                self.sat_is_running = False
+                self.check_tree_state()

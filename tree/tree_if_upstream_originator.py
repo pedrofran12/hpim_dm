@@ -1,22 +1,23 @@
-from .tree_interface import TreeInterface
-from threading import Timer
-from .globals import *
-import traceback
-from . import DataPacketsSocket
-import threading
 import logging
+import traceback
+from threading import Timer
+from threading import Thread
+
 import Main
+from . import DataPacketsSocket
+from .globals import SOURCE_LIFETIME
+from .tree_interface import TreeInterface
 
 
 class TreeInterfaceUpstreamOriginator(TreeInterface):
     LOGGER = logging.getLogger('protocol.KernelEntry.RootInterface')
 
-    def __init__(self, kernel_entry, interface_id, best_upstream_router, current_tree_state):
+    def __init__(self, kernel_entry, interface_id, current_tree_state):
         extra_dict_logger = kernel_entry.kernel_entry_logger.extra.copy()
         extra_dict_logger['vif'] = interface_id
         extra_dict_logger['interfacename'] = Main.kernel.vif_index_to_name_dic[interface_id]
         logger = logging.LoggerAdapter(TreeInterfaceUpstreamOriginator.LOGGER, extra_dict_logger)
-        TreeInterface.__init__(self, kernel_entry, interface_id, best_upstream_router, current_tree_state, logger)
+        TreeInterface.__init__(self, kernel_entry, interface_id, None, current_tree_state, logger)
 
         # Originator state
         self._source_active_timer = None
@@ -30,11 +31,11 @@ class TreeInterfaceUpstreamOriginator(TreeInterface):
         self.socket_pkt = DataPacketsSocket.get_s_g_bpf_filter_code(s, g, interface_name)
 
         # run receive method in background
-        receive_thread = threading.Thread(target=self.socket_recv)
+        receive_thread = Thread(target=self.socket_recv)
         receive_thread.daemon = True
         receive_thread.start()
 
-        self.logger.debug('Created UpstreamInterface')
+        self.logger.debug('Created RootInterfaceOriginator')
 
 
     def socket_recv(self):

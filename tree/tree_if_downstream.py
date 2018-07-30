@@ -1,11 +1,11 @@
-from .assert_state import AssertState, SFMRAssertABC, SFMRAssertWinner
-from .downstream_state import SFMRPruneState, SFMRDownstreamStateABC
+import logging
+
+import Main
 from .tree_interface import TreeInterface
 from .non_root_state_machine import SFMRNonRootState
-
+from .assert_state import AssertState, SFMRAssertABC
+from .downstream_state import SFMRPruneState, SFMRDownstreamStateABC
 from .metric import AssertMetric, Metric
-import logging
-import Main
 
 
 class TreeInterfaceDownstream(TreeInterface):
@@ -19,7 +19,6 @@ class TreeInterfaceDownstream(TreeInterface):
         TreeInterface.__init__(self, kernel_entry, interface_id, best_upstream_router, current_tree_state, logger)
         self.assert_logger = logging.LoggerAdapter(logger.logger.getChild('Assert'), logger.extra)
         self.downstream_logger = logging.LoggerAdapter(logger.logger.getChild('Downstream'), logger.extra)
-
 
         # Downstream Node Interest State
         if interest_state:
@@ -54,7 +53,7 @@ class TreeInterfaceDownstream(TreeInterface):
         elif previous_tree_state.is_unknown() and current_tree_state.is_inactive() and best_upstream_router is not None:
             SFMRNonRootState.tree_transitions_from_unknown_to_inactive_and_best_upstream_is_not_null(self)
 
-        self.logger.debug('Created DownstreamInterface')
+        self.logger.debug('Created NonRootInterface')
 
     ############################################
     # Set ASSERT State
@@ -110,23 +109,23 @@ class TreeInterfaceDownstream(TreeInterface):
     # Tree transitions
     ############################################
     def tree_transition_to_active(self):
-        if not self.current_tree_state.is_active():
+        if not self.is_tree_active():
             SFMRNonRootState.interfaces_roles_dont_change_and_tree_transitions_to_active_state(self)
 
         super().tree_transition_to_active()
 
     def tree_transition_to_inactive(self):
-        if self.current_tree_state.is_active() and self._best_upstream_router is None:
+        if self.is_tree_active() and self._best_upstream_router is None:
             SFMRNonRootState.tree_transitions_from_active_to_inactive_and_best_upstream_neighbor_is_null(self)
-        elif self.current_tree_state.is_active() and self._best_upstream_router is not None:
+        elif self.is_tree_active() and self._best_upstream_router is not None:
             SFMRNonRootState.tree_transitions_from_active_to_inactive_and_best_upstream_neighbor_is_not_null(self)
-        elif self.current_tree_state.is_unknown() and self._best_upstream_router is not None:
+        elif self.is_tree_unknown() and self._best_upstream_router is not None:
             SFMRNonRootState.tree_transitions_from_unknown_to_inactive_and_best_upstream_is_not_null(self)
 
         super().tree_transition_to_inactive()
 
     def tree_transition_to_unknown(self):
-        if self.current_tree_state.is_active():
+        if self.is_tree_active():
             SFMRNonRootState.tree_transitions_from_active_to_unknown(self)
 
         super().tree_transition_to_unknown()
@@ -188,7 +187,6 @@ class TreeInterfaceDownstream(TreeInterface):
     # Override
     def delete(self):
         super().delete()
-        #self.cancel_message()
         self._my_assert_rpc = None
 
     def is_assert_winner(self):
