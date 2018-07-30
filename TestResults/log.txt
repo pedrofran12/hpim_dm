@@ -1,55 +1,433 @@
-Script started on Mon Jul 23 15:40:59 2018
+Script started on Tue Jul 31 19:16:21 2018
 root@switch1:~# 
-root@switch1:~# 
-root@switch1:~# tp cpdump -i br0 -w Q in -w /hosh T thome/Desktop/p test_pim/pim/TestResults/s Switch.pcap &
-[1] 1626
+root@switch1:~# tcpud  dump -i eth   br0 w -Q in -W w /hosthome/Desktop/test_newproto/test_broadcasttree/TestResults/Switch.pcap &
+[1] 1595
 root@switch1:~# tcpdump: listening on br0, link-type EN10MB (Ethernet), capture size 262144 bytes
 
 root@switch1:~# python3 ServerLog.py 
 Test1: Tree creation (10.1.1.100,224.12.12.12)
-Expected: all routers should consider eth0 as their UpstreamInterface
+Expected: all routers should consider eth0 as their Root interface except for R7 that should consider eth2 as it Root interface
 About to start TCP server...
-pim.KernelEntry.UpstreamInterface                  DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R1 Created UpstreamInterface
-pim.KernelEntry.DownstreamInterface                DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R1 Created DownstreamInterface
-pim.KernelEntry.DownstreamInterface                DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R1 Created DownstreamInterface
-pim.KernelEntry.DownstreamInterface                DEBUG    (10.1.1.100,224.12.12.12)           3  eth3  R1 Created DownstreamInterface
-pim.KernelEntry.UpstreamInterface                  DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R3 Created UpstreamInterface
-pim.KernelEntry.UpstreamInterface                  DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R4 Created UpstreamInterface
-pim.KernelEntry.UpstreamInterface                  DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R2 Created UpstreamInterface
-pim.KernelEntry.DownstreamInterface                DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 Created DownstreamInterface
-pim.KernelEntry.DownstreamInterface                DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 Created DownstreamInterface
-pim.KernelEntry.DownstreamInterface                DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 Created DownstreamInterface
-pim.KernelEntry.DownstreamInterface                DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R2 Created DownstreamInterface
-pim.KernelEntry.UpstreamInterface                  DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R6 Created UpstreamInterface
-pim.KernelEntry.DownstreamInterface                DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R6 Created DownstreamInterface
-pim.KernelEntry.UpstreamInterface                  DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 Created UpstreamInterface
-pim.KernelEntry.DownstreamInterface                DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R5 Created DownstreamInterface
-pim.KernelEntry.DownstreamInterface                DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R7 Created DownstreamInterface
-pim.KernelEntry.DownstreamInterface                DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R7 Created DownstreamInterface
-pim.KernelEntry.UpstreamInterface                  DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R7 Created UpstreamInterface
+protocol.Interface                                 DEBUG                                        1  eth1  R1 Received Hello message with HelloHoldTime: 120; CheckpointSN: 1 from neighbor 10.2.2.2
+protocol.Interface                                 DEBUG                                        0  eth0  R2 Received Hello message with HelloHoldTime: 120; CheckpointSN: 1 from neighbor 10.2.2.1
+protocol.Interface                                 DEBUG                                        0  eth0  R6 Received Hello message with HelloHoldTime: 120; CheckpointSN: 4 from neighbor 10.5.5.2
+protocol.Interface                                 DEBUG                                        1  eth1  R3 Received Hello message with HelloHoldTime: 120; CheckpointSN: 4 from neighbor 10.5.5.2
+protocol.Interface                                 DEBUG                                        1  eth1  R4 Received Hello message with HelloHoldTime: 120; CheckpointSN: 4 from neighbor 10.5.5.2
+protocol.Interface                                 DEBUG                                        0  eth0  R5 Received Hello message with HelloHoldTime: 120; CheckpointSN: 4 from neighbor 10.5.5.2
+protocol.KernelEntryOriginator                     DEBUG    (10.1.1.100,224.12.12.12)                    R1 Create KernelEntry
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R1 Downstream interest state transitions to DownstreamInterest
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R1 Assert state transitions to AssertWinner
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R1 BEST UPSTREAM NEIGHBOR IS NONE
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R1 interfaces_roles_dont_change_and_tree_transitions_to_active_state
+protocol.Interface                                 DEBUG                                        0  eth0  R2 Received IamUpstream message with BootTime: 1533057411; Tree: ('10.1.1.100', '224.12.12.12'); SN: 2; MetricPreference: 2; Metric: 0 from neighbor 10.2.2.1
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R1 Created NonRootInterface
+protocol.Interface                                 DEBUG                                        1  eth1  R1 Received Ack message with BootTime: 1533057411; NeighborBootTime: 1533057411; MySnapshotSN: 1; NeighborSnapshotSN: 1; Tree: ('10.1.1.100', '224.12.12.12'); SN: 2 from neighbor 10.2.2.2
+protocol.KernelEntry                               DEBUG    (10.1.1.100,224.12.12.12)                    R2 Create KernelEntry
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R1 Downstream interest state transitions to DownstreamInterest
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R1 Assert state transitions to AssertWinner
+protocol.KernelEntry                               DEBUG    (10.1.1.100,224.12.12.12)                    R2 Tree transitions to Active
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 Downstream interest state transitions to DownstreamInterest
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 Assert state transitions to AssertWinner
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R1 BEST UPSTREAM NEIGHBOR IS NONE
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 BEST UPSTREAM NEIGHBOR IS NONE
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 interfaces_roles_dont_change_and_tree_transitions_to_active_state
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R1 interfaces_roles_dont_change_and_tree_transitions_to_active_state
+protocol.Interface                                 DEBUG                                        0  eth0  R5 Received IamUpstream message with BootTime: 1533057412; Tree: ('10.1.1.100', '224.12.12.12'); SN: 5; MetricPreference: 11; Metric: 20 from neighbor 10.5.5.2
+protocol.Interface                                 DEBUG                                        0  eth0  R6 Received IamUpstream message with BootTime: 1533057412; Tree: ('10.1.1.100', '224.12.12.12'); SN: 5; MetricPreference: 11; Metric: 20 from neighbor 10.5.5.2
+protocol.Interface                                 DEBUG                                        1  eth1  R3 Received IamUpstream message with BootTime: 1533057412; Tree: ('10.1.1.100', '224.12.12.12'); SN: 5; MetricPreference: 11; Metric: 20 from neighbor 10.5.5.2
+protocol.Interface                                 DEBUG                                        1  eth1  R4 Received IamUpstream message with BootTime: 1533057412; Tree: ('10.1.1.100', '224.12.12.12'); SN: 5; MetricPreference: 11; Metric: 20 from neighbor 10.5.5.2
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R1 Created NonRootInterface
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           3  eth3  R1 Downstream interest state transitions to DownstreamInterest
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           3  eth3  R1 Assert state transitions to AssertWinner
+protocol.KernelEntry                               DEBUG    (10.1.1.100,224.12.12.12)                    R3 Create KernelEntry
+protocol.KernelEntry                               DEBUG    (10.1.1.100,224.12.12.12)                    R5 Create KernelEntry
+protocol.KernelEntry                               DEBUG    (10.1.1.100,224.12.12.12)                    R4 Create KernelEntry
+protocol.KernelEntry                               DEBUG    (10.1.1.100,224.12.12.12)                    R6 Create KernelEntry
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           3  eth3  R1 BEST UPSTREAM NEIGHBOR IS NONE
+protocol.KernelEntry                               DEBUG    (10.1.1.100,224.12.12.12)                    R3 Tree transitions to Inactive
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 Downstream interest state transitions to DownstreamInterest
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 Assert state transitions to AssertWinner
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 WON ASSERT
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.2
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 MY METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.3
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 tree_transitions_from_unknown_to_inactive_and_best_upstream_is_not_null
+protocol.Interface                                 DEBUG                                        0  eth0  R3 Received IamUpstream message with BootTime: 1533057412; Tree: ('10.1.1.100', '224.12.12.12'); SN: 2; MetricPreference: 2; Metric: 0 from neighbor 10.3.3.1
+protocol.KernelEntry                               DEBUG    (10.1.1.100,224.12.12.12)                    R4 Tree transitions to Inactive
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 Downstream interest state transitions to DownstreamInterest
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 Assert state transitions to AssertWinner
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 WON ASSERT
+protocol.KernelEntry                               DEBUG    (10.1.1.100,224.12.12.12)                    R5 Tree transitions to Active
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R5 Downstream interest state transitions to DownstreamInterest
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R5 Assert state transitions to AssertWinner
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R5 BEST UPSTREAM NEIGHBOR IS NONE
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R5 interfaces_roles_dont_change_and_tree_transitions_to_active_state
+protocol.KernelEntry                               DEBUG    (10.1.1.100,224.12.12.12)                    R6 Tree transitions to Active
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R6 Downstream interest state transitions to NoDownstreamInterest
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R6 Assert state transitions to AssertWinner
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R6 BEST UPSTREAM NEIGHBOR IS NONE
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.2
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 MY METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.4
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 Created NonRootInterface
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R2 Downstream interest state transitions to DownstreamInterest
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R2 Assert state transitions to AssertWinner
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R2 BEST UPSTREAM NEIGHBOR IS NONE
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R2 interfaces_roles_dont_change_and_tree_transitions_to_active_state
+protocol.Interface                                 DEBUG                                        1  eth1  R2 Received Ack message with BootTime: 1533057419; NeighborBootTime: 1533057412; MySnapshotSN: 2; NeighborSnapshotSN: 2; Tree: ('10.1.1.100', '224.12.12.12'); SN: 5 from neighbor 10.5.5.5
+protocol.Interface                                 DEBUG                                        1  eth1  R2 Received Ack message with BootTime: 1533057421; NeighborBootTime: 1533057412; MySnapshotSN: 3; NeighborSnapshotSN: 4; Tree: ('10.1.1.100', '224.12.12.12'); SN: 5 from neighbor 10.5.5.6
+protocol.Interface                                 DEBUG                                        1  eth1  R2 Received Ack message with BootTime: 1533057418; NeighborBootTime: 1533057412; MySnapshotSN: 1; NeighborSnapshotSN: 1; Tree: ('10.1.1.100', '224.12.12.12'); SN: 5 from neighbor 10.5.5.4
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           3  eth3  R1 interfaces_roles_dont_change_and_tree_transitions_to_active_state
+protocol.Interface                                 DEBUG                                        2  eth2  R1 Received Ack message with BootTime: 1533057414; NeighborBootTime: 1533057412; MySnapshotSN: 1; NeighborSnapshotSN: 1; Tree: ('10.1.1.100', '224.12.12.12'); SN: 2 from neighbor 10.3.3.3
+protocol.Interface                                 DEBUG                                        1  eth1  R2 Received Ack message with BootTime: 1533057416; NeighborBootTime: 1533057412; MySnapshotSN: 3; NeighborSnapshotSN: 3; Tree: ('10.1.1.100', '224.12.12.12'); SN: 5 from neighbor 10.5.5.3
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           3  eth3  R1 Created NonRootInterface
+protocol.Interface                                 DEBUG                                        3  eth3  R1 Received Ack message with BootTime: 1533057416; NeighborBootTime: 1533057413; MySnapshotSN: 1; NeighborSnapshotSN: 1; Tree: ('10.1.1.100', '224.12.12.12'); SN: 2 from neighbor 10.4.4.4
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 Created NonRootInterface
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 tree_transitions_from_unknown_to_inactive_and_best_upstream_is_not_null
+protocol.Interface                                 DEBUG                                        0  eth0  R4 Received IamUpstream message with BootTime: 1533057413; Tree: ('10.1.1.100', '224.12.12.12'); SN: 2; MetricPreference: 2; Metric: 0 from neighbor 10.4.4.1
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 Created NonRootInterface
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R6 interfaces_roles_dont_change_and_tree_transitions_to_active_state
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R5 Created NonRootInterface
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R6 Created NonRootInterface
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 tree_transitions_to_active_state
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R6 tree_transitions_to_active_state
+protocol.Interface                                 DEBUG                                        1  eth1  R2 Received NoInterest message with BootTime: 1533057416; Tree: ('10.1.1.100', '224.12.12.12'); SN: 5 from neighbor 10.5.5.3
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R2 Created NonRootInterface
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R2 tree_transitions_to_active_state
+protocol.Interface                                 DEBUG                                        1  eth1  R5 Received Ack message with BootTime: 1533057423; NeighborBootTime: 1533057420; MySnapshotSN: 1; NeighborSnapshotSN: 1; Tree: ('10.1.1.100', '224.12.12.12'); SN: 2 from neighbor 10.6.6.7
+protocol.Interface                                 DEBUG                                        0  eth0  R7 Received IamUpstream message with BootTime: 1533057420; Tree: ('10.1.1.100', '224.12.12.12'); SN: 2; MetricPreference: 11; Metric: 30 from neighbor 10.6.6.5
+protocol.Interface                                 DEBUG                                        2  eth2  R7 Received IamUpstream message with BootTime: 1533057414; Tree: ('10.1.1.100', '224.12.12.12'); SN: 2; MetricPreference: 11; Metric: 20 from neighbor 10.9.9.2
+protocol.Interface                                 DEBUG                                        2  eth2  R2 Received Ack message with BootTime: 1533057424; NeighborBootTime: 1533057414; MySnapshotSN: 1; NeighborSnapshotSN: 1; Tree: ('10.1.1.100', '224.12.12.12'); SN: 2 from neighbor 10.9.9.7
+protocol.KernelEntry                               DEBUG    (10.1.1.100,224.12.12.12)                    R7 Create KernelEntry
+protocol.Interface                                 DEBUG                                        1  eth1  R1 Received Interest message with BootTime: 1533057411; Tree: ('10.1.1.100', '224.12.12.12'); SN: 2 from neighbor 10.2.2.2
+protocol.KernelEntry                               DEBUG    (10.1.1.100,224.12.12.12)                    R7 Tree transitions to Active
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R7 Downstream interest state transitions to NoDownstreamInterest
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R7 Assert state transitions to AssertWinner
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R7 WON ASSERT
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R7 BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 30; IP: 10.6.6.5
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R7 MY METRIC_PREFERENCE: 11; METRIC: 30; IP: 10.6.6.7
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R7 interfaces_roles_dont_change_and_tree_transitions_to_active_state
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R7 Created NonRootInterface
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R7 Downstream interest state transitions to NoDownstreamInterest
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R7 Assert state transitions to AssertWinner
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R7 BEST UPSTREAM NEIGHBOR IS NONE
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R7 interfaces_roles_dont_change_and_tree_transitions_to_active_state
+protocol.Interface                                 DEBUG                                        1  eth1  R5 Received IamUpstream message with BootTime: 1533057423; Tree: ('10.1.1.100', '224.12.12.12'); SN: 2; MetricPreference: 11; Metric: 30 from neighbor 10.6.6.7
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R7 Created NonRootInterface
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R7 tree_transitions_to_active_state
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R3 Created RootInterface
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R3 tree_is_active_and_best_upstream_router_reelected
+protocol.Interface                                 DEBUG                                        1  eth1  R3 Received Ack message with BootTime: 1533057412; NeighborBootTime: 1533057416; MySnapshotSN: 3; NeighborSnapshotSN: 3; Tree: ('10.1.1.100', '224.12.12.12'); SN: 5 from neighbor 10.5.5.2
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R4 Created RootInterface
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R4 tree_is_active_and_best_upstream_router_reelected
+protocol.KernelEntry                               DEBUG    (10.1.1.100,224.12.12.12)                    R3 Tree transitions to Active
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R3 tree_transitions_to_active_state
+protocol.Interface                                 DEBUG                                        2  eth2  R2 Received Interest message with BootTime: 1533057424; Tree: ('10.1.1.100', '224.12.12.12'); SN: 2 from neighbor 10.9.9.7
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 Created RootInterface
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R5 LOST ASSERT
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R5 BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 30; IP: 10.6.6.7
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R5 MY METRIC_PREFERENCE: 11; METRIC: 30; IP: 10.6.6.5
+protocol.KernelEntry                               DEBUG    (10.1.1.100,224.12.12.12)                    R4 Tree transitions to Active
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R5 Assert state transitions to AssertLoser
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 transition_to_it_or_ot_and_active_tree
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R4 tree_transitions_to_active_state
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R1 Created RootInterfaceOriginator
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R5 DownstreamInterest -> NoDownstreamInterest
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 interfaces_roles_dont_change_and_tree_transitions_to_active_state
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R5 Downstream interest state transitions to NoDownstreamInterest
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R6 Created RootInterface
+protocol.Interface                                 DEBUG                                        2  eth2  R1 Received Interest message with BootTime: 1533057414; Tree: ('10.1.1.100', '224.12.12.12'); SN: 2 from neighbor 10.3.3.3
+protocol.Interface                                 DEBUG                                        3  eth3  R1 Received Interest message with BootTime: 1533057416; Tree: ('10.1.1.100', '224.12.12.12'); SN: 2 from neighbor 10.4.4.4
+protocol.Interface                                 DEBUG                                        0  eth0  R5 Received IamUpstream message with BootTime: 1533057416; Tree: ('10.1.1.100', '224.12.12.12'); SN: 6; MetricPreference: 11; Metric: 20 from neighbor 10.5.5.3
+protocol.Interface                                 DEBUG                                        0  eth0  R3 Received Ack message with BootTime: 1533057412; NeighborBootTime: 1533057414; MySnapshotSN: 1; NeighborSnapshotSN: 1; Tree: ('10.1.1.100', '224.12.12.12'); SN: 2 from neighbor 10.3.3.1
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 interfaces_roles_dont_change_and_tree_transitions_to_active_state
+protocol.Interface                                 DEBUG                                        1  eth1  R3 Received Ack message with BootTime: 1533057419; NeighborBootTime: 1533057416; MySnapshotSN: 3; NeighborSnapshotSN: 2; Tree: ('10.1.1.100', '224.12.12.12'); SN: 6 from neighbor 10.5.5.5
+protocol.Interface                                 DEBUG                                        2  eth2  R1 Received Interest message with BootTime: 1533057414; Tree: ('10.1.1.100', '224.12.12.12'); SN: 3 from neighbor 10.3.3.3
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 tree_is_active_and_best_upstream_router_reelected
+protocol.Interface                                 DEBUG                                        0  eth0  R3 Received Ack message with BootTime: 1533057412; NeighborBootTime: 1533057414; MySnapshotSN: 1; NeighborSnapshotSN: 1; Tree: ('10.1.1.100', '224.12.12.12'); SN: 3 from neighbor 10.3.3.1
+protocol.Interface                                 DEBUG                                        3  eth3  R1 Received Interest message with BootTime: 1533057416; Tree: ('10.1.1.100', '224.12.12.12'); SN: 3 from neighbor 10.4.4.4
+protocol.Interface                                 DEBUG                                        1  eth1  R3 Received IamUpstream message with BootTime: 1533057418; Tree: ('10.1.1.100', '224.12.12.12'); SN: 6; MetricPreference: 11; Metric: 20 from neighbor 10.5.5.4
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 LOST ASSERT
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.4
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 MY METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.3
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 Assert state transitions to AssertLoser
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R3 transition_to_it_or_ot_and_active_tree
+protocol.Interface                                 DEBUG                                        1  eth1  R4 Received IamUpstream message with BootTime: 1533057416; Tree: ('10.1.1.100', '224.12.12.12'); SN: 6; MetricPreference: 11; Metric: 20 from neighbor 10.5.5.3
+protocol.Interface                                 DEBUG                                        0  eth0  R6 Received IamUpstream message with BootTime: 1533057416; Tree: ('10.1.1.100', '224.12.12.12'); SN: 6; MetricPreference: 11; Metric: 20 from neighbor 10.5.5.3
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 WON ASSERT
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.3
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 MY METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.4
+protocol.Interface                                 DEBUG                                        1  eth1  R4 Received Ack message with BootTime: 1533057416; NeighborBootTime: 1533057418; MySnapshotSN: 1; NeighborSnapshotSN: 2; Tree: ('10.1.1.100', '224.12.12.12'); SN: 6 from neighbor 10.5.5.3
+protocol.Interface                                 DEBUG                                        2  eth2  R1 Received NoInterest message with BootTime: 1533057414; Tree: ('10.1.1.100', '224.12.12.12'); SN: 4 from neighbor 10.3.3.3
+protocol.Interface                                 DEBUG                                        0  eth0  R4 Received Ack message with BootTime: 1533057413; NeighborBootTime: 1533057416; MySnapshotSN: 1; NeighborSnapshotSN: 1; Tree: ('10.1.1.100', '224.12.12.12'); SN: 2 from neighbor 10.4.4.1
+protocol.Interface                                 DEBUG                                        1  eth1  R3 Received Ack message with BootTime: 1533057418; NeighborBootTime: 1533057416; MySnapshotSN: 2; NeighborSnapshotSN: 1; Tree: ('10.1.1.100', '224.12.12.12'); SN: 6 from neighbor 10.5.5.4
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R1 DownstreamInterest -> NoDownstreamInterest
+protocol.Interface                                 DEBUG                                        0  eth0  R4 Received Ack message with BootTime: 1533057413; NeighborBootTime: 1533057416; MySnapshotSN: 1; NeighborSnapshotSN: 1; Tree: ('10.1.1.100', '224.12.12.12'); SN: 3 from neighbor 10.4.4.1
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R1 Downstream interest state transitions to NoDownstreamInterest
+protocol.Interface                                 DEBUG                                        1  eth1  R3 Received Ack message with BootTime: 1533057421; NeighborBootTime: 1533057416; MySnapshotSN: 1; NeighborSnapshotSN: 4; Tree: ('10.1.1.100', '224.12.12.12'); SN: 6 from neighbor 10.5.5.6
+protocol.Interface                                 DEBUG                                        0  eth0  R3 Received Ack message with BootTime: 1533057412; NeighborBootTime: 1533057414; MySnapshotSN: 1; NeighborSnapshotSN: 1; Tree: ('10.1.1.100', '224.12.12.12'); SN: 4 from neighbor 10.3.3.1
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R6 tree_is_active_and_best_upstream_router_reelected
+protocol.Interface                                 DEBUG                                        1  eth1  R3 Received NoInterest message with BootTime: 1533057419; Tree: ('10.1.1.100', '224.12.12.12'); SN: 7 from neighbor 10.5.5.5
+protocol.Interface                                 DEBUG                                        1  eth1  R3 Received Interest message with BootTime: 1533057421; Tree: ('10.1.1.100', '224.12.12.12'); SN: 6 from neighbor 10.5.5.6
+protocol.Interface                                 DEBUG                                        0  eth0  R5 Received IamUpstream message with BootTime: 1533057418; Tree: ('10.1.1.100', '224.12.12.12'); SN: 6; MetricPreference: 11; Metric: 20 from neighbor 10.5.5.4
+protocol.Interface                                 DEBUG                                        0  eth0  R6 Received IamUpstream message with BootTime: 1533057418; Tree: ('10.1.1.100', '224.12.12.12'); SN: 6; MetricPreference: 11; Metric: 20 from neighbor 10.5.5.4
+protocol.Interface                                 DEBUG                                        1  eth1  R4 Received Ack message with BootTime: 1533057419; NeighborBootTime: 1533057418; MySnapshotSN: 1; NeighborSnapshotSN: 3; Tree: ('10.1.1.100', '224.12.12.12'); SN: 6 from neighbor 10.5.5.5
+protocol.Interface                                 DEBUG                                        1  eth1  R4 Received Ack message with BootTime: 1533057421; NeighborBootTime: 1533057418; MySnapshotSN: 2; NeighborSnapshotSN: 4; Tree: ('10.1.1.100', '224.12.12.12'); SN: 6 from neighbor 10.5.5.6
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R6 tree_is_active_and_best_upstream_router_reelected
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 tree_is_active_and_best_upstream_router_reelected
+protocol.Interface                                 DEBUG                                        1  eth1  R4 Received Interest message with BootTime: 1533057421; Tree: ('10.1.1.100', '224.12.12.12'); SN: 7 from neighbor 10.5.5.6
+protocol.Interface                                 DEBUG                                        1  eth1  R4 Received NoInterest message with BootTime: 1533057419; Tree: ('10.1.1.100', '224.12.12.12'); SN: 8 from neighbor 10.5.5.5
+protocol.Interface                                 DEBUG                                        0  eth0  R6 Received Ack message with BootTime: 1533057416; NeighborBootTime: 1533057421; MySnapshotSN: 4; NeighborSnapshotSN: 1; Tree: ('10.1.1.100', '224.12.12.12'); SN: 6 from neighbor 10.5.5.3
+protocol.Interface                                 DEBUG                                        0  eth0  R6 Received Ack message with BootTime: 1533057418; NeighborBootTime: 1533057421; MySnapshotSN: 4; NeighborSnapshotSN: 2; Tree: ('10.1.1.100', '224.12.12.12'); SN: 7 from neighbor 10.5.5.4
+protocol.Interface                                 DEBUG                                        0  eth0  R5 Received Ack message with BootTime: 1533057416; NeighborBootTime: 1533057419; MySnapshotSN: 2; NeighborSnapshotSN: 3; Tree: ('10.1.1.100', '224.12.12.12'); SN: 7 from neighbor 10.5.5.3
+protocol.Interface                                 DEBUG                                        0  eth0  R5 Received Ack message with BootTime: 1533057418; NeighborBootTime: 1533057419; MySnapshotSN: 3; NeighborSnapshotSN: 1; Tree: ('10.1.1.100', '224.12.12.12'); SN: 8 from neighbor 10.5.5.4
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R2 Created RootInterface
+protocol.Interface                                 DEBUG                                        0  eth0  R2 Received Ack message with BootTime: 1533057411; NeighborBootTime: 1533057411; MySnapshotSN: 1; NeighborSnapshotSN: 1; Tree: ('10.1.1.100', '224.12.12.12'); SN: 2 from neighbor 10.2.2.1
+protocol.Interface                                 DEBUG                                        1  eth1  R2 Received NoInterest message with BootTime: 1533057418; Tree: ('10.1.1.100', '224.12.12.12'); SN: 5 from neighbor 10.5.5.4
+protocol.Interface                                 DEBUG                                        1  eth1  R4 Received Ack message with BootTime: 1533057412; NeighborBootTime: 1533057418; MySnapshotSN: 1; NeighborSnapshotSN: 1; Tree: ('10.1.1.100', '224.12.12.12'); SN: 5 from neighbor 10.5.5.2
+protocol.Interface                                 DEBUG                                        1  eth1  R2 Received Interest message with BootTime: 1533057421; Tree: ('10.1.1.100', '224.12.12.12'); SN: 5 from neighbor 10.5.5.6
+protocol.Interface                                 DEBUG                                        0  eth0  R6 Received Ack message with BootTime: 1533057412; NeighborBootTime: 1533057421; MySnapshotSN: 4; NeighborSnapshotSN: 3; Tree: ('10.1.1.100', '224.12.12.12'); SN: 5 from neighbor 10.5.5.2
+protocol.Interface                                 DEBUG                                        1  eth1  R2 Received Interest message with BootTime: 1533057419; Tree: ('10.1.1.100', '224.12.12.12'); SN: 5 from neighbor 10.5.5.5
+protocol.Interface                                 DEBUG                                        0  eth0  R5 Received Ack message with BootTime: 1533057412; NeighborBootTime: 1533057419; MySnapshotSN: 2; NeighborSnapshotSN: 2; Tree: ('10.1.1.100', '224.12.12.12'); SN: 5 from neighbor 10.5.5.2
+protocol.Interface                                 DEBUG                                        1  eth1  R2 Received NoInterest message with BootTime: 1533057419; Tree: ('10.1.1.100', '224.12.12.12'); SN: 6 from neighbor 10.5.5.5
+protocol.Interface                                 DEBUG                                        1  eth1  R2 Received IamUpstream message with BootTime: 1533057416; Tree: ('10.1.1.100', '224.12.12.12'); SN: 6; MetricPreference: 11; Metric: 20 from neighbor 10.5.5.3
+protocol.Interface                                 DEBUG                                        1  eth1  R3 Received Ack message with BootTime: 1533057412; NeighborBootTime: 1533057416; MySnapshotSN: 3; NeighborSnapshotSN: 3; Tree: ('10.1.1.100', '224.12.12.12'); SN: 6 from neighbor 10.5.5.2
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 LOST ASSERT
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.3
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 MY METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.2
+protocol.Interface                                 DEBUG                                        0  eth0  R5 Received Ack message with BootTime: 1533057412; NeighborBootTime: 1533057419; MySnapshotSN: 2; NeighborSnapshotSN: 2; Tree: ('10.1.1.100', '224.12.12.12'); SN: 6 from neighbor 10.5.5.2
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 Assert state transitions to AssertLoser
+protocol.Interface                                 DEBUG                                        1  eth1  R2 Received IamUpstream message with BootTime: 1533057418; Tree: ('10.1.1.100', '224.12.12.12'); SN: 6; MetricPreference: 11; Metric: 20 from neighbor 10.5.5.4
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R7 Created RootInterface
 [1;32;40mTest1 Success[0m
 Test2: Change interface eth2 cost of Router R7 to 100
 Expected: Router R7 should change Root<->Non-Root interface
-pim.KernelEntry.DownstreamInterface                DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R7 Created DownstreamInterface
-pim.KernelEntry.UpstreamInterface                  DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R7 Created UpstreamInterface
+protocol.Interface                                 DEBUG                                        1  eth1  R4 Received Ack message with BootTime: 1533057412; NeighborBootTime: 1533057418; MySnapshotSN: 1; NeighborSnapshotSN: 1; Tree: ('10.1.1.100', '224.12.12.12'); SN: 6 from neighbor 10.5.5.2
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 LOST ASSERT
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.4
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 MY METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.2
+protocol.Interface                                 DEBUG                                        0  eth0  R7 Received Ack message with BootTime: 1533057420; NeighborBootTime: 1533057423; MySnapshotSN: 1; NeighborSnapshotSN: 1; Tree: ('10.1.1.100', '224.12.12.12'); SN: 2 from neighbor 10.6.6.5
+protocol.Interface                                 DEBUG                                        2  eth2  R7 Received Ack message with BootTime: 1533057414; NeighborBootTime: 1533057424; MySnapshotSN: 1; NeighborSnapshotSN: 1; Tree: ('10.1.1.100', '224.12.12.12'); SN: 2 from neighbor 10.9.9.2
+protocol.Interface                                 DEBUG                                        2  eth2  R1 Received Hello message with HelloHoldTime: 120; CheckpointSN: 4 from neighbor 10.3.3.3
+protocol.Interface                                 DEBUG                                        2  eth2  R7 Received Hello message with HelloHoldTime: 120; CheckpointSN: 2 from neighbor 10.9.9.2
+protocol.Interface                                 DEBUG                                        0  eth0  R4 Received Hello message with HelloHoldTime: 120; CheckpointSN: 2 from neighbor 10.4.4.1
+protocol.Interface                                 DEBUG                                        1  eth1  R2 Received Hello message with HelloHoldTime: 120; CheckpointSN: 6 from neighbor 10.5.5.4
+protocol.Interface                                 DEBUG                                        1  eth1  R3 Received Hello message with HelloHoldTime: 120; CheckpointSN: 6 from neighbor 10.5.5.4
+protocol.Interface                                 DEBUG                                        0  eth0  R6 Received Hello message with HelloHoldTime: 120; CheckpointSN: 6 from neighbor 10.5.5.4
+protocol.Interface                                 DEBUG                                        0  eth0  R5 Received Hello message with HelloHoldTime: 120; CheckpointSN: 6 from neighbor 10.5.5.4
+protocol.Interface                                 DEBUG                                        0  eth0  R6 Received Hello message with HelloHoldTime: 120; CheckpointSN: 6 from neighbor 10.5.5.3
+protocol.Interface                                 DEBUG                                        0  eth0  R5 Received Hello message with HelloHoldTime: 120; CheckpointSN: 6 from neighbor 10.5.5.3
+protocol.Interface                                 DEBUG                                        1  eth1  R4 Received Hello message with HelloHoldTime: 120; CheckpointSN: 6 from neighbor 10.5.5.3
+protocol.Interface                                 DEBUG                                        1  eth1  R2 Received Hello message with HelloHoldTime: 120; CheckpointSN: 6 from neighbor 10.5.5.3
+protocol.Interface                                 DEBUG                                        3  eth3  R1 Received Hello message with HelloHoldTime: 120; CheckpointSN: 3 from neighbor 10.4.4.4
+protocol.Interface                                 DEBUG                                        1  eth1  R4 Received Hello message with HelloHoldTime: 120; CheckpointSN: 8 from neighbor 10.5.5.5
+protocol.Interface                                 DEBUG                                        0  eth0  R6 Received Hello message with HelloHoldTime: 120; CheckpointSN: 8 from neighbor 10.5.5.5
+protocol.Interface                                 DEBUG                                        1  eth1  R3 Received Hello message with HelloHoldTime: 120; CheckpointSN: 8 from neighbor 10.5.5.5
+protocol.Interface                                 DEBUG                                        1  eth1  R2 Received Hello message with HelloHoldTime: 120; CheckpointSN: 8 from neighbor 10.5.5.5
+protocol.Interface                                 DEBUG                                        0  eth0  R7 Received Hello message with HelloHoldTime: 120; CheckpointSN: 2 from neighbor 10.6.6.5
+protocol.Interface                                 DEBUG                                        0  eth0  R5 Received Hello message with HelloHoldTime: 120; CheckpointSN: 7 from neighbor 10.5.5.6
+protocol.Interface                                 DEBUG                                        1  eth1  R2 Received Hello message with HelloHoldTime: 120; CheckpointSN: 7 from neighbor 10.5.5.6
+protocol.Interface                                 DEBUG                                        1  eth1  R3 Received Hello message with HelloHoldTime: 120; CheckpointSN: 7 from neighbor 10.5.5.6
+protocol.Interface                                 DEBUG                                        1  eth1  R4 Received Hello message with HelloHoldTime: 120; CheckpointSN: 7 from neighbor 10.5.5.6
+protocol.Interface                                 DEBUG                                        1  eth1  R5 Received Hello message with HelloHoldTime: 120; CheckpointSN: 2 from neighbor 10.6.6.7
+protocol.Interface                                 DEBUG                                        2  eth2  R2 Received Hello message with HelloHoldTime: 120; CheckpointSN: 2 from neighbor 10.9.9.7
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R7 Downstream interest state transitions to NoDownstreamInterest
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R7 Assert state transitions to AssertWinner
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R7 LOST ASSERT
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R7 BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.9.9.2
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R7 MY METRIC_PREFERENCE: 11; METRIC: 40; IP: 10.9.9.7
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R7 Assert state transitions to AssertLoser
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R7 interfaces_roles_change_and_tree_remains_or_transitions_to_active_state
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R7 Created NonRootInterface
+protocol.Interface                                 DEBUG                                        2  eth2  R2 Received IamUpstream message with BootTime: 1533057424; Tree: ('10.1.1.100', '224.12.12.12'); SN: 3; MetricPreference: 11; Metric: 40 from neighbor 10.9.9.7
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R7 tree_remains_in_active_state_and_non_root_transitions_to_root_interface
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R2 WON ASSERT
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R2 BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 40; IP: 10.9.9.7
+protocol.Interface                                 DEBUG                                        2  eth2  R7 Received Ack message with BootTime: 1533057414; NeighborBootTime: 1533057424; MySnapshotSN: 1; NeighborSnapshotSN: 1; Tree: ('10.1.1.100', '224.12.12.12'); SN: 3 from neighbor 10.9.9.2
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R2 MY METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.9.9.2
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R2 DownstreamInterest -> NoDownstreamInterest
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R2 Downstream interest state transitions to NoDownstreamInterest
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R2 transition_to_it_or_ot_and_active_tree
+protocol.Interface                                 DEBUG                                        1  eth1  R5 Received IamNoLongerUpstream message with BootTime: 1533057423; Tree: ('10.1.1.100', '224.12.12.12'); SN: 3 from neighbor 10.6.6.7
+protocol.Interface                                 DEBUG                                        1  eth1  R1 Received NoInterest message with BootTime: 1533057411; Tree: ('10.1.1.100', '224.12.12.12'); SN: 3 from neighbor 10.2.2.2
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R1 DownstreamInterest -> NoDownstreamInterest
+protocol.Interface                                 DEBUG                                        0  eth0  R2 Received Ack message with BootTime: 1533057411; NeighborBootTime: 1533057411; MySnapshotSN: 1; NeighborSnapshotSN: 1; Tree: ('10.1.1.100', '224.12.12.12'); SN: 3 from neighbor 10.2.2.1
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R1 Downstream interest state transitions to NoDownstreamInterest
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R5 BEST UPSTREAM NEIGHBOR IS NONE
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R5 Assert state transitions to AssertWinner
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R5 NoDownstreamInterest -> DownstreamInterest
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R5 Downstream interest state transitions to DownstreamInterest
+protocol.Interface                                 DEBUG                                        0  eth0  R7 Received Ack message with BootTime: 1533057420; NeighborBootTime: 1533057423; MySnapshotSN: 1; NeighborSnapshotSN: 1; Tree: ('10.1.1.100', '224.12.12.12'); SN: 3 from neighbor 10.6.6.5
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 transition_to_it_or_ot_and_active_tree
+protocol.Interface                                 DEBUG                                        1  eth1  R4 Received Interest message with BootTime: 1533057419; Tree: ('10.1.1.100', '224.12.12.12'); SN: 9 from neighbor 10.5.5.5
+protocol.Interface                                 DEBUG                                        1  eth1  R5 Received Interest message with BootTime: 1533057423; Tree: ('10.1.1.100', '224.12.12.12'); SN: 4 from neighbor 10.6.6.7
+protocol.Interface                                 DEBUG                                        0  eth0  R5 Received Ack message with BootTime: 1533057418; NeighborBootTime: 1533057419; MySnapshotSN: 3; NeighborSnapshotSN: 1; Tree: ('10.1.1.100', '224.12.12.12'); SN: 9 from neighbor 10.5.5.4
+protocol.Interface                                 DEBUG                                        0  eth0  R7 Received Ack message with BootTime: 1533057420; NeighborBootTime: 1533057423; MySnapshotSN: 1; NeighborSnapshotSN: 1; Tree: ('10.1.1.100', '224.12.12.12'); SN: 4 from neighbor 10.6.6.5
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R7 Created RootInterface
 [1;32;40mTest2 Success[0m
 Test3: Fail router 5 (disable its interfaces)
 Expected: Router R7 should change Root<->Non-Root interface
-pim.KernelEntry.DownstreamInterface                DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 Created DownstreamInterface
-pim.KernelEntry.DownstreamInterface                DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R7 Created DownstreamInterface
-pim.KernelEntry.UpstreamInterface                  DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R5 Created UpstreamInterface
-pim.KernelEntry.UpstreamInterface                  DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R7 Created UpstreamInterface
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R7 tree_is_active_and_my_rpc_changes
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R7 BEST UPSTREAM NEIGHBOR IS NONE
+protocol.Interface                                 DEBUG                                        1  eth1  R1 Received Hello message with HelloHoldTime: 120; CheckpointSN: 3 from neighbor 10.2.2.2
+protocol.Interface                                 DEBUG                                        0  eth0  R3 Received Hello message with HelloHoldTime: 120; CheckpointSN: 2 from neighbor 10.3.3.1
+protocol.Interface                                 DEBUG                                        0  eth0  R2 Received Hello message with HelloHoldTime: 120; CheckpointSN: 2 from neighbor 10.2.2.1
+protocol.Interface                                 DEBUG                                        1  eth1  R4 Received Hello message with HelloHoldTime: 120; CheckpointSN: 5 from neighbor 10.5.5.2
+protocol.Interface                                 DEBUG                                        0  eth0  R6 Received Hello message with HelloHoldTime: 120; CheckpointSN: 5 from neighbor 10.5.5.2
+protocol.Interface                                 DEBUG                                        1  eth1  R3 Received Hello message with HelloHoldTime: 120; CheckpointSN: 5 from neighbor 10.5.5.2
+protocol.Interface                                 DEBUG                                        0  eth0  R5 Received Hello message with HelloHoldTime: 120; CheckpointSN: 5 from neighbor 10.5.5.2
+protocol.Interface                                 DEBUG                                        2  eth2  R1 Received Hello message with HelloHoldTime: 120; CheckpointSN: 4 from neighbor 10.3.3.3
+protocol.Interface                                 DEBUG                                        2  eth2  R7 Received Hello message with HelloHoldTime: 120; CheckpointSN: 2 from neighbor 10.9.9.2
+protocol.Interface                                 DEBUG                                        0  eth0  R4 Received Hello message with HelloHoldTime: 120; CheckpointSN: 2 from neighbor 10.4.4.1
+protocol.Interface                                 DEBUG                                        0  eth0  R5 Received Hello message with HelloHoldTime: 120; CheckpointSN: 6 from neighbor 10.5.5.4
+protocol.Interface                                 DEBUG                                        1  eth1  R2 Received Hello message with HelloHoldTime: 120; CheckpointSN: 6 from neighbor 10.5.5.4
+protocol.Interface                                 DEBUG                                        0  eth0  R6 Received Hello message with HelloHoldTime: 120; CheckpointSN: 6 from neighbor 10.5.5.4
+protocol.Interface                                 DEBUG                                        1  eth1  R3 Received Hello message with HelloHoldTime: 120; CheckpointSN: 6 from neighbor 10.5.5.4
+protocol.Interface                                 DEBUG                                        0  eth0  R6 Received Hello message with HelloHoldTime: 120; CheckpointSN: 6 from neighbor 10.5.5.3
+protocol.Interface                                 DEBUG                                        0  eth0  R5 Received Hello message with HelloHoldTime: 120; CheckpointSN: 6 from neighbor 10.5.5.3
+protocol.Interface                                 DEBUG                                        1  eth1  R4 Received Hello message with HelloHoldTime: 120; CheckpointSN: 6 from neighbor 10.5.5.3
+protocol.Interface                                 DEBUG                                        1  eth1  R2 Received Hello message with HelloHoldTime: 120; CheckpointSN: 6 from neighbor 10.5.5.3
+protocol.Interface                                 DEBUG                                        3  eth3  R1 Received Hello message with HelloHoldTime: 120; CheckpointSN: 3 from neighbor 10.4.4.4
+protocol.Interface                                 DEBUG                                        0  eth0  R6 Received Hello message with HelloHoldTime: 120; CheckpointSN: 9 from neighbor 10.5.5.5
+protocol.Interface                                 DEBUG                                        1  eth1  R2 Received Hello message with HelloHoldTime: 120; CheckpointSN: 9 from neighbor 10.5.5.5
+protocol.Interface                                 DEBUG                                        1  eth1  R3 Received Hello message with HelloHoldTime: 120; CheckpointSN: 9 from neighbor 10.5.5.5
+protocol.Interface                                 DEBUG                                        1  eth1  R4 Received Hello message with HelloHoldTime: 120; CheckpointSN: 9 from neighbor 10.5.5.5
+protocol.Interface                                 DEBUG                                        0  eth0  R7 Received Hello message with HelloHoldTime: 120; CheckpointSN: 2 from neighbor 10.6.6.5
+protocol.Interface                                 DEBUG                                        1  eth1  R2 Received Hello message with HelloHoldTime: 120; CheckpointSN: 7 from neighbor 10.5.5.6
+protocol.Interface                                 DEBUG                                        1  eth1  R3 Received Hello message with HelloHoldTime: 120; CheckpointSN: 7 from neighbor 10.5.5.6
+protocol.Interface                                 DEBUG                                        0  eth0  R5 Received Hello message with HelloHoldTime: 120; CheckpointSN: 7 from neighbor 10.5.5.6
+protocol.Interface                                 DEBUG                                        1  eth1  R4 Received Hello message with HelloHoldTime: 120; CheckpointSN: 7 from neighbor 10.5.5.6
+protocol.Interface                                 DEBUG                                        1  eth1  R5 Received Hello message with HelloHoldTime: 120; CheckpointSN: 4 from neighbor 10.6.6.7
+protocol.Interface                                 DEBUG                                        2  eth2  R2 Received Hello message with HelloHoldTime: 120; CheckpointSN: 3 from neighbor 10.9.9.7
+protocol.Interface                                 DEBUG                                        1  eth1  R1 Received Hello message with HelloHoldTime: 120; CheckpointSN: 3 from neighbor 10.2.2.2
+protocol.Interface                                 DEBUG                                        0  eth0  R3 Received Hello message with HelloHoldTime: 120; CheckpointSN: 2 from neighbor 10.3.3.1
+protocol.Interface                                 DEBUG                                        0  eth0  R2 Received Hello message with HelloHoldTime: 120; CheckpointSN: 2 from neighbor 10.2.2.1
+protocol.Interface                                 DEBUG                                        0  eth0  R6 Received Hello message with HelloHoldTime: 0; CheckpointSN: 0 from neighbor 10.5.5.5
+protocol.Interface                                 DEBUG                                        1  eth1  R3 Received Hello message with HelloHoldTime: 0; CheckpointSN: 0 from neighbor 10.5.5.5
+protocol.Interface.Neighbor                        DEBUG                                        1  eth1  R3 Removing neighbor 10.5.5.5
+protocol.Interface                                 DEBUG                                        1  eth1  R4 Received Hello message with HelloHoldTime: 0; CheckpointSN: 0 from neighbor 10.5.5.5
+protocol.Interface.Neighbor                        DEBUG                                        1  eth1  R4 Removing neighbor 10.5.5.5
+protocol.Interface                                 DEBUG                                        1  eth1  R2 Received Hello message with HelloHoldTime: 0; CheckpointSN: 0 from neighbor 10.5.5.5
+protocol.Interface.Neighbor                        DEBUG                                        1  eth1  R2 Removing neighbor 10.5.5.5
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 LOST ASSERT
+protocol.Interface.Neighbor                        DEBUG                                        0  eth0  R6 Removing neighbor 10.5.5.5
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 LOST ASSERT
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.4
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 MY METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.3
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 WON ASSERT
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.4
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 MY METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.2
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.3
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 MY METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.4
+protocol.Interface.Neighbor                        DEBUG                                        0  eth0  R5 Removing neighbor 10.5.5.3
+protocol.Interface.Neighbor                        DEBUG                                        0  eth0  R5 Removing neighbor 10.5.5.2
+protocol.Interface.Neighbor                        DEBUG                                        0  eth0  R5 Removing neighbor 10.5.5.4
+protocol.Interface.Neighbor                        DEBUG                                        0  eth0  R5 Removing neighbor 10.5.5.6
+protocol.Interface                                 DEBUG                                        1  eth1  R3 Received Hello message with HelloHoldTime: 120; CheckpointSN: 5 from neighbor 10.5.5.2
+protocol.Interface                                 DEBUG                                        0  eth0  R6 Received Hello message with HelloHoldTime: 120; CheckpointSN: 5 from neighbor 10.5.5.2
+protocol.Interface                                 DEBUG                                        1  eth1  R4 Received Hello message with HelloHoldTime: 120; CheckpointSN: 5 from neighbor 10.5.5.2
+protocol.Interface                                 DEBUG                                        2  eth2  R1 Received Hello message with HelloHoldTime: 120; CheckpointSN: 4 from neighbor 10.3.3.3
+protocol.Interface                                 DEBUG                                        2  eth2  R7 Received Hello message with HelloHoldTime: 120; CheckpointSN: 2 from neighbor 10.9.9.2
+protocol.Interface                                 DEBUG                                        0  eth0  R4 Received Hello message with HelloHoldTime: 120; CheckpointSN: 2 from neighbor 10.4.4.1
+protocol.Interface                                 DEBUG                                        0  eth0  R6 Received Hello message with HelloHoldTime: 120; CheckpointSN: 6 from neighbor 10.5.5.4
+protocol.Interface                                 DEBUG                                        1  eth1  R2 Received Hello message with HelloHoldTime: 120; CheckpointSN: 6 from neighbor 10.5.5.4
+protocol.Interface                                 DEBUG                                        1  eth1  R3 Received Hello message with HelloHoldTime: 120; CheckpointSN: 6 from neighbor 10.5.5.4
+protocol.Interface                                 DEBUG                                        0  eth0  R6 Received Hello message with HelloHoldTime: 120; CheckpointSN: 6 from neighbor 10.5.5.3
+protocol.Interface                                 DEBUG                                        1  eth1  R4 Received Hello message with HelloHoldTime: 120; CheckpointSN: 6 from neighbor 10.5.5.3
+protocol.Interface                                 DEBUG                                        1  eth1  R2 Received Hello message with HelloHoldTime: 120; CheckpointSN: 6 from neighbor 10.5.5.3
+protocol.Interface                                 DEBUG                                        3  eth3  R1 Received Hello message with HelloHoldTime: 120; CheckpointSN: 3 from neighbor 10.4.4.4
+protocol.Interface                                 DEBUG                                        0  eth0  R7 Received Hello message with HelloHoldTime: 120; CheckpointSN: 2 from neighbor 10.6.6.5
+protocol.Interface                                 DEBUG                                        1  eth1  R2 Received Hello message with HelloHoldTime: 120; CheckpointSN: 7 from neighbor 10.5.5.6
+protocol.Interface                                 DEBUG                                        1  eth1  R3 Received Hello message with HelloHoldTime: 120; CheckpointSN: 7 from neighbor 10.5.5.6
+protocol.Interface                                 DEBUG                                        1  eth1  R4 Received Hello message with HelloHoldTime: 120; CheckpointSN: 7 from neighbor 10.5.5.6
+protocol.Interface                                 DEBUG                                        1  eth1  R5 Received Hello message with HelloHoldTime: 120; CheckpointSN: 4 from neighbor 10.6.6.7
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 Downstream interest state transitions to DownstreamInterest
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 Assert state transitions to AssertWinner
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 LOST ASSERT
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.4
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 MY METRIC_PREFERENCE: 11; METRIC: 130; IP: 10.5.5.5
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 Assert state transitions to AssertLoser
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 tree_transitions_from_active_to_inactive_and_best_upstream_neighbor_is_not_null
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 Created NonRootInterface
+protocol.Interface                                 DEBUG                                        0  eth0  R7 Received IamNoLongerUpstream message with BootTime: 1533057420; Tree: ('10.1.1.100', '224.12.12.12'); SN: 3 from neighbor 10.6.6.5
+protocol.KernelEntry                               DEBUG    (10.1.1.100,224.12.12.12)                    R7 Tree transitions to Inactive
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R7 tree_transitions_from_active_to_inactive_and_best_upstream_neighbor_is_null
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R7 tree_transitions_from_active_to_inactive_and_best_upstream_neighbor_is_not_null
+protocol.Interface                                 DEBUG                                        2  eth2  R2 Received IamNoLongerUpstream message with BootTime: 1533057424; Tree: ('10.1.1.100', '224.12.12.12'); SN: 4 from neighbor 10.9.9.7
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R2 BEST UPSTREAM NEIGHBOR IS NONE
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R2 NoDownstreamInterest -> DownstreamInterest
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R2 Downstream interest state transitions to DownstreamInterest
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R2 transition_to_it_or_ot_and_active_tree
+protocol.Interface                                 DEBUG                                        2  eth2  R7 Received Ack message with BootTime: 1533057414; NeighborBootTime: 1533057424; MySnapshotSN: 1; NeighborSnapshotSN: 1; Tree: ('10.1.1.100', '224.12.12.12'); SN: 4 from neighbor 10.9.9.2
+protocol.Interface                                 DEBUG                                        1  eth1  R1 Received Interest message with BootTime: 1533057411; Tree: ('10.1.1.100', '224.12.12.12'); SN: 4 from neighbor 10.2.2.2
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R1 NoDownstreamInterest -> DownstreamInterest
+protocol.Interface                                 DEBUG                                        2  eth2  R2 Received NoInterest message with BootTime: 1533057424; Tree: ('10.1.1.100', '224.12.12.12'); SN: 5 from neighbor 10.9.9.7
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R1 Downstream interest state transitions to DownstreamInterest
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R2 DownstreamInterest -> NoDownstreamInterest
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R2 Downstream interest state transitions to NoDownstreamInterest
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R2 transition_to_it_or_ot_and_active_tree
+protocol.Interface                                 DEBUG                                        2  eth2  R7 Received Ack message with BootTime: 1533057414; NeighborBootTime: 1533057424; MySnapshotSN: 1; NeighborSnapshotSN: 1; Tree: ('10.1.1.100', '224.12.12.12'); SN: 5 from neighbor 10.9.9.2
+protocol.Interface                                 DEBUG                                        0  eth0  R2 Received Ack message with BootTime: 1533057411; NeighborBootTime: 1533057411; MySnapshotSN: 1; NeighborSnapshotSN: 1; Tree: ('10.1.1.100', '224.12.12.12'); SN: 4 from neighbor 10.2.2.1
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R7 Downstream interest state transitions to DownstreamInterest
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R7 Assert state transitions to AssertWinner
+protocol.Interface                                 DEBUG                                        1  eth1  R1 Received NoInterest message with BootTime: 1533057411; Tree: ('10.1.1.100', '224.12.12.12'); SN: 5 from neighbor 10.2.2.2
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R1 DownstreamInterest -> NoDownstreamInterest
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R1 Downstream interest state transitions to NoDownstreamInterest
+protocol.Interface                                 DEBUG                                        0  eth0  R2 Received Ack message with BootTime: 1533057411; NeighborBootTime: 1533057411; MySnapshotSN: 1; NeighborSnapshotSN: 1; Tree: ('10.1.1.100', '224.12.12.12'); SN: 5 from neighbor 10.2.2.1
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R7 BEST UPSTREAM NEIGHBOR IS NONE
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R7 interfaces_roles_change_and_tree_remains_or_transitions_to_active_state
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R7 Created NonRootInterface
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R7 tree_transitions_to_active_state_and_non_root_interface_transitions_to_root
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R7 tree_transitions_to_active_state
+protocol.Interface                                 DEBUG                                        2  eth2  R2 Received Interest message with BootTime: 1533057424; Tree: ('10.1.1.100', '224.12.12.12'); SN: 6 from neighbor 10.9.9.7
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R5 tree_transitions_from_active_to_inactive_state_due_to_transition_from_non_root_to_root_interface
+protocol.Interface                                 DEBUG                                        1  eth1  R5 Received Ack message with BootTime: 1533057423; NeighborBootTime: 1533057420; MySnapshotSN: 1; NeighborSnapshotSN: 1; Tree: ('10.1.1.100', '224.12.12.12'); SN: 3 from neighbor 10.6.6.7
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R2 NoDownstreamInterest -> DownstreamInterest
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R2 Downstream interest state transitions to DownstreamInterest
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R2 transition_to_it_or_ot_and_active_tree
+protocol.Interface                                 DEBUG                                        1  eth1  R1 Received Interest message with BootTime: 1533057411; Tree: ('10.1.1.100', '224.12.12.12'); SN: 6 from neighbor 10.2.2.2
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R1 NoDownstreamInterest -> DownstreamInterest
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R1 Downstream interest state transitions to DownstreamInterest
+protocol.Interface                                 DEBUG                                        0  eth0  R2 Received Ack message with BootTime: 1533057411; NeighborBootTime: 1533057411; MySnapshotSN: 1; NeighborSnapshotSN: 1; Tree: ('10.1.1.100', '224.12.12.12'); SN: 6 from neighbor 10.2.2.1
+protocol.Interface                                 DEBUG                                        2  eth2  R7 Received Ack message with BootTime: 1533057414; NeighborBootTime: 1533057424; MySnapshotSN: 1; NeighborSnapshotSN: 1; Tree: ('10.1.1.100', '224.12.12.12'); SN: 6 from neighbor 10.9.9.2
+protocol.Interface                                 DEBUG                                        0  eth0  R7 Received Ack message with BootTime: 1533057420; NeighborBootTime: 1533057423; MySnapshotSN: 1; NeighborSnapshotSN: 1; Tree: ('10.1.1.100', '224.12.12.12'); SN: 5 from neighbor 10.6.6.5
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R7 Created RootInterface
 [1;32;40mTest3 Success[0m
+protocol.KernelEntry                               DEBUG    (10.1.1.100,224.12.12.12)                    R7 Tree transitions to Active
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R7 interfaces_roles_dont_change_and_tree_transitions_to_active_state
+protocol.KernelEntry.NonRootInterface              DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R7 tree_is_active_and_my_rpc_changes
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R7 BEST UPSTREAM NEIGHBOR IS NONE
+protocol.Interface                                 DEBUG                                        2  eth2  R2 Received Hello message with HelloHoldTime: 120; CheckpointSN: 6 from neighbor 10.9.9.7
+protocol.Interface                                 DEBUG                                        1  eth1  R5 Received IamUpstream message with BootTime: 1533057423; Tree: ('10.1.1.100', '224.12.12.12'); SN: 5; MetricPreference: 11; Metric: 120 from neighbor 10.6.6.7
+protocol.Interface                                 DEBUG                                        0  eth0  R7 Received NoInterest message with BootTime: 1533057420; Tree: ('10.1.1.100', '224.12.12.12'); SN: 4 from neighbor 10.6.6.5
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R7 DownstreamInterest -> NoDownstreamInterest
+protocol.KernelEntry.NonRootInterface.Downstream   DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R7 Downstream interest state transitions to NoDownstreamInterest
+protocol.Interface                                 DEBUG                                        0  eth0  R7 Received NoInterest message with BootTime: 1533057420; Tree: ('10.1.1.100', '224.12.12.12'); SN: 5 from neighbor 10.6.6.5
+protocol.Interface                                 DEBUG                                        1  eth1  R1 Received Hello message with HelloHoldTime: 120; CheckpointSN: 6 from neighbor 10.2.2.2
+protocol.Interface                                 DEBUG                                        0  eth0  R3 Received Hello message with HelloHoldTime: 120; CheckpointSN: 2 from neighbor 10.3.3.1
+protocol.Interface                                 DEBUG                                        0  eth0  R2 Received Hello message with HelloHoldTime: 120; CheckpointSN: 2 from neighbor 10.2.2.1
+protocol.Interface                                 DEBUG                                        1  eth1  R3 Received Hello message with HelloHoldTime: 120; CheckpointSN: 5 from neighbor 10.5.5.2
+protocol.Interface                                 DEBUG                                        0  eth0  R6 Received Hello message with HelloHoldTime: 120; CheckpointSN: 5 from neighbor 10.5.5.2
+protocol.Interface                                 DEBUG                                        1  eth1  R4 Received Hello message with HelloHoldTime: 120; CheckpointSN: 5 from neighbor 10.5.5.2
+protocol.Interface                                 DEBUG                                        2  eth2  R1 Received Hello message with HelloHoldTime: 120; CheckpointSN: 4 from neighbor 10.3.3.3
+protocol.Interface                                 DEBUG                                        0  eth0  R4 Received Hello message with HelloHoldTime: 120; CheckpointSN: 2 from neighbor 10.4.4.1
+protocol.Interface                                 DEBUG                                        2  eth2  R7 Received Hello message with HelloHoldTime: 120; CheckpointSN: 2 from neighbor 10.9.9.2
+protocol.Interface                                 DEBUG                                        1  eth1  R2 Received Hello message with HelloHoldTime: 120; CheckpointSN: 6 from neighbor 10.5.5.4
+protocol.Interface                                 DEBUG                                        1  eth1  R3 Received Hello message with HelloHoldTime: 120; CheckpointSN: 6 from neighbor 10.5.5.4
+protocol.Interface                                 DEBUG                                        0  eth0  R6 Received Hello message with HelloHoldTime: 120; CheckpointSN: 6 from neighbor 10.5.5.4
+protocol.Interface                                 DEBUG                                        0  eth0  R6 Received Hello message with HelloHoldTime: 120; CheckpointSN: 6 from neighbor 10.5.5.3
+protocol.Interface                                 DEBUG                                        1  eth1  R4 Received Hello message with HelloHoldTime: 120; CheckpointSN: 6 from neighbor 10.5.5.3
+protocol.Interface                                 DEBUG                                        1  eth1  R2 Received Hello message with HelloHoldTime: 120; CheckpointSN: 6 from neighbor 10.5.5.3
+protocol.Interface                                 DEBUG                                        3  eth3  R1 Received Hello message with HelloHoldTime: 120; CheckpointSN: 3 from neighbor 10.4.4.4
+protocol.Interface                                 DEBUG                                        0  eth0  R7 Received Hello message with HelloHoldTime: 120; CheckpointSN: 5 from neighbor 10.6.6.5
+protocol.Interface                                 DEBUG                                        1  eth1  R2 Received Hello message with HelloHoldTime: 120; CheckpointSN: 7 from neighbor 10.5.5.6
+protocol.Interface                                 DEBUG                                        1  eth1  R3 Received Hello message with HelloHoldTime: 120; CheckpointSN: 7 from neighbor 10.5.5.6
+protocol.Interface                                 DEBUG                                        1  eth1  R4 Received Hello message with HelloHoldTime: 120; CheckpointSN: 7 from neighbor 10.5.5.6
 ^CException KeyboardInterrupt: KeyboardInterrupt() in <module 'threading' from '/usr/lib/python3.2/threading.py'> ignored
-root@switch1:~# 
-root@switch1:~# 
-root@switch1:~# 
-root@switch1:~# l ff h g g
-tcpdump -i br0 -Q in -w /hosthome/Desktop/test_pim/pim/TestResults/Switch.pcap
-^C1181 packets captured
-2138 packets received by filter
-29 packets dropped by kernel
+root@switch1:~# fg
+tcpdump -i br0 -Q in -w /hosthome/Desktop/test_newproto/test_broadcasttree/TestResults/Switch.pcap
+^C793 packets captured
+1373 packets received by filter
+81 packets dropped by kernel
 root@switch1:~# exit
 exit
 
-Script done on Mon Jul 23 15:44:15 2018
+Script done on Tue Jul 31 19:19:11 2018

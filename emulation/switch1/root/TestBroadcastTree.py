@@ -4,7 +4,7 @@ from abc import ABCMeta, abstractmethod
 
 class CustomFilter(logging.Filter):
     def filter(self, record):
-        return record.name in ("pim.KernelEntry.DownstreamInterface", "pim.KernelEntry.UpstreamInterface") and \
+        return (record.name.startswith("protocol.KernelEntry") or record.name.startswith("protocol.Interface")) and \
                 record.routername in ["R1", "R2", "R3", "R4", "R5", "R6", "R7"]
 
 
@@ -35,13 +35,13 @@ class Test(object):
 
 class Test1(Test):
     def __init__(self):
-        expectedState = {"R1": {"eth0": "Created UpstreamInterface", "eth1": "Created DownstreamInterface", "eth2": "Created DownstreamInterface", "eth3": "Created DownstreamInterface"},
-                         "R2": {"eth0": "Created UpstreamInterface", "eth1": "Created DownstreamInterface", "eth2": "Created DownstreamInterface"},
-                         "R3": {"eth0": "Created UpstreamInterface", "eth1": "Created DownstreamInterface"},
-                         "R4": {"eth0": "Created UpstreamInterface", "eth1": "Created DownstreamInterface"},
-                         "R5": {"eth0": "Created UpstreamInterface", "eth1": "Created DownstreamInterface"},
-                         "R6": {"eth0": "Created UpstreamInterface", "eth1": "Created DownstreamInterface"},
-                         "R7": {"eth0": "Created DownstreamInterface", "eth1": "Created DownstreamInterface", "eth2": "Created UpstreamInterface"},
+        expectedState = {"R1": {"eth0": "Created RootInterfaceOriginator", "eth1": "Created NonRootInterface", "eth2": "Created NonRootInterface", "eth3": "Created NonRootInterface"},
+                         "R2": {"eth0": "Created RootInterface", "eth1": "Created NonRootInterface", "eth2": "Created NonRootInterface"},
+                         "R3": {"eth0": "Created RootInterface", "eth1": "Created NonRootInterface"},
+                         "R4": {"eth0": "Created RootInterface", "eth1": "Created NonRootInterface"},
+                         "R5": {"eth0": "Created RootInterface", "eth1": "Created NonRootInterface"},
+                         "R6": {"eth0": "Created RootInterface", "eth1": "Created NonRootInterface"},
+                         "R7": {"eth0": "Created NonRootInterface", "eth1": "Created NonRootInterface", "eth2": "Created RootInterface"},
                          }
 
         success = {"R1": {"eth0": False, "eth1": False, "eth2": False, "eth3": False},
@@ -57,12 +57,12 @@ class Test1(Test):
 
     def print_test(self):
         print("Test1: Tree creation (10.1.1.100,224.12.12.12)")
-        print("Expected: all routers should consider eth0 as their UpstreamInterface")
+        print("Expected: all routers should consider eth0 as their Root interface except for R7 that should consider eth2 as it Root interface")
 
 
 class Test2(Test):
     def __init__(self):
-        expectedState = {"R7": {"eth0": "Created UpstreamInterface", "eth2": "Created DownstreamInterface"}
+        expectedState = {"R7": {"eth0": "Created RootInterface", "eth2": "Created NonRootInterface"}
                          }
 
         success = {"R7": {"eth0": False, "eth2": False},
@@ -76,7 +76,7 @@ class Test2(Test):
 
 class Test3(Test):
     def __init__(self):
-        expectedState = {"R7": {"eth0": "Created DownstreamInterface", "eth2": "Created UpstreamInterface"}
+        expectedState = {"R7": {"eth0": "Created NonRootInterface", "eth2": "Created RootInterface"}
                          }
 
         success = {"R7": {"eth0": False, "eth2": False},

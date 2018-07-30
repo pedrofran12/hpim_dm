@@ -1,7 +1,12 @@
 rm -rf MulticastRouting/
-cp -rf /hosthome/Desktop/pim/ MulticastRouting/
+cp -rf /hosthome/Desktop/new_protocol2/ MulticastRouting/
 cd MulticastRouting
 #pip-3.2 install --index-url=https://pypi.python.org/simple/ -r requirements.txt
+
+tcpdump -i eth0 -w /hosthome/Desktop/test_newproto/test_broadcasttree/TestResults/Router7_Router5.pcap &
+tcpdump -i eth1 -w /hosthome/Desktop/test_newproto/test_broadcasttree/TestResults/Router7_Client0.pcap &
+tcpdump -i eth2 -w /hosthome/Desktop/test_newproto/test_broadcasttree/TestResults/Router7_Router2.pcap &
+
 
 python3 Run.py -stop
 python3 Run.py -start
