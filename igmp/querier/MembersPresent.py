@@ -1,5 +1,6 @@
 from Packet.PacketIGMPHeader import PacketIGMPHeader
-from utils import Membership_Query, LastMemberQueryInterval, TYPE_CHECKING
+from utils import TYPE_CHECKING
+from igmp.igmp_globals import Membership_Query, LastMemberQueryInterval
 from ..wrapper import Version1MembersPresent, CheckingMembership, NoMembersPresent
 if TYPE_CHECKING:
     from ..GroupState import GroupState

@@ -5,7 +5,7 @@ from threading import Thread
 
 import Main
 from . import DataPacketsSocket
-from .globals import SOURCE_LIFETIME
+from .protocol_globals import SOURCE_LIFETIME
 from .tree_interface import TreeInterface
 
 
@@ -82,9 +82,6 @@ class TreeInterfaceUpstreamOriginator(TreeInterface):
     ###########################################
     # Change to in/out-tree
     ###########################################
-    def send_my_interest(self):
-        return
-
     def node_is_out_tree(self):
         return
 
@@ -92,11 +89,9 @@ class TreeInterfaceUpstreamOriginator(TreeInterface):
         return
 
     ####################################################################
-    #Override
     def is_forwarding(self):
         return False
 
-    #Override
     def delete(self):
         self.socket_is_enabled = False
         try:

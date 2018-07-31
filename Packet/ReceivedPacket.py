@@ -1,7 +1,7 @@
 from Packet.Packet import Packet
 from Packet.PacketIpHeader import PacketIpHeader
 from Packet.PacketIGMPHeader import PacketIGMPHeader
-from tree.globals import MSG_FORMAT
+from tree.protocol_globals import MSG_FORMAT
 from utils import TYPE_CHECKING
 
 if TYPE_CHECKING:

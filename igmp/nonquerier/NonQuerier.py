@@ -1,7 +1,9 @@
 from ipaddress import IPv4Address
-from utils import Membership_Query, QueryResponseInterval, LastMemberQueryCount, TYPE_CHECKING
-from Packet.PacketIGMPHeader import PacketIGMPHeader
+
+from igmp.igmp_globals import Membership_Query, QueryResponseInterval, LastMemberQueryCount
+from utils import TYPE_CHECKING
 from Packet.ReceivedPacket import ReceivedPacket
+from Packet.PacketIGMPHeader import PacketIGMPHeader
 from . import NoMembersPresent, MembersPresent, CheckingMembership
 
 if TYPE_CHECKING:

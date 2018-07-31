@@ -6,9 +6,9 @@ from threading import Timer
 import Main
 from utils import HELLO_HOLD_TIME_NO_TIMEOUT, HELLO_HOLD_TIME_TIMEOUT, TYPE_CHECKING
 from tree.metric import AssertMetric
-from tree import globals
+from tree import protocol_globals
 from Packet.Packet import Packet
-if globals.MSG_FORMAT == "BINARY":
+if protocol_globals.MSG_FORMAT == "BINARY":
     from Packet.PacketProtocolAck import PacketNewProtocolAck as PacketProtocolAck
     from Packet.PacketProtocolSync import PacketNewProtocolSync as PacketProtocolHelloSync
     from Packet.PacketProtocolHeader import PacketNewProtocolHeader as PacketProtocolHeader
@@ -407,7 +407,7 @@ class Neighbor:
             upstream_state = self.tree_metric_state.get(tree, None)
             interest_state = False
             if upstream_state is None:
-                interest_state = self.tree_interest_state.get(tree, globals.INITIAL_FLOOD_ENABLED)
+                interest_state = self.tree_interest_state.get(tree, protocol_globals.INITIAL_FLOOD_ENABLED)
             print("INTEREST NEIGHBOR ", self.ip, ":", interest_state)
             print("UPSTREAM NEIGHBOR ", self.ip, ":", upstream_state)
             return (interest_state, upstream_state)

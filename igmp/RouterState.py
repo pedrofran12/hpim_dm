@@ -3,11 +3,13 @@ import logging
 
 from Packet.PacketIGMPHeader import PacketIGMPHeader
 from Packet.ReceivedPacket import ReceivedPacket
-from utils import Membership_Query, QueryResponseInterval, QueryInterval, OtherQuerierPresentInterval, TYPE_CHECKING
 from RWLock.RWLock import RWLockWrite
+from utils import TYPE_CHECKING
+
+from .GroupState import GroupState
 from .querier.Querier import Querier
 from .nonquerier.NonQuerier import NonQuerier
-from .GroupState import GroupState
+from .igmp_globals import Membership_Query, QueryResponseInterval, QueryInterval, OtherQuerierPresentInterval
 
 if TYPE_CHECKING:
     from InterfaceIGMP import InterfaceIGMP

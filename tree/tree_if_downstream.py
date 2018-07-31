@@ -60,29 +60,40 @@ class TreeInterfaceDownstream(TreeInterface):
     ############################################
     def calculate_assert_winner(self):
         print("CALCULATE ASSERT WINNER")
-        if self._best_upstream_router is None:
-            self.assert_logger.debug('BEST UPSTREAM NEIGHBOR IS NONE')
-            self.set_assert_state(AssertState.Winner)
-        elif self._my_assert_rpc.is_better_than(self._best_upstream_router):
-            self.assert_logger.debug('WON ASSERT')
-            self.assert_logger.debug("BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: " +
-                                     str(self._best_upstream_router.metric_preference) + '; METRIC: ' +
-                                     str(self._best_upstream_router.route_metric) + '; IP: ' +
-                                     self._best_upstream_router.get_ip())
-            self.assert_logger.debug("MY METRIC_PREFERENCE: " + str(self._my_assert_rpc.metric_preference) +
-                                     '; METRIC: ' + str(self._my_assert_rpc.route_metric) + '; IP: ' +
-                                     self._my_assert_rpc.get_ip())
-            self.set_assert_state(AssertState.Winner)
+        if self.is_tree_active():
+            if self._best_upstream_router is None:
+                self.assert_logger.debug('BEST UPSTREAM NEIGHBOR IS NONE AND TREE IS ACTIVE')
+                self.set_assert_state(AssertState.Winner)
+            elif self._my_assert_rpc.is_better_than(self._best_upstream_router):
+                self.assert_logger.debug('TREE IS ACTIVE AND WON ASSERT')
+                self.assert_logger.debug("BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: " +
+                                         str(self._best_upstream_router.metric_preference) + '; METRIC: ' +
+                                         str(self._best_upstream_router.route_metric) + '; IP: ' +
+                                         self._best_upstream_router.get_ip())
+                self.assert_logger.debug("MY METRIC_PREFERENCE: " + str(self._my_assert_rpc.metric_preference) +
+                                         '; METRIC: ' + str(self._my_assert_rpc.route_metric) + '; IP: ' +
+                                         self._my_assert_rpc.get_ip())
+                self.set_assert_state(AssertState.Winner)
+            else:
+                self.assert_logger.debug('TREE IS ACTIVE AND LOST ASSERT')
+                self.assert_logger.debug("BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: " +
+                                         str(self._best_upstream_router.metric_preference) + '; METRIC: ' +
+                                         str(self._best_upstream_router.route_metric) + '; IP: ' +
+                                         self._best_upstream_router.get_ip())
+                self.assert_logger.debug("MY METRIC_PREFERENCE: " + str(self._my_assert_rpc.metric_preference) +
+                                         '; METRIC: ' + str(self._my_assert_rpc.route_metric) + '; IP: ' +
+                                         self._my_assert_rpc.get_ip())
+                self.set_assert_state(AssertState.Loser)
+        elif self.is_tree_inactive():
+            if self._best_upstream_router is None:
+                self.assert_logger.debug('TREE IS INACTIVE AND NO UPSTREAM NEIGHBOR')
+                self.set_assert_state(AssertState.Winner)
+            else:
+                self.assert_logger.debug('TREE IS INACTIVE AND UPSTREAM NEIGHBOR CONNECTED TO THIS INTERFACE')
+                self.set_assert_state(AssertState.Loser)
         else:
-            self.assert_logger.debug('LOST ASSERT')
-            self.assert_logger.debug("BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: " +
-                                     str(self._best_upstream_router.metric_preference) + '; METRIC: ' +
-                                     str(self._best_upstream_router.route_metric) + '; IP: ' +
-                                     self._best_upstream_router.get_ip())
-            self.assert_logger.debug("MY METRIC_PREFERENCE: " + str(self._my_assert_rpc.metric_preference) +
-                                     '; METRIC: ' + str(self._my_assert_rpc.route_metric) + '; IP: ' +
-                                     self._my_assert_rpc.get_ip())
-            self.set_assert_state(AssertState.Loser)
+            self.assert_logger.debug('TREE IS UNKNOWN AND UPSTREAM NEIGHBOR CONNECTED TO THIS INTERFACE')
+            self.set_assert_state(AssertState.Winner)
 
     def set_assert_state(self, new_state: SFMRAssertABC):
         with self.get_state_lock():
@@ -113,6 +124,7 @@ class TreeInterfaceDownstream(TreeInterface):
             SFMRNonRootState.interfaces_roles_dont_change_and_tree_transitions_to_active_state(self)
 
         super().tree_transition_to_active()
+        self.calculate_assert_winner()
 
     def tree_transition_to_inactive(self):
         if self.is_tree_active() and self._best_upstream_router is None:
@@ -123,12 +135,14 @@ class TreeInterfaceDownstream(TreeInterface):
             SFMRNonRootState.tree_transitions_from_unknown_to_inactive_and_best_upstream_is_not_null(self)
 
         super().tree_transition_to_inactive()
+        self.calculate_assert_winner()
 
     def tree_transition_to_unknown(self):
         if self.is_tree_active():
             SFMRNonRootState.tree_transitions_from_active_to_unknown(self)
 
         super().tree_transition_to_unknown()
+        self.calculate_assert_winner()
 
     ###########################################
     # Recv packets
@@ -173,8 +187,6 @@ class TreeInterfaceDownstream(TreeInterface):
             return None
 
     ##########################################################
-
-    # Override
     def is_forwarding(self):
         return self.is_in_tree() and self.is_assert_winner()
 
@@ -184,7 +196,6 @@ class TreeInterfaceDownstream(TreeInterface):
     def are_downstream_nodes_interested(self):
         return self._downstream_node_interest_state == SFMRPruneState.DI
 
-    # Override
     def delete(self):
         super().delete()
         self._my_assert_rpc = None

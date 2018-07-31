@@ -113,11 +113,9 @@ class TreeInterfaceUpstream(TreeInterface):
             SFMRRootState.transition_to_it_or_ot_and_active_tree(self)
 
     ####################################################################
-    #Override
     def is_forwarding(self):
         return False
 
-    #Override
     def delete(self):
         self.socket_is_enabled = False
         self.socket_pkt.close()

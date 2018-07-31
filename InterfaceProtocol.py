@@ -9,7 +9,7 @@ import netifaces
 from Interface import Interface
 from Neighbor import Neighbor
 import Main
-from tree.globals import MSG_FORMAT
+from tree.protocol_globals import MSG_FORMAT
 from utils import HELLO_HOLD_TIME_TIMEOUT
 from ReliableMsgTransmission import ReliableMessageTransmission
 

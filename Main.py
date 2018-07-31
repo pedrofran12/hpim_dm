@@ -6,7 +6,7 @@ from prettytable import PrettyTable
 import netifaces
 from TestLogger import RootFilter
 
-from tree import globals
+from tree import protocol_globals
 from Kernel import Kernel
 import UnicastRouting
 
@@ -162,9 +162,9 @@ def list_routing_state():
 
 
 def change_initial_flood_setting():
-    globals.INITIAL_FLOOD_ENABLED ^= True
+    protocol_globals.INITIAL_FLOOD_ENABLED ^= True
     kernel.recheck_all_trees_in_all_interfaces()
-    return "Flood is enabled?: " + str(globals.INITIAL_FLOOD_ENABLED)
+    return "Flood is enabled?: " + str(protocol_globals.INITIAL_FLOOD_ENABLED)
 
 
 def stop():

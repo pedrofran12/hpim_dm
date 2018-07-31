@@ -1,11 +1,12 @@
 import socket
 import struct
+import netifaces
 from ipaddress import IPv4Address
 from ctypes import create_string_buffer, addressof
-import netifaces
+
 from Packet.ReceivedPacket import ReceivedPacket
 from Interface import Interface
-from utils import Version_1_Membership_Report, Version_2_Membership_Report, Leave_Group, Membership_Query
+from igmp.igmp_globals import Version_1_Membership_Report, Version_2_Membership_Report, Leave_Group, Membership_Query
 if not hasattr(socket, 'SO_BINDTODEVICE'):
     socket.SO_BINDTODEVICE = 25
 
