@@ -2,25 +2,18 @@ import socket
 import ipaddress
 from threading import RLock
 from pyroute2 import IPDB, IPRoute
+
 import Main
+from utils import if_indextoname
 
-def get_route(ip_dst: str):
-    return UnicastRouting.get_route(ip_dst)
-
-def get_metric(ip_dst: str):
-    return UnicastRouting.get_metric(ip_dst)
-
-def check_rpf(ip_dst):
-    return UnicastRouting.check_rpf(ip_dst)
-
+def get_unicast_info(ip_dst):
+    return UnicastRouting.get_unicast_info(ip_dst)
 
 class UnicastRouting(object):
-    ipr = None
     ipdb = None
     lock = RLock()
 
     def __init__(self):
-        UnicastRouting.ipr = IPRoute()
         UnicastRouting.ipdb = IPDB()
         self._ipdb = UnicastRouting.ipdb
         self._ipdb.register_callback(UnicastRouting.unicast_changes, mode="post")
@@ -28,7 +21,6 @@ class UnicastRouting(object):
 
     @staticmethod
     def get_route(ip_dst: str):
-
         ip_bytes = socket.inet_aton(ip_dst)
         ip_int = int.from_bytes(ip_bytes, byteorder='big')
         info = None
@@ -46,35 +38,45 @@ class UnicastRouting(object):
                     continue
             if not info:
                 print("0.0.0.0/0")
-                info = ipdb.routes["default"]
+                if "default" in ipdb.routes:
+                    info = ipdb.routes["default"]
             print(info)
             return info
 
 
-    # get metrics (routing preference and cost) to IP ip_dst
     @staticmethod
-    def get_metric(ip_dst: str):
-        unicast_routing_entry = UnicastRouting.get_route(ip_dst)
-        entry_protocol = unicast_routing_entry["proto"]
-        entry_cost = unicast_routing_entry["priority"]
-        mask = unicast_routing_entry["dst_len"]
-        if entry_cost is None:
-            entry_cost = 0
-        return (entry_protocol, entry_cost, mask)
+    def get_unicast_info(ip_dst):
+        metric_administrative_distance = 0xFFFFFFFF
+        metric_cost = 0xFFFFFFFF
+        is_directly_connected = False
+        oif = None
+        with UnicastRouting.lock:
+            unicast_route = UnicastRouting.get_route(ip_dst)
+            if unicast_route is not None:
+                oif = unicast_route.get("oif")
+                next_hop = unicast_route["gateway"]
+                multipaths = unicast_route["multipath"]
 
+                rpf_node = next_hop if next_hop is not None else ip_dst
+                highest_ip = ipaddress.ip_address("0.0.0.0")
+                for m in multipaths:
+                    if m["gateway"] is None:
+                        oif = m.get('oif')
+                        rpf_node = ip_dst
+                        break
+                    elif ipaddress.ip_address(m["gateway"]) > highest_ip:
+                        highest_ip = ipaddress.ip_address(m["gateway"])
+                        oif = m.get('oif')
+                        rpf_node = m["gateway"]
 
-    # get output interface IP, used to send data to IP ip_dst
-    # (root interface IP to ip_dst)
-    @staticmethod
-    def check_rpf(ip_dst):
-        # obter index da interface
-        # rpf_interface_index = ipr.get_routes(family=socket.AF_INET, dst=ip)[0]['attrs'][2][1]
-        # interface_name = if_indextoname(rpf_interface_index)
-        # return interface_name
+                metric_administrative_distance = unicast_route["proto"]
+                metric_cost = unicast_route["priority"]
+                metric_cost = metric_cost if metric_cost is not None else 0
+                is_directly_connected = rpf_node == ip_dst
 
-        # obter ip da interface de saida
-        rpf_interface_source = UnicastRouting.ipr.get_routes(family=socket.AF_INET, dst=ip_dst)[0]['attrs'][3][1]
-        return rpf_interface_source
+        interface_name = None if oif is None else if_indextoname(int(oif))
+        rpf_if = Main.kernel.vif_name_to_index_dic.get(interface_name)
+        return (metric_administrative_distance, metric_cost, is_directly_connected, rpf_if)
 
 
     @staticmethod
@@ -116,16 +118,14 @@ class UnicastRouting(object):
                 if key == "IFA_LABEL":
                     interface_name = value
                     break
-    
+
             Main.kernel.notify_interface_change(interface_name)
             '''
         else:
             UnicastRouting.lock.release()
 
     def stop(self):
-        if UnicastRouting.ipr:
-            UnicastRouting.ipr.close()
-        if UnicastRouting.ipdb:
-            UnicastRouting.ipdb = None
         if self._ipdb:
             self._ipdb.release()
+        if UnicastRouting.ipdb:
+            UnicastRouting.ipdb = None

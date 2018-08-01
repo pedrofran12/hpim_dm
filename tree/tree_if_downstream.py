@@ -121,10 +121,9 @@ class TreeInterfaceDownstream(TreeInterface):
     ############################################
     def tree_transition_to_active(self):
         if not self.is_tree_active():
+            super().tree_transition_to_active()
+            self.calculate_assert_winner()
             SFMRNonRootState.interfaces_roles_dont_change_and_tree_transitions_to_active_state(self)
-
-        super().tree_transition_to_active()
-        self.calculate_assert_winner()
 
     def tree_transition_to_inactive(self):
         if self.is_tree_active() and self._best_upstream_router is None:
@@ -134,15 +133,17 @@ class TreeInterfaceDownstream(TreeInterface):
         elif self.is_tree_unknown() and self._best_upstream_router is not None:
             SFMRNonRootState.tree_transitions_from_unknown_to_inactive_and_best_upstream_is_not_null(self)
 
-        super().tree_transition_to_inactive()
-        self.calculate_assert_winner()
+        if not self.is_tree_inactive():
+            super().tree_transition_to_inactive()
+            self.calculate_assert_winner()
 
     def tree_transition_to_unknown(self):
         if self.is_tree_active():
             SFMRNonRootState.tree_transitions_from_active_to_unknown(self)
 
-        super().tree_transition_to_unknown()
-        self.calculate_assert_winner()
+        if not self.is_tree_unknown():
+            super().tree_transition_to_unknown()
+            self.calculate_assert_winner()
 
     ###########################################
     # Recv packets
@@ -155,12 +156,6 @@ class TreeInterfaceDownstream(TreeInterface):
         super().change_assert_state(assert_state)
         self.calculate_assert_winner()
 
-        '''
-        if best_upstream_router is None and assert_state is not None or \
-                best_upstream_router is not None and assert_state is None or \
-                best_upstream_router is not assert_state:
-            self._downstream_state.tree_is_inactive_and_best_upstream_router_reelected(self)
-        '''
         # Event 6 and 7
         if self.current_tree_state.is_inactive() and assert_state is not None and \
                  (best_upstream_router is None or best_upstream_router is not assert_state):

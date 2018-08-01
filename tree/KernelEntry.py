@@ -27,42 +27,20 @@ class KernelEntry:
         self._interest_interface_state = interest_state_dic
         self._upstream_interface_state = upstream_state_dic
 
-        # CHECK UNICAST ROUTING INFORMATION###################################################
-        # CHOSE RPC INTERFACE
-        # GET RPC TO SOURCE
-        unicast_route = UnicastRouting.get_route(source_ip)
-        next_hop = unicast_route["gateway"]
-        multipaths = unicast_route["multipath"]
-
-        self.rpf_node = next_hop if next_hop is not None else source_ip
-        highest_ip = ipaddress.ip_address("0.0.0.0")
-        for m in multipaths:
-            if m["gateway"] is None:
-                self.rpf_node = source_ip
-                break
-            elif ipaddress.ip_address(m["gateway"]) > highest_ip:
-                highest_ip = ipaddress.ip_address(m["gateway"])
-                self.rpf_node = m["gateway"]
-
-        print("RPF_NODE:", UnicastRouting.get_route(source_ip))
-        print(self.rpf_node == source_ip)
-        metric_administrative_distance = unicast_route["proto"]
-        metric_cost = unicast_route["priority"]
-        metric_cost = metric_cost if metric_cost is not None else 0
+        ###### UNICAST INFO#################################################################
+        (metric_administrative_distance, metric_cost, is_directly_connected, root_if) = \
+            UnicastRouting.get_unicast_info(source_ip)
+        # TODO verificar is directly connected
         self._rpc = Metric(metric_administrative_distance, metric_cost)
-        ######################################################################################
-
+        #######################################################################################
         # Locks
         self._multicast_change = Lock()
         self._lock_test2 = RLock()
         self.CHANGE_STATE_LOCK = RLock()
 
-        # decide inbound interface based on rpf check
-        self.inbound_interface_index = Main.kernel.vif_dic.get(self.check_rpf(), None)
+        # select root interface based on rpf check
+        self.inbound_interface_index = root_if
         self.interface_state = {}  # type: dict(int, TreeInterface)
-
-    def is_S_directly_conn(self):
-        return self.rpf_node == self.source_ip
 
     def get_inbound_interface_index(self):
         return self.inbound_interface_index
@@ -72,9 +50,6 @@ class KernelEntry:
         for (index, state) in self.interface_state.items():
             outbound_indexes[index] = state.is_forwarding()
         return outbound_indexes
-
-    def check_rpf(self):
-        return UnicastRouting.check_rpf(self.source_ip)
 
     @abstractmethod
     def check_tree_state(self):
@@ -207,9 +182,6 @@ class KernelEntryNonOriginator(KernelEntry):
     def __init__(self, source_ip: str, group_ip: str, upstream_state_dic, interest_state_dic):
         super().__init__(source_ip, group_ip, upstream_state_dic, interest_state_dic)
 
-        # decide inbound interface based on rpf check
-        self.inbound_interface_index = Main.kernel.vif_dic.get(self.check_rpf(), None)
-
         # (S,G) starts OUT-TREE state... later check if node is in-tree via evaluate_in_tree_change()
         self._was_in_tree = False
 
@@ -244,7 +216,6 @@ class KernelEntryNonOriginator(KernelEntry):
         self.change()
         self.evaluate_in_tree_change()
         print('Tree NonOriginator created')
-
 
     def check_tree_state(self):
         with self.CHANGE_STATE_LOCK:
@@ -282,30 +253,11 @@ class KernelEntryNonOriginator(KernelEntry):
     ###############################################################
     def network_update(self):
         with self.CHANGE_STATE_LOCK:
-            unicast_route = UnicastRouting.get_route(self.source_ip)
-            next_hop = unicast_route["gateway"]
-            multipaths = unicast_route["multipath"]
-
-            rpf_node = next_hop if next_hop is not None else self.source_ip
-            highest_ip = ipaddress.ip_address("0.0.0.0")
-            for m in multipaths:
-                if m["gateway"] is None:
-                    rpf_node = self.source_ip
-                    break
-                elif ipaddress.ip_address(m["gateway"]) > highest_ip:
-                    highest_ip = ipaddress.ip_address(m["gateway"])
-                    rpf_node = m["gateway"]
-
-            print("RPF_NODE:", UnicastRouting.get_route(self.source_ip))
-            self.rpf_node = rpf_node
-            print(self.rpf_node == self.source_ip)
-            metric_administrative_distance = unicast_route["proto"]
-            metric_cost = unicast_route["priority"]
-            metric_cost = metric_cost if metric_cost is not None else 0
+            (metric_administrative_distance, metric_cost, is_directly_connected, new_inbound_interface_index) = \
+                UnicastRouting.get_unicast_info(self.source_ip)
             new_rpc = Metric(metric_administrative_distance, metric_cost)
 
-            new_inbound_interface_index = Main.kernel.vif_dic.get(self.check_rpf(), None)
-            if self.is_S_directly_conn():
+            if is_directly_connected:
                 self._tree_state.transition_to_unknown(self)
                 return
             if new_inbound_interface_index != self.inbound_interface_index:
@@ -377,7 +329,9 @@ class KernelEntryNonOriginator(KernelEntry):
             if index in self.interface_state:
                 return
 
-            inbound_interface_index = Main.kernel.vif_dic.get(self.check_rpf(), None)
+            (_, _, _, inbound_interface_index) = UnicastRouting.get_unicast_info(self.source_ip)
+            # TODO verificar is directly connected
+
             # new interface is of type non-root
             if inbound_interface_index != index:
                 interest_state = False
@@ -404,8 +358,7 @@ class KernelEntryNonOriginator(KernelEntry):
                 interface_name = Main.kernel.vif_index_to_name_dic.get(index, None)
                 if interface_name in Main.kernel.protocol_interface:
                     (interest_state, upstream_state) = Main.kernel.protocol_interface.get(
-                        interface_name).get_tree_state(
-                        (self.source_ip, self.group_ip))
+                        interface_name).get_tree_state((self.source_ip, self.group_ip))
 
                 self._interest_interface_state[index] = interest_state
                 self._upstream_interface_state[index] = upstream_state
@@ -423,8 +376,7 @@ class KernelEntryNonOriginator(KernelEntry):
                 interface_name = Main.kernel.vif_index_to_name_dic.get(index, None)
                 if interface_name in Main.kernel.protocol_interface:
                     (root_interest_state, root_upstream_state) = Main.kernel.protocol_interface.get(
-                        interface_name).get_tree_state(
-                        (self.source_ip, self.group_ip))
+                        interface_name).get_tree_state((self.source_ip, self.group_ip))
                 self._interest_interface_state[index] = root_interest_state
                 self._upstream_interface_state[index] = root_upstream_state
 
@@ -470,9 +422,6 @@ class KernelEntryOriginator(KernelEntry):
         super().__init__(source_ip, group_ip, upstream_state_dic, interest_state_dic)
         self.sat_is_running = True
         self._tree_state = TreeState.Active
-
-        # decide inbound interface based on rpf check
-        self.inbound_interface_index = Main.kernel.vif_dic.get(self.check_rpf(), None)
 
         with self.CHANGE_STATE_LOCK:
             for i in Main.kernel.vif_index_to_name_dic.keys():
@@ -531,30 +480,11 @@ class KernelEntryOriginator(KernelEntry):
     ###############################################################
     def network_update(self):
         with self.CHANGE_STATE_LOCK:
-            unicast_route = UnicastRouting.get_route(self.source_ip)
-            next_hop = unicast_route["gateway"]
-            multipaths = unicast_route["multipath"]
-
-            rpf_node = next_hop if next_hop is not None else self.source_ip
-            highest_ip = ipaddress.ip_address("0.0.0.0")
-            for m in multipaths:
-                if m["gateway"] is None:
-                    rpf_node = self.source_ip
-                    break
-                elif ipaddress.ip_address(m["gateway"]) > highest_ip:
-                    highest_ip = ipaddress.ip_address(m["gateway"])
-                    rpf_node = m["gateway"]
-
-            print("RPF_NODE:", UnicastRouting.get_route(self.source_ip))
-            self.rpf_node = rpf_node
-            print(self.rpf_node == self.source_ip)
-            metric_administrative_distance = unicast_route["proto"]
-            metric_cost = unicast_route["priority"]
-            metric_cost = metric_cost if metric_cost is not None else 0
+            (metric_administrative_distance, metric_cost, is_directly_connected, new_inbound_interface_index) = \
+                UnicastRouting.get_unicast_info(self.source_ip)
             new_rpc = Metric(metric_administrative_distance, metric_cost)
 
-            new_inbound_interface_index = Main.kernel.vif_dic.get(self.check_rpf(), None)
-            if not self.is_S_directly_conn():
+            if not is_directly_connected:
                 self._tree_state.transition_to_unknown(self)
                 return
             if new_inbound_interface_index != self.inbound_interface_index:
@@ -612,7 +542,9 @@ class KernelEntryOriginator(KernelEntry):
             if index in self.interface_state:
                 return
 
-            inbound_interface_index = Main.kernel.vif_dic.get(self.check_rpf(), None)
+            (_, _, _, inbound_interface_index) = UnicastRouting.get_unicast_info(self.source_ip)
+            # TODO verificar is directly connected
+
             if inbound_interface_index != index:
                 interest_state = False
                 upstream_state = None
@@ -643,8 +575,7 @@ class KernelEntryOriginator(KernelEntry):
                 interface_name = Main.kernel.vif_index_to_name_dic.get(index, None)
                 if interface_name in Main.kernel.protocol_interface:
                     (root_interest_state, root_upstream_state) = Main.kernel.protocol_interface.get(
-                        interface_name).get_tree_state(
-                        (self.source_ip, self.group_ip))
+                        interface_name).get_tree_state((self.source_ip, self.group_ip))
 
                 non_root_interest_state = self._interest_interface_state.get(self.inbound_interface_index, False)
                 non_root_upstream_state = self._upstream_interface_state.get(self.inbound_interface_index, None)

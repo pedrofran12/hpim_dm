@@ -21,8 +21,7 @@ class TreeInterfaceUpstreamOriginator(TreeInterface):
 
         # Originator state
         self._source_active_timer = None
-        if self.is_S_directly_conn():
-            self.set_source_active_timer()
+        self.set_source_active_timer()
 
         # TODO TESTE SOCKET RECV DATA PCKTS
         self.socket_is_enabled = True
@@ -73,11 +72,10 @@ class TreeInterfaceUpstreamOriginator(TreeInterface):
     # Recv packets
     ###########################################
     def recv_data_msg(self):
-        if self.is_S_directly_conn():
+        if not self.is_tree_unknown():
             self.set_source_active_timer()
             if self.is_tree_inactive():
                 self._kernel_entry.sat_running()
-
 
     ###########################################
     # Change to in/out-tree

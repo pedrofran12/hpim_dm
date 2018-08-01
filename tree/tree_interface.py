@@ -1,4 +1,5 @@
 import logging
+import netifaces
 from threading import RLock
 from abc import ABCMeta, abstractmethod
 
@@ -155,7 +156,6 @@ class TreeInterface(metaclass=ABCMeta):
             return self._local_membership_state.has_members()
 
     def get_interface(self):
-        #with Main.kernel.interface_lock:
         interface = Main.interfaces.get(self.get_interface_name(), None)
         return interface
 
@@ -164,9 +164,7 @@ class TreeInterface(metaclass=ABCMeta):
         return kernel.vif_index_to_name_dic.get(self._interface_id, None)
 
     def get_ip(self):
-        #ip = self.get_interface().get_ip()
-        if_name = Main.kernel.vif_index_to_name_dic[self._interface_id]
-        import netifaces
+        if_name = self.get_interface_name()
         ip = netifaces.ifaddresses(if_name)[netifaces.AF_INET][0]['addr']
         return ip
 
@@ -178,9 +176,6 @@ class TreeInterface(metaclass=ABCMeta):
 
     def get_state_lock(self):
         return self._kernel_entry.CHANGE_STATE_LOCK
-
-    def is_S_directly_conn(self):
-        return self._kernel_entry.rpf_node == self._kernel_entry.source_ip
 
     ###########################################
     # Change to in/out-tree

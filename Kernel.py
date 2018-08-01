@@ -120,12 +120,9 @@ class Kernel:
         self.interface_logger.debug('Create virtual interface: %s -> %d', interface_name, index)
         return index
 
-
     def create_protocol_interface(self, interface_name: str):
         thread = None
         with self.rwlock.genWlock():
-            pim_interface = None
-            #with self.interface_lock:
             protocol_interface = self.protocol_interface.get(interface_name)
             igmp_interface = self.igmp_interface.get(interface_name)
             vif_already_exists = protocol_interface or igmp_interface
@@ -153,7 +150,6 @@ class Kernel:
     def create_igmp_interface(self, interface_name: str):
         thread = None
         with self.rwlock.genWlock():
-            #with self.interface_lock:
             protocol_interface = self.protocol_interface.get(interface_name)
             igmp_interface = self.igmp_interface.get(interface_name)
             vif_already_exists = protocol_interface or igmp_interface
@@ -195,8 +191,15 @@ class Kernel:
                 ip_interface = igmp_interface.ip_interface
                 igmp_interface.remove()
 
-            if (not self.igmp_interface.get(interface_name) and not self.protocol_interface.get(interface_name)):
+            if not self.igmp_interface.get(interface_name) and not self.protocol_interface.get(interface_name):
                 self.remove_virtual_interface(ip_interface)
+            else:
+                vif_index = self.vif_name_to_index_dic.get(interface_name)
+                thread = Thread(target=self.recheck_all_trees, args=(vif_index,))
+                thread.start()
+
+        if thread is not None:
+            thread.join()
 
     def remove_virtual_interface(self, ip_interface):
         index = self.vif_dic.pop(ip_interface, None)
@@ -362,23 +365,21 @@ class Kernel:
 
     # receive multicast (S,G) packet and multicast routing table has no (S,G) entry
     def igmpmsg_nocache_handler(self, ip_src, ip_dst, iif):
-        is_directly_connected = self.is_directly_connected(ip_src)
+        (_, _, is_directly_connected, rpf_if) = UnicastRouting.get_unicast_info(ip_src)
 
-        source_group_pair = (ip_src, ip_dst)
         with self.rwlock.genWlock():
             if ip_src in self.routing and ip_dst in self.routing[ip_src]:
                 self.routing[ip_src][ip_dst].recv_data_msg(iif)
             elif is_directly_connected:
                 if protocol_globals.INITIAL_FLOOD_ENABLED:
-                    iif = self.vif_dic.get(UnicastRouting.check_rpf(ip_src))
-                    self.set_flood_multicast_route(ip_src, ip_dst, iif)
+                    # flood
+                    self.set_flood_multicast_route(ip_src, ip_dst, rpf_if)
 
                 self.create_entry(ip_src, ip_dst)
                 self.routing[ip_src][ip_dst].recv_data_msg(iif)
             elif not is_directly_connected and protocol_globals.INITIAL_FLOOD_ENABLED:
                 # flood
-                iif = self.vif_dic.get(UnicastRouting.check_rpf(ip_src))
-                self.set_flood_multicast_route(ip_src, ip_dst, iif)
+                self.set_flood_multicast_route(ip_src, ip_dst, rpf_if)
 
 
 
@@ -388,24 +389,6 @@ class Kernel:
         #self.get_routing_entry(source_group_pair, create_if_not_existent=True).recv_data_msg(iif)
         return
 
-    def is_directly_connected(self, ip):
-        try:
-            unicast_route = UnicastRouting.get_route(ip)
-            next_hop = unicast_route["gateway"]
-            multipaths = unicast_route["multipath"]
-
-            rpf_node = next_hop if next_hop is not None else ip
-            highest_ip = ipaddress.ip_address("0.0.0.0")
-            for m in multipaths:
-                if m["gateway"] is None:
-                    rpf_node = ip
-                    break
-                elif ipaddress.ip_address(m["gateway"]) > highest_ip:
-                    highest_ip = ipaddress.ip_address(m["gateway"])
-                    rpf_node = m["gateway"]
-            return ip == rpf_node
-        except:
-            return False
 
     ''' useless in PIM-DM... useful in PIM-SM
     def igmpmsg_wholepacket_handler(self, ip_src, ip_dst):
@@ -465,7 +448,7 @@ class Kernel:
         print("SAIU RECV_INTEREST")
 
     def create_entry(self, ip_src, ip_dst):
-        is_directly_connected = self.is_directly_connected(ip_src)
+        (_, _, is_directly_connected, _) = UnicastRouting.get_unicast_info(ip_src)
 
         upstream_state_dict = {}
         interest_state_dict = {}

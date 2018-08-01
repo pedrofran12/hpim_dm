@@ -84,7 +84,6 @@ class TreeInterfaceUpstream(TreeInterface):
     def change_interest_state(self, interest_state):
         return
 
-
     ############################################
     # Tree transitions
     ############################################
@@ -97,19 +96,19 @@ class TreeInterfaceUpstream(TreeInterface):
     # Change to in/out-tree
     ###########################################
     def send_my_interest(self):
-        if self.is_node_in_tree() and not self.is_S_directly_conn():
+        if self.is_node_in_tree():
             self.send_interest()
-        elif not self.is_S_directly_conn():
+        else:
             self.send_no_interest()
 
     # event 5
     def node_is_out_tree(self):
-        if self.is_tree_active() and not self.is_S_directly_conn() and self._best_upstream_router is not None:
+        if self.is_tree_active() and self._best_upstream_router is not None:
             SFMRRootState.transition_to_it_or_ot_and_active_tree(self)
 
     # event 5
     def node_is_in_tree(self):
-        if self.is_tree_active() and not self.is_S_directly_conn() and self._best_upstream_router is not None:
+        if self.is_tree_active() and self._best_upstream_router is not None:
             SFMRRootState.transition_to_it_or_ot_and_active_tree(self)
 
     ####################################################################
