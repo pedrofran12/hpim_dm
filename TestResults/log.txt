@@ -1,130 +1,123 @@
-Script started on Fri Jul 27 01:32:31 2018
-root@switch1:~# 
-root@switch1:~# history -w[Khistory -w[Khistory -w[Ktcpdump -i br0 -W   W   Q in -w & /hosthome/Desktop/test_pim/test_assert/TestResults/Switch.pcap &
-[1] 1607
+Script started on Wed Aug  1 22:58:37 2018
+root@switch1:~# tcpdump -i et  br0 -w Q in -w /hosthome/Desktop/test_newproto/pim/TestResults/l Switch.pcap &
+[1] 1592
 root@switch1:~# tcpdump: listening on br0, link-type EN10MB (Ethernet), capture size 262144 bytes
 
-root@switch1:~# . sc[K[Kpython3 ServerLog.py 
+root@switch1:~# python3 ServerLog.py 
 Test1: No info about (10.1.1.100,224.12.12.12) and data packets are flooded on the network
-Expected: R4 WINNER
+Expected: R4 AssertWinner
 About to start TCP server...
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R4 Assert state transitions to NoInfo
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R3 Assert state transitions to NoInfo
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R2 Assert state transitions to NoInfo
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 Assert state transitions to NoInfo
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 Assert state transitions to NoInfo
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 Assert state transitions to NoInfo
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R2 Assert state transitions to NoInfo
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 Assert state transitions to NoInfo
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R6 Assert state transitions to NoInfo
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R6 Assert state transitions to NoInfo
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R5 Assert state transitions to NoInfo
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 receivedDataFromDownstreamIf, NI -> W
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 receivedDataFromDownstreamIf, NI -> W
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 Assert state transitions to Winner
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 Assert state transitions to Winner
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 receivedDataFromDownstreamIf, NI -> W
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 Assert state transitions to Winner
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R6 receivedPreferedMetric, NI -> L
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 receivedPreferedMetric, W -> L
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 receivedPreferedMetric, NI -> L
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 receivedInferiorMetricFromNonWinner_couldAssertIsTrue, W -> W
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R6 Assert state transitions to Loser
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 receivedInferiorMetricFromNonWinner_couldAssertIsTrue, W -> W
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 Assert state transitions to Loser
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 Assert state transitions to Loser
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 receivedInferiorMetricFromNonWinner_couldAssertIsTrue, W -> W
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R6 receivedPreferedMetric, L -> L
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 receivedPruneOrJoinOrGraft, L -> L
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 receivedPreferedMetric, W -> L
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 receivedPreferedMetric, L -> L
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 Assert state transitions to Loser
+protocol.KernelEntry                               DEBUG    (10.1.1.100,224.12.12.12)                    R2 Create KernelEntry
+protocol.KernelEntry                               DEBUG    (10.1.1.100,224.12.12.12)                    R2 Tree transitions to Active
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 Assert state transitions to AssertWinner
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 BEST UPSTREAM NEIGHBOR IS NONE AND TREE IS ACTIVE
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R2 Assert state transitions to AssertWinner
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           2  eth2  R2 BEST UPSTREAM NEIGHBOR IS NONE AND TREE IS ACTIVE
+protocol.KernelEntry                               DEBUG    (10.1.1.100,224.12.12.12)                    R5 Create KernelEntry
+protocol.KernelEntry                               DEBUG    (10.1.1.100,224.12.12.12)                    R4 Create KernelEntry
+protocol.KernelEntry                               DEBUG    (10.1.1.100,224.12.12.12)                    R6 Create KernelEntry
+protocol.KernelEntry                               DEBUG    (10.1.1.100,224.12.12.12)                    R6 Tree transitions to Active
+protocol.KernelEntry                               DEBUG    (10.1.1.100,224.12.12.12)                    R4 Tree transitions to Inactive
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R6 Assert state transitions to AssertWinner
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R6 BEST UPSTREAM NEIGHBOR IS NONE AND TREE IS ACTIVE
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 Assert state transitions to AssertWinner
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 TREE IS INACTIVE AND UPSTREAM NEIGHBOR CONNECTED TO THIS INTERFACE
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 Assert state transitions to AssertLoser
+protocol.KernelEntry                               DEBUG    (10.1.1.100,224.12.12.12)                    R5 Tree transitions to Active
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R5 Assert state transitions to AssertWinner
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R5 BEST UPSTREAM NEIGHBOR IS NONE AND TREE IS ACTIVE
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 tree_transitions_to_active_state
+protocol.KernelEntry                               DEBUG    (10.1.1.100,224.12.12.12)                    R3 Create KernelEntry
+protocol.KernelEntry                               DEBUG    (10.1.1.100,224.12.12.12)                    R3 Tree transitions to Inactive
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 Assert state transitions to AssertWinner
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 TREE IS INACTIVE AND UPSTREAM NEIGHBOR CONNECTED TO THIS INTERFACE
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 Assert state transitions to AssertLoser
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R2 tree_transitions_to_active_state
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R6 tree_transitions_to_active_state
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R4 Created RootInterface
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R4 tree_is_active_and_best_upstream_router_reelected
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R2 Created RootInterface
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R6 Created RootInterface
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R3 Created RootInterface
+protocol.KernelEntry                               DEBUG    (10.1.1.100,224.12.12.12)                    R4 Tree transitions to Active
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R4 tree_transitions_to_active_state
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R3 tree_is_active_and_best_upstream_router_reelected
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 Created RootInterface
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 TREE IS ACTIVE AND WON ASSERT
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.2
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 MY METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.4
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 Assert state transitions to AssertWinner
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R4 transition_to_it_or_ot_and_active_tree
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R5 TREE IS ACTIVE AND LOST ASSERT
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R5 BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 30; IP: 10.6.6.7
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R5 MY METRIC_PREFERENCE: 11; METRIC: 30; IP: 10.6.6.5
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R5 Assert state transitions to AssertLoser
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 transition_to_it_or_ot_and_active_tree
+protocol.KernelEntry                               DEBUG    (10.1.1.100,224.12.12.12)                    R3 Tree transitions to Active
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R3 tree_transitions_to_active_state
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 TREE IS ACTIVE AND WON ASSERT
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.2
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 MY METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.3
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 Assert state transitions to AssertWinner
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R3 transition_to_it_or_ot_and_active_tree
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 TREE IS ACTIVE AND LOST ASSERT
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.4
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 MY METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.2
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R6 tree_is_active_and_best_upstream_router_reelected
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 Assert state transitions to AssertLoser
 [1;32;40mTest1 Success[0m
-Test2: Kill Assert Winner and dont send data packets
-Expected: Every AL transitions to NI
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 receivedPreferedMetric, L -> L
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 receivedPruneOrJoinOrGraft, L -> L
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 receivedPreferedMetric, L -> L
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 receivedPreferedMetric, L -> L
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 receivedInferiorMetricFromNonWinner_couldAssertIsTrue, W -> W
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R6 receivedPreferedMetric, L -> L
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 receivedInferiorMetricFromNonWinner_couldAssertIsTrue, L -> L
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 receivedPreferedMetric, L -> L
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R6 receivedPreferedMetric, L -> L
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 receivedInferiorMetricFromNonWinner_couldAssertIsTrue, L -> L
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R6 receivedPreferedMetric, L -> L
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 receivedPreferedMetric, L -> L
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 receivedPreferedMetric, L -> L
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 receivedInferiorMetricFromNonWinner_couldAssertIsTrue, W -> W
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 receivedPreferedMetric, L -> L
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 receivedPreferedMetric, L -> L
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R6 receivedPreferedMetric, L -> L
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 receivedPreferedMetric, L -> L
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 receivedInferiorMetricFromNonWinner_couldAssertIsTrue, W -> W
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 receivedPreferedMetric, L -> L
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 receivedPreferedMetric, L -> L
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 receivedPreferedMetric, L -> L
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R6 receivedPreferedMetric, L -> L
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 receivedPreferedMetric, L -> L
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 receivedPreferedMetric, L -> L
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 receivedPreferedMetric, L -> L
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 winnerLivelinessTimerExpires, L -> NI
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 winnerLivelinessTimerExpires, L -> NI
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 Assert state transitions to NoInfo
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 Assert state transitions to NoInfo
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R6 winnerLivelinessTimerExpires, L -> NI
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R6 Assert state transitions to NoInfo
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 winnerLivelinessTimerExpires, L -> NI
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 Assert state transitions to NoInfo
+Test2: Kill Assert AssertWinner
+Expected: New AssertAssertWinner will be R3
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 tree_is_active_and_best_upstream_router_reelected
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 TREE IS ACTIVE AND LOST ASSERT
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.4
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 MY METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.2
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 TREE IS ACTIVE AND LOST ASSERT
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.4
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 MY METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.3
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 Assert state transitions to AssertLoser
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R3 transition_to_it_or_ot_and_active_tree
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 TREE IS ACTIVE AND WON ASSERT
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.3
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 MY METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.4
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 TREE IS ACTIVE AND WON ASSERT
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.3
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R4 MY METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.4
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 TREE IS ACTIVE AND LOST ASSERT
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 TREE IS ACTIVE AND WON ASSERT
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.2
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 MY METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.3
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.3
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 MY METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.2
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 Assert state transitions to AssertWinner
 [1;32;40mTest2 Success[0m
-Test3: Source sends data causing the reelection of AW
-Expected: R3 WINNER
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 receivedDataFromDownstreamIf, NI -> W
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 Assert state transitions to Winner
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R5 receivedDataFromDownstreamIf, NI -> W
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 receivedDataFromDownstreamIf, NI -> W
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R5 Assert state transitions to Winner
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 Assert state transitions to Winner
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R6 receivedPreferedMetric, NI -> L
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 receivedPreferedMetric, NI -> L
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 receivedPreferedMetric, W -> L
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 receivedInferiorMetricFromNonWinner_couldAssertIsTrue, W -> W
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R6 Assert state transitions to Loser
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 Assert state transitions to Loser
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 Assert state transitions to Loser
+Test3: R3's interface eth1 becomes Root type
+Change interface eth0 cost of router R3 to 100, causing eth1 to be considered Root interface
+Expected: New AssertAssertWinner will be R2
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R3 transition_to_it_or_ot_and_active_tree
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R6 tree_is_active_and_best_upstream_router_reelected
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 tree_is_active_and_best_upstream_router_reelected
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R4 transition_to_it_or_ot_and_active_tree
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R3 Assert state transitions to AssertWinner
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R3 TREE IS ACTIVE AND LOST ASSERT
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R3 BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 2; METRIC: 0; IP: 10.3.3.1
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R3 MY METRIC_PREFERENCE: 11; METRIC: 30; IP: 10.3.3.3
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R3 Assert state transitions to AssertLoser
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 tree_remains_in_active_state_and_non_root_transitions_to_root_interface
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 BEST UPSTREAM NEIGHBOR IS NONE AND TREE IS ACTIVE
+protocol.KernelEntry.NonRootInterface.Assert       DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 Assert state transitions to AssertWinner
 [1;32;40mTest3 Success[0m
-Test4: CouldAssert of AssertWinner(R3) -> False
-Change interface eth0 cost of router R3 to 100, causing eth1 to be considered as the Root interface
-Expected: everyone NI
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R6 receivedPreferedMetric, L -> L
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 receivedPreferedMetric, L -> L
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 receivedPreferedMetric, L -> L
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R5 receivedPreferedMetric, W -> L
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R5 Assert state transitions to Loser
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R3 Assert state transitions to NoInfo
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 Assert state transitions to NoInfo
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R3 couldAssertIsNowTrue, NI -> NI
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 couldAssertIsNowFalse, W -> NI
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R6 receivedInferiorMetricFromWinner, L -> NI
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R6 Assert state transitions to NoInfo
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 receivedInferiorMetricFromWinner, L -> NI
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R2 Assert state transitions to NoInfo
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 receivedInferiorMetricFromWinner, L -> NI
-pim.KernelEntry.UpstreamInterface.Assert           DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 Assert state transitions to NoInfo
-[1;32;40mTest4 Success[0m
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 Assert state transitions to NoInfo
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R3 receivedDataFromDownstreamIf, NI -> W
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R3 Assert state transitions to Winner
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R3 receivedPreferedMetric, W -> L
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R3 Assert state transitions to Loser
-pim.KernelEntry.DownstreamInterface.Assert         DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R3 receivedPreferedMetric, L -> L
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R6 tree_is_active_and_best_upstream_router_reelected
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           0  eth0  R5 tree_is_active_and_best_upstream_router_reelected
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 Created RootInterface
+protocol.KernelEntry.RootInterface                 DEBUG    (10.1.1.100,224.12.12.12)           1  eth1  R3 transition_to_it_or_ot_and_active_tree
 ^CException KeyboardInterrupt: KeyboardInterrupt() in <module 'threading' from '/usr/lib/python3.2/threading.py'> ignored
 root@switch1:~# fg
-tcpdump -i br0 -Q in -w /hosthome/Desktop/test_pim/test_assert/TestResults/Switch.pcap
-^C1521 packets captured
-2764 packets received by filter
-65 packets dropped by kernel
+tcpdump -i br0 -Q in -w /hosthome/Desktop/test_newproto/pim/TestResults/Switch.pcap
+^C957 packets captured
+1610 packets received by filter
+26 packets dropped by kernel
 root@switch1:~# exit
 exit
 
-Script done on Fri Jul 27 01:37:12 2018
+Script done on Wed Aug  1 23:02:31 2018

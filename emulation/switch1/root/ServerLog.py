@@ -3,7 +3,7 @@ import logging
 import logging.handlers
 import socketserver
 import struct
-from TestAssert import CustomFilter, Test1, Test2, Test3, Test4
+from TestAssert import CustomFilter, Test1, Test2, Test3
 import sys
 import threading
 from queue import Queue
@@ -24,7 +24,7 @@ def worker():
 class TestHandler(logging.StreamHandler):
     currentTest = Test1()
     currentTest.print_test()
-    nextTests = [Test2(), Test3(), Test4()]
+    nextTests = [Test2(), Test3()]
     main = None
 
     def emit(self, record):
