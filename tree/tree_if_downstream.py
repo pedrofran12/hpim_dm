@@ -31,7 +31,7 @@ class TreeInterfaceDownstream(TreeInterface):
         self._assert_state = AssertState.Winner
         self.assert_logger.debug('Assert state transitions to ' + str(self._assert_state))
         self._my_assert_rpc = AssertMetric(rpc.metric_preference, rpc.route_metric, self.get_ip())
-        self.calculate_assert_winner()
+        self.calculate_assert_winner(creating_interface=True)
 
         # Deal with messages according to tree state and interface role change
         # Event 1
@@ -58,12 +58,12 @@ class TreeInterfaceDownstream(TreeInterface):
     ############################################
     # Set ASSERT State
     ############################################
-    def calculate_assert_winner(self):
+    def calculate_assert_winner(self, creating_interface=False):
         print("CALCULATE ASSERT WINNER")
         if self.is_tree_active():
             if self._best_upstream_router is None:
                 self.assert_logger.debug('BEST UPSTREAM NEIGHBOR IS NONE AND TREE IS ACTIVE')
-                self.set_assert_state(AssertState.Winner)
+                self.set_assert_state(AssertState.Winner, creating_interface)
             elif self._my_assert_rpc.is_better_than(self._best_upstream_router):
                 self.assert_logger.debug('TREE IS ACTIVE AND WON ASSERT')
                 self.assert_logger.debug("BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: " +
@@ -73,7 +73,7 @@ class TreeInterfaceDownstream(TreeInterface):
                 self.assert_logger.debug("MY METRIC_PREFERENCE: " + str(self._my_assert_rpc.metric_preference) +
                                          '; METRIC: ' + str(self._my_assert_rpc.route_metric) + '; IP: ' +
                                          self._my_assert_rpc.get_ip())
-                self.set_assert_state(AssertState.Winner)
+                self.set_assert_state(AssertState.Winner, creating_interface)
             else:
                 self.assert_logger.debug('TREE IS ACTIVE AND LOST ASSERT')
                 self.assert_logger.debug("BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: " +
@@ -83,26 +83,26 @@ class TreeInterfaceDownstream(TreeInterface):
                 self.assert_logger.debug("MY METRIC_PREFERENCE: " + str(self._my_assert_rpc.metric_preference) +
                                          '; METRIC: ' + str(self._my_assert_rpc.route_metric) + '; IP: ' +
                                          self._my_assert_rpc.get_ip())
-                self.set_assert_state(AssertState.Loser)
+                self.set_assert_state(AssertState.Loser, creating_interface)
         elif self.is_tree_inactive():
             if self._best_upstream_router is None:
                 self.assert_logger.debug('TREE IS INACTIVE AND NO UPSTREAM NEIGHBOR')
                 self.set_assert_state(AssertState.Winner)
             else:
                 self.assert_logger.debug('TREE IS INACTIVE AND UPSTREAM NEIGHBOR CONNECTED TO THIS INTERFACE')
-                self.set_assert_state(AssertState.Loser)
+                self.set_assert_state(AssertState.Loser, creating_interface)
         else:
             self.assert_logger.debug('TREE IS UNKNOWN AND UPSTREAM NEIGHBOR CONNECTED TO THIS INTERFACE')
-            self.set_assert_state(AssertState.Winner)
+            self.set_assert_state(AssertState.Winner, creating_interface)
 
-    def set_assert_state(self, new_state: SFMRAssertABC):
+    def set_assert_state(self, new_state: SFMRAssertABC, creating_interface=False):
         with self.get_state_lock():
             if new_state != self._assert_state:
                 self._assert_state = new_state
                 self.assert_logger.debug('Assert state transitions to ' + str(new_state))
-
-                self.change_tree()
-                self.evaluate_in_tree()
+                if not creating_interface:
+                    self.change_tree()
+                    self.evaluate_in_tree()
 
     ##########################################
     # Set Downstream Node Interest state
@@ -163,9 +163,9 @@ class TreeInterfaceDownstream(TreeInterface):
 
     def change_interest_state(self, interest_state):
         if interest_state:
-            self._downstream_node_interest_state.in_tree(self)
+            self.set_downstream_node_interest_state(SFMRPruneState.DI)
         else:
-            self._downstream_node_interest_state.out_tree(self)
+            self.set_downstream_node_interest_state(SFMRPruneState.NDI)
 
     ###########################################
     # Send packets
@@ -189,7 +189,7 @@ class TreeInterfaceDownstream(TreeInterface):
         return self.igmp_has_members() or self.are_downstream_nodes_interested()
 
     def are_downstream_nodes_interested(self):
-        return self._downstream_node_interest_state == SFMRPruneState.DI
+        return self._downstream_node_interest_state.are_downstream_nodes_interested()
 
     def delete(self):
         super().delete()

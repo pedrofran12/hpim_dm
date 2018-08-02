@@ -11,3 +11,6 @@ SOURCE_LIFETIME = 210
 
 # Periodicity for message retransmission
 MESSAGE_RETRANSMISSION_TIME = 10
+
+
+HELLO_HOLD_TIME_TIMEOUT = 0

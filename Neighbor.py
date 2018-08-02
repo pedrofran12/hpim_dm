@@ -4,7 +4,7 @@ import ipaddress
 from threading import Timer
 
 import Main
-from utils import HELLO_HOLD_TIME_NO_TIMEOUT, HELLO_HOLD_TIME_TIMEOUT, TYPE_CHECKING
+from utils import TYPE_CHECKING
 from tree.metric import AssertMetric
 from tree import protocol_globals
 from Packet.Packet import Packet
@@ -121,6 +121,7 @@ class Master(NeighborState):
                 neighbor.set_hello_hold_time(DEFAULT_HELLO_HOLD_TIME_AFTER_SYNC)
                 neighbor.set_sync_state(Updated)
                 neighbor.clear_sync_timer()
+                del neighbor.my_snapshot_multicast_routing_table[:]
             else:
                 neighbor.set_hello_hold_time(DEFAULT_HELLO_HOLD_TIME_DURING_SYNC)
                 neighbor.set_sync_timer()
@@ -179,6 +180,7 @@ class Slave(NeighborState):
                 print("HERE4")
                 neighbor.set_sync_state(Updated)
                 neighbor.clear_sync_timer()
+                del neighbor.my_snapshot_multicast_routing_table[:]
             else:
                 neighbor.set_hello_hold_time(DEFAULT_HELLO_HOLD_TIME_DURING_SYNC)
                 print("HERE5")
@@ -244,7 +246,7 @@ class Neighbor:
 
     def __init__(self, contact_interface: "InterfaceProtocol", ip, hello_hold_time: int, neighbor_time_of_boot: int,
                  my_interface_boot_time: int):
-        if hello_hold_time == HELLO_HOLD_TIME_TIMEOUT:
+        if hello_hold_time == protocol_globals.HELLO_HOLD_TIME_TIMEOUT:
             raise Exception
         logger_info = dict(contact_interface.interface_logger.extra)
         logger_info['neighbor_ip'] = ip
@@ -478,13 +480,11 @@ class Neighbor:
         if self.neighbor_liveness_timer is not None:
             self.neighbor_liveness_timer.cancel()
 
-        if hello_hold_time == HELLO_HOLD_TIME_TIMEOUT:
+        if hello_hold_time == protocol_globals.HELLO_HOLD_TIME_TIMEOUT:
             self.remove()
-        elif hello_hold_time != HELLO_HOLD_TIME_NO_TIMEOUT:
+        else:
             self.neighbor_liveness_timer = Timer(hello_hold_time, self.remove)
             self.neighbor_liveness_timer.start()
-        else:
-            self.neighbor_liveness_timer = None
 
     def remove(self):
         with self.contact_interface.neighbors_lock:
@@ -503,3 +503,4 @@ class Neighbor:
         self.tree_interest_state.clear()
         self.tree_metric_state.clear()
         self.last_sequence_number.clear()
+        del self.my_snapshot_multicast_routing_table[:]

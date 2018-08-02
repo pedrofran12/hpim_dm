@@ -374,9 +374,9 @@ class Kernel:
                 if protocol_globals.INITIAL_FLOOD_ENABLED:
                     # flood
                     self.set_flood_multicast_route(ip_src, ip_dst, rpf_if)
-
-                self.create_entry(ip_src, ip_dst)
-                self.routing[ip_src][ip_dst].recv_data_msg(iif)
+                if rpf_if is not None:
+                    self.create_entry(ip_src, ip_dst)
+                    self.routing[ip_src][ip_dst].recv_data_msg(iif)
             elif not is_directly_connected and protocol_globals.INITIAL_FLOOD_ENABLED:
                 # flood
                 self.set_flood_multicast_route(ip_src, ip_dst, rpf_if)

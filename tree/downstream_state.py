@@ -9,24 +9,13 @@ if TYPE_CHECKING:
 class SFMRDownstreamStateABC(metaclass=ABCMeta):
     @staticmethod
     @abstractmethod
-    def in_tree(interface: 'TreeInterfaceDownstream') -> None:
+    def are_downstream_nodes_interested() -> bool:
         raise NotImplementedError()
-
-    @staticmethod
-    @abstractmethod
-    def out_tree(interface: 'TreeInterfaceDownstream') -> None:
-        raise NotImplementedError()
-
 
 class SFMRDownstreamInterested(SFMRDownstreamStateABC):
     @staticmethod
-    def in_tree(interface: 'TreeInterfaceDownstream') -> None:
-        interface.downstream_logger.debug('DownstreamInterest -> DownstreamInterest')
-
-    @staticmethod
-    def out_tree(interface: 'TreeInterfaceDownstream') -> None:
-        interface.downstream_logger.debug('DownstreamInterest -> NoDownstreamInterest')
-        interface.set_downstream_node_interest_state(SFMRPruneState.NDI)
+    def are_downstream_nodes_interested():
+        return True
 
     def __str__(self):
         return 'DownstreamInterest'
@@ -34,13 +23,8 @@ class SFMRDownstreamInterested(SFMRDownstreamStateABC):
 
 class SFMRNoDownstreamInterested(SFMRDownstreamStateABC):
     @staticmethod
-    def in_tree(interface: 'TreeInterfaceDownstream') -> None:
-        interface.downstream_logger.debug('NoDownstreamInterest -> DownstreamInterest')
-        interface.set_downstream_node_interest_state(SFMRPruneState.DI)
-
-    @staticmethod
-    def out_tree(interface: 'TreeInterfaceDownstream') -> None:
-        interface.downstream_logger.debug('NoDownstreamInterest -> NoDownstreamInterest')
+    def are_downstream_nodes_interested():
+        return False
 
     def __str__(self):
         return 'NoDownstreamInterest'

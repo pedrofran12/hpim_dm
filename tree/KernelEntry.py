@@ -420,8 +420,11 @@ class KernelEntryOriginator(KernelEntry):
 
     def __init__(self, source_ip: str, group_ip: str, upstream_state_dic, interest_state_dic):
         super().__init__(source_ip, group_ip, upstream_state_dic, interest_state_dic)
-        self.sat_is_running = True
-        self._tree_state = TreeState.Active
+        self.sat_is_running = False
+        self._tree_state = TreeState.Inactive
+        if self.inbound_interface_index is not None:
+            self.sat_is_running = True
+            self._tree_state = TreeState.Active
 
         with self.CHANGE_STATE_LOCK:
             for i in Main.kernel.vif_index_to_name_dic.keys():
@@ -497,10 +500,9 @@ class KernelEntryOriginator(KernelEntry):
                 root_interest_state = self._interest_interface_state.get(new_inbound_interface_index, False)
                 root_upstream_state = self._upstream_interface_state.get(new_inbound_interface_index, None)
 
-                new_tree_state = self._tree_state
-                if self.is_tree_active() and root_upstream_state is None:
+                if new_inbound_interface_index is None:
                     new_tree_state = TreeState.Inactive
-                elif self.is_tree_inactive() and root_upstream_state is not None:
+                else:
                     new_tree_state = TreeState.Active
 
                 # change type of interfaces
@@ -512,6 +514,7 @@ class KernelEntryOriginator(KernelEntry):
                                                                        current_tree_state=new_tree_state)
                     self.interface_state[self.inbound_interface_index] = new_downstream_interface
                 if new_inbound_interface_index is not None:
+                    self.sat_is_running = True
                     new_upstream_interface = TreeInterfaceUpstreamOriginator(self, new_inbound_interface_index, new_tree_state)
                     self.interface_state[new_inbound_interface_index] = new_upstream_interface
                 self.inbound_interface_index = new_inbound_interface_index
@@ -565,7 +568,7 @@ class KernelEntryOriginator(KernelEntry):
             elif inbound_interface_index == index and self.inbound_interface_index is None:
                 self.inbound_interface_index = index
                 self.sat_is_running = True
-                self.interface_state[index] = self.interface_state[self.inbound_interface_index] = \
+                self.interface_state[index] = \
                     TreeInterfaceUpstreamOriginator(self, self.inbound_interface_index, self._tree_state)
             elif inbound_interface_index == index and self.inbound_interface_index is not None:
                 old_upstream_interface = self.interface_state.get(self.inbound_interface_index, None)

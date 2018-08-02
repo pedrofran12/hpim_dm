@@ -1,10 +1,6 @@
 import array
 
 
-HELLO_HOLD_TIME_NO_TIMEOUT = 0xFFFF
-HELLO_HOLD_TIME_TIMEOUT = 0
-
-
 def checksum(pkt: bytes) -> bytes:
     if len(pkt) % 2 == 1:
         pkt += "\0"
