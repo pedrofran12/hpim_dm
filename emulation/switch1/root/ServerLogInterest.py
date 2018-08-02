@@ -3,7 +3,7 @@ import logging
 import logging.handlers
 import socketserver
 import struct
-from TestJoinPrune import CustomFilter, Test1, Test2, Test3, Test4, Test5
+from TestInterest import CustomFilter, Test1, Test2, Test3, Test4
 from queue import Queue
 
 q = Queue()
@@ -22,7 +22,7 @@ def worker():
 class TestHandler(logging.StreamHandler):
     currentTest = Test1()
     currentTest.print_test()
-    nextTests = [Test2(), Test3(), Test4(), Test5()]
+    nextTests = [Test2(), Test3(), Test4()]
     main = None
 
     def emit(self, record):
