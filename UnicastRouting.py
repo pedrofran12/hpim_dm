@@ -32,7 +32,9 @@ class UnicastRouting(object):
                 ip_dst = socket.inet_ntoa(ip_bytes) + "/" + str(mask_len)
                 print(ip_dst)
                 if ip_dst in ipdb.routes:
-                    info = ipdb.routes[ip_dst]
+                    print(info)
+                    if ipdb.routes[ip_dst]['ipdb_scope'] != 'gc':
+                        info = ipdb.routes[ip_dst]
                     break
                 else:
                     continue
@@ -56,7 +58,9 @@ class UnicastRouting(object):
                 oif = unicast_route.get("oif")
                 next_hop = unicast_route["gateway"]
                 multipaths = unicast_route["multipath"]
+                #prefsrc = unicast_route.get("prefsrc")
 
+                #rpf_node = ip_dst if (next_hop is None and prefsrc is not None) else next_hop
                 rpf_node = next_hop if next_hop is not None else ip_dst
                 highest_ip = ipaddress.ip_address("0.0.0.0")
                 for m in multipaths:
@@ -84,7 +88,6 @@ class UnicastRouting(object):
         print("unicast change?")
         print(action)
         UnicastRouting.lock.acquire()
-        UnicastRouting.ipdb = ipdb
         if action == "RTM_NEWROUTE" or action == "RTM_DELROUTE":
             print(ipdb.routes)
             mask_len = msg["dst_len"]
@@ -105,10 +108,8 @@ class UnicastRouting(object):
             print(str(subnet))
             UnicastRouting.lock.release()
             Main.kernel.notify_unicast_changes(subnet)
-        elif action == "RTM_NEWADDR" or action == "RTM_DELADDR":
-            UnicastRouting.lock.release()
-            # TODO ALTERACOES NA INTERFACE
             '''
+        elif action == "RTM_NEWADDR" or action == "RTM_DELADDR":
             print(action)
             print(msg)
             interface_name = None
@@ -118,8 +119,34 @@ class UnicastRouting(object):
                 if key == "IFA_LABEL":
                     interface_name = value
                     break
-
-            Main.kernel.notify_interface_change(interface_name)
+            UnicastRouting.lock.release()
+            try:
+                Main.kernel.notify_interface_changes(interface_name)
+            except:
+                import traceback
+                traceback.print_exc()
+                pass
+            subnet = ipaddress.ip_network("0.0.0.0/0")
+            Main.kernel.notify_unicast_changes(subnet)
+        elif action == "RTM_NEWLINK" or action == "RTM_DELLINK":
+            attrs = msg["attrs"]
+            if_name = None
+            operation = None
+            for (key, value) in attrs:
+                print((key, value))
+                if key == "IFLA_IFNAME":
+                    if_name = value
+                elif key == "IFLA_OPERSTATE":
+                    operation = value
+                if if_name is not None and operation is not None:
+                    break
+            if if_name is not None:
+                print(if_name + ": " + operation)
+            UnicastRouting.lock.release()
+            if operation == 'DOWN':
+                Main.kernel.remove_interface(if_name, igmp=True, pim=True)
+            subnet = ipaddress.ip_network("0.0.0.0/0")
+            Main.kernel.notify_unicast_changes(subnet)
             '''
         else:
             UnicastRouting.lock.release()

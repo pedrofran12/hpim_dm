@@ -46,7 +46,10 @@ class Interface(metaclass=ABCMeta):
 
     def send(self, data: bytes, group_ip: str):
         if self.interface_enabled and data:
-            self._send_socket.sendto(data, (group_ip, 0))
+            try:
+                self._send_socket.sendto(data, (group_ip, 0))
+            except socket.error:
+                pass
 
     def remove(self):
         self.interface_enabled = False

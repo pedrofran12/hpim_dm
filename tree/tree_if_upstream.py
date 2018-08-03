@@ -35,7 +35,7 @@ class TreeInterfaceUpstream(TreeInterface):
         # TODO TESTE SOCKET RECV DATA PCKTS
         self.socket_is_enabled = True
         (s, g) = self.get_tree_id()
-        interface_name = self.get_interface().interface_name
+        interface_name = self.get_interface_name()
         self.socket_pkt = DataPacketsSocket.get_s_g_bpf_filter_code(s, g, interface_name)
 
         # run receive method in background
@@ -70,16 +70,13 @@ class TreeInterfaceUpstream(TreeInterface):
         print("best:", best_upstream_router)
         print("new best", assert_state)
 
-        if assert_state is None:
-            print("ASSERT IS NONE")
+        if assert_state is None or not self.is_tree_active():
+            print("ASSERT IS NONE OR TREE NOT ACTIVE")
             return
-
         elif best_upstream_router is None or best_upstream_router is not assert_state:
-            print("ASSERT IS ELIF")
+            print("TREE ACTIVE AND ASSERT REELECTED")
             # EVENT 6 and 7
             SFMRRootState.tree_is_active_and_best_upstream_router_reelected(self)
-        else:
-            print("ELSE")
 
     def change_interest_state(self, interest_state):
         return

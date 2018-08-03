@@ -25,6 +25,8 @@ class InterfaceIGMP(Interface):
     ]
 
     def __init__(self, interface_name: str, vif_index: int):
+        self.ip_interface = netifaces.ifaddresses(interface_name)[netifaces.AF_INET][0]['addr']
+
         # SEND SOCKET
         snd_s = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_IGMP)
 
@@ -51,11 +53,7 @@ class InterfaceIGMP(Interface):
 
 
     def get_ip(self):
-        return netifaces.ifaddresses(self.interface_name)[netifaces.AF_INET][0]['addr']
-
-    @property
-    def ip_interface(self):
-        return self.get_ip()
+        return self.ip_interface
 
     def send(self, data: bytes, address: str="224.0.0.1"):
         super().send(data, address)

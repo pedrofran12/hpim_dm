@@ -90,14 +90,14 @@ class Master(NeighborState):
         if neighbor.current_sync_sn == 0 and neighbor.neighbor_snapshot_sn == 0:
             neighbor.neighbor_snapshot_sn = neighbor_snapshot_sn
 
-        if sync_sn != neighbor.current_sync_sn:
-            print("EXIT MASTER")
-            return
-
         if neighbor.neighbor_snapshot_sn > neighbor_snapshot_sn:
             return
         elif neighbor.neighbor_snapshot_sn < neighbor_snapshot_sn:
             Master.new_neighbor_or_adjacency_reset(neighbor)
+            return
+
+        if sync_sn != neighbor.current_sync_sn:
+            print("EXIT MASTER")
             return
 
         if master_bit and (sync_sn > 0 and neighbor.my_snapshot_sequencer == my_snapshot_sn or sync_sn == 0):
@@ -274,7 +274,7 @@ class Neighbor:
 
         self.sync_timer = None
         self.neighbor_state = Unknown
-        self.neighbor_logger.debug('Neighbor state Transitions to ' + self.neighbor_state.__name__)
+        self.neighbor_logger.debug('Neighbor state transitions to ' + self.neighbor_state.__name__)
 
         # checkpoint sn
         self.checkpoint_sn = 0
@@ -319,7 +319,7 @@ class Neighbor:
             return
 
         self.neighbor_state = state
-        self.neighbor_logger.debug('Neighbor state Transitions to ' + state.__name__ +
+        self.neighbor_logger.debug('Neighbor state transitions to ' + state.__name__ +
                                    ' with MyBootTime=' + str(self.my_snapshot_boot_time) +
                                    '; MySnapshotSN=' + str(self.my_snapshot_sequencer) +
                                    '; NeighborBootTime=' + str(self.time_of_boot) +

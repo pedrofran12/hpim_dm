@@ -69,7 +69,6 @@ class Kernel:
 
         self.socket = s
         self.rwlock = RWLockWrite()
-        self.interface_lock = RLock()
 
         # Create register interface
         # todo useless in PIM-DM... useful in PIM-SM
@@ -180,18 +179,18 @@ class Kernel:
             ip_interface = None
             pim_interface = self.protocol_interface.get(interface_name)
             igmp_interface = self.igmp_interface.get(interface_name)
-            if (igmp and not igmp_interface) or (pim and not pim_interface) or (not igmp and not pim):
+            if (not igmp and not pim) or (interface_name not in self.vif_name_to_index_dic):
                 return
-            if pim:
+            if pim and pim_interface is not None:
                 pim_interface = self.protocol_interface.pop(interface_name)
                 ip_interface = pim_interface.ip_interface
                 pim_interface.remove()
-            elif igmp:
+            if igmp and igmp_interface is not None:
                 igmp_interface = self.igmp_interface.pop(interface_name)
                 ip_interface = igmp_interface.ip_interface
                 igmp_interface.remove()
 
-            if not self.igmp_interface.get(interface_name) and not self.protocol_interface.get(interface_name):
+            if interface_name not in self.igmp_interface and interface_name not in self.protocol_interface:
                 self.remove_virtual_interface(ip_interface)
             else:
                 vif_index = self.vif_name_to_index_dic.get(interface_name)
@@ -220,6 +219,18 @@ class Kernel:
 
         self.interface_logger.debug('Remove virtual interface: %s -> %d', interface_name, index)
 
+    def notify_interface_changes(self, interface_name):
+        with self.rwlock.genWlock():
+            if interface_name is None or interface_name not in self.vif_name_to_index_dic:
+                return
+            igmp_was_enabled = interface_name in self.igmp_interface
+            protocol_was_enabled = interface_name in self.protocol_interface
+
+        self.remove_interface(interface_name, igmp=True, pim=True)
+        if igmp_was_enabled:
+            self.create_igmp_interface(interface_name)
+        if protocol_was_enabled:
+            self.create_protocol_interface(interface_name)
 
     '''
     /* Cache manipulation structures for mrouted and PIMd */

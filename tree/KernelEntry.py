@@ -332,18 +332,13 @@ class KernelEntryNonOriginator(KernelEntry):
             (_, _, _, inbound_interface_index) = UnicastRouting.get_unicast_info(self.source_ip)
             # TODO verificar is directly connected
 
+            interest_state = False
+            upstream_state = None
+            self._interest_interface_state[index] = interest_state
+            self._upstream_interface_state[index] = upstream_state
+
             # new interface is of type non-root
             if inbound_interface_index != index:
-                interest_state = False
-                upstream_state = None
-                interface_name = Main.kernel.vif_index_to_name_dic.get(index, None)
-                if interface_name in Main.kernel.protocol_interface:
-                    (interest_state, upstream_state) = Main.kernel.protocol_interface.get(interface_name).get_tree_state(
-                        (self.source_ip, self.group_ip))
-
-                self._interest_interface_state[index] = interest_state
-                self._upstream_interface_state[index] = upstream_state
-
                 self.interface_state[index] = TreeInterfaceDownstream(self, index, self._rpc,
                                                                       best_upstream_router=upstream_state,
                                                                       interest_state=interest_state,
@@ -353,16 +348,6 @@ class KernelEntryNonOriginator(KernelEntry):
             # new interface is of type root and there wasnt any root interface previously configured
             elif inbound_interface_index == index and self.inbound_interface_index is None:
                 self.inbound_interface_index = index
-                interest_state = False
-                upstream_state = None
-                interface_name = Main.kernel.vif_index_to_name_dic.get(index, None)
-                if interface_name in Main.kernel.protocol_interface:
-                    (interest_state, upstream_state) = Main.kernel.protocol_interface.get(
-                        interface_name).get_tree_state((self.source_ip, self.group_ip))
-
-                self._interest_interface_state[index] = interest_state
-                self._upstream_interface_state[index] = upstream_state
-
                 self.interface_state[index] = TreeInterfaceUpstream(self, self.inbound_interface_index,
                                                                     upstream_state, was_non_root=False,
                                                                     previous_tree_state=self._tree_state,
@@ -371,23 +356,13 @@ class KernelEntryNonOriginator(KernelEntry):
             elif inbound_interface_index == index and self.inbound_interface_index is not None:
                 old_upstream_interface = self.interface_state.get(self.inbound_interface_index, None)
 
-                root_interest_state = False
-                root_upstream_state = None
-                interface_name = Main.kernel.vif_index_to_name_dic.get(index, None)
-                if interface_name in Main.kernel.protocol_interface:
-                    (root_interest_state, root_upstream_state) = Main.kernel.protocol_interface.get(
-                        interface_name).get_tree_state((self.source_ip, self.group_ip))
-                self._interest_interface_state[index] = root_interest_state
-                self._upstream_interface_state[index] = root_upstream_state
-
+                root_upstream_state = upstream_state
                 non_root_interest_state = self._interest_interface_state.get(self.inbound_interface_index, False)
                 non_root_upstream_state = self._upstream_interface_state.get(self.inbound_interface_index, None)
 
                 new_tree_state = self._tree_state
                 if self.is_tree_active() and root_upstream_state is None:
                     new_tree_state = TreeState.Inactive
-                elif self.is_tree_inactive() and root_upstream_state is not None:
-                    new_tree_state = TreeState.Active
 
                 # change type of interfaces
                 if self.inbound_interface_index is not None:
@@ -501,6 +476,7 @@ class KernelEntryOriginator(KernelEntry):
                 root_upstream_state = self._upstream_interface_state.get(new_inbound_interface_index, None)
 
                 if new_inbound_interface_index is None:
+                    self.sat_is_running = False
                     new_tree_state = TreeState.Inactive
                 else:
                     new_tree_state = TreeState.Active
@@ -547,18 +523,12 @@ class KernelEntryOriginator(KernelEntry):
 
             (_, _, _, inbound_interface_index) = UnicastRouting.get_unicast_info(self.source_ip)
             # TODO verificar is directly connected
+            interest_state = False
+            upstream_state = None
+            self._interest_interface_state[index] = interest_state
+            self._upstream_interface_state[index] = upstream_state
 
             if inbound_interface_index != index:
-                interest_state = False
-                upstream_state = None
-                interface_name = Main.kernel.vif_index_to_name_dic.get(index, None)
-                if interface_name in Main.kernel.protocol_interface:
-                    (interest_state, upstream_state) = Main.kernel.protocol_interface.get(interface_name).get_tree_state(
-                        (self.source_ip, self.group_ip))
-
-                self._interest_interface_state[index] = interest_state
-                self._upstream_interface_state[index] = upstream_state
-
                 self.interface_state[index] = TreeInterfaceDownstream(self, index, self._rpc,
                                                                       best_upstream_router=upstream_state,
                                                                       interest_state=interest_state,
@@ -572,14 +542,6 @@ class KernelEntryOriginator(KernelEntry):
                     TreeInterfaceUpstreamOriginator(self, self.inbound_interface_index, self._tree_state)
             elif inbound_interface_index == index and self.inbound_interface_index is not None:
                 old_upstream_interface = self.interface_state.get(self.inbound_interface_index, None)
-
-                root_interest_state = False
-                root_upstream_state = None
-                interface_name = Main.kernel.vif_index_to_name_dic.get(index, None)
-                if interface_name in Main.kernel.protocol_interface:
-                    (root_interest_state, root_upstream_state) = Main.kernel.protocol_interface.get(
-                        interface_name).get_tree_state((self.source_ip, self.group_ip))
-
                 non_root_interest_state = self._interest_interface_state.get(self.inbound_interface_index, False)
                 non_root_upstream_state = self._upstream_interface_state.get(self.inbound_interface_index, None)
 
