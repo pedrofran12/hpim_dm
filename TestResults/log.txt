@@ -1,0 +1,49 @@
+Script started on Thu Aug 23 00:35:23 2018
+root@switch1:~# 
+root@switch1:~# tcpdump -i br0 -Q in -w /hosthome/Desktop/test_newproto/test_sync/TestResults/Swithc.   ch.pcp ap / 6 &
+[1] 1650
+root@switch1:~# tcpdump: listening on br0, link-type EN10MB (Ethernet), capture size 262144 bytes
+
+root@switch1:~# python3 ServerLogT Sync.py 
+Test1: Neighborhood relationships
+Start R1 and R2.... they should transition to Updated state
+About to start TCP server...
+protocol.Interface                                 DEBUG    2018-08-23 00:36:28,440                                       0  eth0  R1 Received Hello message with HelloHoldTime: 120; CheckpointSN: 0 from neighbor 10.0.0.2
+protocol.Interface.Neighbor                        DEBUG    2018-08-23 00:36:28,488                                       0  eth0  R1 Neighbor state transitions to Unknown
+protocol.Interface.Neighbor                        DEBUG    2018-08-23 00:36:28,491                                       0  eth0  R1 Neighbor state transitions to Slave with MyBootTime=1534977381; MySnapshotSN=0; NeighborBootTime=1534977383; NeighborSnapshotSN=0
+protocol.Interface                                 DEBUG    2018-08-23 00:36:28,508                                       0  eth0  R2 Received Sync message with BootTime: 1534977381; NeighborBootTime: 1534977383; MySnapshotSN: 1; NeighborSnapshotSN: 0; SyncSN: 0; Master flag: 1; More flag: 0 from neighbor 10.0.0.1
+protocol.Interface.Neighbor                        DEBUG    2018-08-23 00:36:28,532                                       0  eth0  R2 Neighbor state transitions to Unknown
+protocol.Interface.Neighbor                        DEBUG    2018-08-23 00:36:28,533                                       0  eth0  R2 Neighbor state transitions to Master with MyBootTime=1534977383; MySnapshotSN=0; NeighborBootTime=1534977381; NeighborSnapshotSN=0
+protocol.Interface                                 DEBUG    2018-08-23 00:36:28,547                                       0  eth0  R1 Received Sync message with BootTime: 1534977383; NeighborBootTime: 1534977381; MySnapshotSN: 1; NeighborSnapshotSN: 1; SyncSN: 0; Master flag: 0; More flag: 0 from neighbor 10.0.0.2
+protocol.Interface                                 DEBUG    2018-08-23 00:36:28,567                                       0  eth0  R2 Received Sync message with BootTime: 1534977381; NeighborBootTime: 1534977383; MySnapshotSN: 1; NeighborSnapshotSN: 1; SyncSN: 1; Master flag: 1; More flag: 0 from neighbor 10.0.0.1
+protocol.Interface                                 DEBUG    2018-08-23 00:36:28,566                                       0  eth0  R1 Received Sync message with BootTime: 1534977383; NeighborBootTime: 1534977381; MySnapshotSN: 1; NeighborSnapshotSN: 1; SyncSN: 1; Master flag: 0; More flag: 0 from neighbor 10.0.0.2
+protocol.Interface.Neighbor                        DEBUG    2018-08-23 00:36:28,577                                       0  eth0  R2 Neighbor state transitions to Updated with MyBootTime=1534977383; MySnapshotSN=1; NeighborBootTime=1534977381; NeighborSnapshotSN=1
+protocol.Interface.Neighbor                        DEBUG    2018-08-23 00:36:28,576                                       0  eth0  R1 Neighbor state transitions to Updated with MyBootTime=1534977381; MySnapshotSN=1; NeighborBootTime=1534977383; NeighborSnapshotSN=1
+[1;32;40mTest1 Success[0m
+Test2: Restart R2
+Synchronization should be restarted and both at the end must be in Updated state
+protocol.Interface                                 DEBUG    2018-08-23 00:36:55,209                                       0  eth0  R1 Received Hello message with HelloHoldTime: 120; CheckpointSN: 0 from neighbor 10.0.0.2
+protocol.Interface.Neighbor                        DEBUG    2018-08-23 00:36:55,212                                       0  eth0  R1 Neighbor state transitions to Slave with MyBootTime=1534977381; MySnapshotSN=1; NeighborBootTime=1534977413; NeighborSnapshotSN=0
+protocol.Interface                                 DEBUG    2018-08-23 00:36:55,255                                       0  eth0  R2 Received Sync message with BootTime: 1534977381; NeighborBootTime: 1534977413; MySnapshotSN: 2; NeighborSnapshotSN: 0; SyncSN: 0; Master flag: 1; More flag: 0 from neighbor 10.0.0.1
+protocol.Interface.Neighbor                        DEBUG    2018-08-23 00:36:55,279                                       0  eth0  R2 Neighbor state transitions to Unknown
+protocol.Interface.Neighbor                        DEBUG    2018-08-23 00:36:55,280                                       0  eth0  R2 Neighbor state transitions to Master with MyBootTime=1534977413; MySnapshotSN=0; NeighborBootTime=1534977381; NeighborSnapshotSN=0
+protocol.Interface                                 DEBUG    2018-08-23 00:36:55,291                                       0  eth0  R1 Received Sync message with BootTime: 1534977413; NeighborBootTime: 1534977381; MySnapshotSN: 1; NeighborSnapshotSN: 2; SyncSN: 0; Master flag: 0; More flag: 0 from neighbor 10.0.0.2
+protocol.Interface                                 DEBUG    2018-08-23 00:36:55,311                                       0  eth0  R2 Received Sync message with BootTime: 1534977381; NeighborBootTime: 1534977413; MySnapshotSN: 2; NeighborSnapshotSN: 1; SyncSN: 1; Master flag: 1; More flag: 0 from neighbor 10.0.0.1
+protocol.Interface                                 DEBUG    2018-08-23 00:36:55,311                                       0  eth0  R1 Received Sync message with BootTime: 1534977413; NeighborBootTime: 1534977381; MySnapshotSN: 1; NeighborSnapshotSN: 2; SyncSN: 1; Master flag: 0; More flag: 0 from neighbor 10.0.0.2
+protocol.Interface.Neighbor                        DEBUG    2018-08-23 00:36:55,322                                       0  eth0  R2 Neighbor state transitions to Updated with MyBootTime=1534977413; MySnapshotSN=1; NeighborBootTime=1534977381; NeighborSnapshotSN=2
+protocol.Interface.Neighbor                        DEBUG    2018-08-23 00:36:55,322                                       0  eth0  R1 Neighbor state transitions to Updated with MyBootTime=1534977381; MySnapshotSN=2; NeighborBootTime=1534977413; NeighborSnapshotSN=1
+[1;32;40mTest2 Success[0m
+Test3: Neighbor failure should be detected
+Fail R2... R1 should transition R2 to Unknown state, due to the absence of Hello messages
+protocol.Interface.Neighbor                        DEBUG    2018-08-23 00:38:55,331                                       0  eth0  R1 Removing neighbor 10.0.0.2
+[1;32;40mTest3 Success[0m
+^CException KeyboardInterrupt: KeyboardInterrupt() in <module 'threading' from '/usr/lib/python3.2/threading.py'> ignored
+root@switch1:~# f df  fg
+tcpdump -i br0 -Q in -w /hosthome/Desktop/test_newproto/test_sync/TestResults/Switch.pcap
+^C87 packets captured
+126 packets received by filter
+0 packets dropped by kernel
+root@switch1:~# exit
+exit
+
+Script done on Thu Aug 23 00:39:28 2018
