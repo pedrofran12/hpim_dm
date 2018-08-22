@@ -27,17 +27,18 @@ inline recv_sync_and_neighbor_is_master(node_id, total_of_sync_msgs, neighbor_id
       bool process_this_message2 = true;
       if
       :: rcv_neighbor_boot_time > neighbor_boot_time[node_id] ->
-          neighbor_boot_time[node_id] = rcv_neighbor_boot_time
-          neighbor_snapshot_sn[node_id] = rcv_neighbor_snapshot_sn;
-          current_sync_sn[node_id] = 0;
+          // received greater BootTime... means that neighbor rebooted during sync... need to restart synchronization and store new SNs from neighbor
           new_neighbor(node_id, total_of_sync_msgs, neighbor_id, rcv_neighbor_boot_time, rcv_neighbor_snapshot_sn, rcv_my_snapshot_sn, rcv_sync_sn, rcv_master_bit, rcv_more_bit);
           process_this_message2 = false;
       :: rcv_neighbor_boot_time == neighbor_boot_time[node_id] && rcv_neighbor_snapshot_sn > neighbor_snapshot_sn[node_id] ->
+          // received same BootTime but greater SnapshotSN... means that neighbor wants to restart sync... need to restart synchronization and store new SN from neighbor
           new_neighbor(node_id, total_of_sync_msgs, neighbor_id, rcv_neighbor_boot_time, rcv_neighbor_snapshot_sn, rcv_my_snapshot_sn, rcv_sync_sn, rcv_master_bit, rcv_more_bit);
           process_this_message2 = false;
-      :: rcv_neighbor_boot_time == neighbor_boot_time[node_id] && rcv_neighbor_snapshot_sn < neighbor_snapshot_sn[node_id] ->
+      :: rcv_neighbor_boot_time < neighbor_boot_time[node_id] || (rcv_neighbor_boot_time == neighbor_boot_time[node_id] && rcv_neighbor_snapshot_sn < neighbor_snapshot_sn[node_id]) ->
+          // if receive lower BootTime or same BootTime but with a lower SnapshotSN means that I have received a message from a previous sync process... must ignore this message
           process_this_message2 = false;
       :: else ->
+          // if same BootTime and SnapshotSN continue processing message
           skip;
       fi;
 
@@ -45,7 +46,7 @@ inline recv_sync_and_neighbor_is_master(node_id, total_of_sync_msgs, neighbor_id
       :: process_this_message2 && rcv_master_bit && rcv_sync_sn == current_sync_sn[node_id] && (rcv_sync_sn > 0 && rcv_my_snapshot_sn == my_snapshot_sn[node_id] || rcv_sync_sn == 0) ->
           ch[neighbor_id] ! sync(node_id, my_boot_time[node_id], neighbor_boot_time[node_id], my_snapshot_sn[node_id], neighbor_snapshot_sn[node_id], current_sync_sn[node_id], MASTER_FLAG(neighbor_state[node_id]), MORE_FLAG(total_of_sync_msgs, current_sync_sn[node_id]));
           if
-          :: !MORE_FLAG(total_of_sync_msgs, current_sync_sn[node_id]) && !rcv_more_bit ->
+          :: rcv_sync_sn > 0 && !MORE_FLAG(total_of_sync_msgs, current_sync_sn[node_id]) && !rcv_more_bit ->
               neighbor_state[node_id] = updated;
           :: else ->
               current_sync_sn[node_id] = current_sync_sn[node_id] + 1;
@@ -61,15 +62,19 @@ inline recv_sync_and_neighbor_is_slave(node_id, total_of_sync_msgs, neighbor_id,
       bool process_this_message1 = true;
       if
       :: rcv_neighbor_boot_time > neighbor_boot_time[node_id] ->
-          neighbor_boot_time[node_id] = rcv_neighbor_boot_time
-          neighbor_snapshot_sn[node_id] = rcv_neighbor_snapshot_sn;
+          // received greater BootTime... means that neighbor rebooted during sync... need to restart synchronization and store new SNs from neighbor
           new_neighbor(node_id, total_of_sync_msgs, neighbor_id, rcv_neighbor_boot_time, rcv_neighbor_snapshot_sn, rcv_my_snapshot_sn, rcv_sync_sn, rcv_master_bit, rcv_more_bit);
-          current_sync_sn[node_id] = 0;
       :: rcv_neighbor_boot_time == neighbor_boot_time[node_id] && rcv_neighbor_snapshot_sn > neighbor_snapshot_sn[node_id] && current_sync_sn[node_id] == 0 ->
+          // received same BootTime but greater SnapshotSN... means that neighbor wants to restart sync... if current SyncSN is 0 store new SN of neighbor and process this message
           neighbor_snapshot_sn[node_id] = rcv_neighbor_snapshot_sn;
       :: rcv_neighbor_boot_time == neighbor_boot_time[node_id] && rcv_neighbor_snapshot_sn > neighbor_snapshot_sn[node_id] && current_sync_sn[node_id] > 0 ->
+          // received same BootTime but greater SnapshotSN... means that neighbor wants to restart sync... if current SyncSN is greater than 0 store all SNs and increment my SnapshotSN
           new_neighbor(node_id, total_of_sync_msgs, neighbor_id, rcv_neighbor_boot_time, rcv_neighbor_snapshot_sn, rcv_my_snapshot_sn, rcv_sync_sn, rcv_master_bit, rcv_more_bit);
+      :: rcv_neighbor_boot_time < neighbor_boot_time[node_id] || (rcv_neighbor_boot_time == neighbor_boot_time[node_id] && rcv_neighbor_snapshot_sn < neighbor_snapshot_sn[node_id]) ->
+          // if receive lower BootTime or same BootTime but with a lower SnapshotSN means that I have received a message from a previous sync process... must ignore this message
+          process_this_message1 = false;
       :: else ->
+          // if same BootTime and SnapshotSN continue processing message
           skip;
       fi;
 
@@ -86,7 +91,7 @@ inline recv_sync_and_neighbor_is_slave(node_id, total_of_sync_msgs, neighbor_id,
           fi;
       :: process_this_message1 && rcv_sync_sn == current_sync_sn[node_id] && !rcv_master_bit && my_snapshot_sn[node_id] == rcv_my_snapshot_sn ->
           if
-          :: !MORE_FLAG(total_of_sync_msgs, current_sync_sn[node_id]) && !rcv_more_bit ->
+          :: current_sync_sn[node_id] > 0 && !MORE_FLAG(total_of_sync_msgs, current_sync_sn[node_id]) && !rcv_more_bit ->
               neighbor_state[node_id] = updated;
           :: else ->
               current_sync_sn[node_id] = current_sync_sn[node_id] + 1;
@@ -100,7 +105,7 @@ inline recv_sync_and_neighbor_is_slave(node_id, total_of_sync_msgs, neighbor_id,
 
 inline recv_sync_and_neighbor_is_unknown(node_id, total_of_sync_msgs, neighbor_id, rcv_neighbor_boot_time, rcv_neighbor_snapshot_sn, rcv_my_snapshot_sn, rcv_sync_sn, rcv_master_bit, rcv_more_bit) {
     if
-    :: neighbor_state[node_id] == unknown && rcv_sync_sn == 0 && rcv_master_bit ->
+    :: rcv_sync_sn == 0 && rcv_master_bit ->
       neighbor_boot_time[node_id] = rcv_neighbor_boot_time;
       neighbor_snapshot_sn[node_id] = rcv_neighbor_snapshot_sn;
       neighbor_state[node_id] = master;
@@ -127,17 +132,24 @@ inline rcv_sync_and_neighbor_updated(node_id, total_of_sync_msgs, neighbor_id, r
     bool process_this_message3 = true;
     if
     :: rcv_neighbor_boot_time > neighbor_boot_time[node_id] || (rcv_neighbor_boot_time == neighbor_boot_time[node_id] && rcv_neighbor_snapshot_sn > neighbor_snapshot_sn[node_id]) ->
+        // if received greater BootTime or same BootTime and greater SnapshotSN... must resynchronize
         neighbor_boot_time[node_id] = rcv_neighbor_boot_time
         neighbor_snapshot_sn[node_id] = rcv_neighbor_snapshot_sn;
         current_sync_sn[node_id] = 0;
         process_this_message3 = false;
         if
         :: rcv_sync_sn == 0 && rcv_master_bit ->
+            // if neighbor transmits message with SyncSN==0 and MasterBit set... consider neighbor as master
+            my_snapshot_sn[node_id] = my_snapshot_sn[node_id] + 1;
             neighbor_state[node_id] = master;
             recv_sync_and_neighbor_is_master(node_id, total_of_sync_msgs, neighbor_id, rcv_neighbor_boot_time, rcv_neighbor_snapshot_sn, rcv_my_snapshot_sn, rcv_sync_sn, rcv_master_bit, rcv_more_bit);
         :: else ->
+            // otherwise the node will consider itself as master
             new_neighbor(node_id, total_of_sync_msgs, neighbor_id, rcv_neighbor_boot_time, rcv_neighbor_snapshot_sn, rcv_my_snapshot_sn, rcv_sync_sn, rcv_master_bit, rcv_more_bit);
         fi;
+    :: rcv_neighbor_boot_time < neighbor_boot_time[node_id] || (rcv_neighbor_boot_time == neighbor_boot_time[node_id] && rcv_neighbor_snapshot_sn < neighbor_snapshot_sn[node_id]) ->
+        // if receive lower BootTime or same BootTime but with a lower SnapshotSN means that I have received a message from a previous sync process... must ignore this message
+        process_this_message3 = false;
     :: else ->
         skip;
     fi;
@@ -145,6 +157,8 @@ inline rcv_sync_and_neighbor_updated(node_id, total_of_sync_msgs, neighbor_id, r
 
     if
     :: process_this_message3 && rcv_sync_sn == current_sync_sn[node_id] && rcv_master_bit ->
+        // if receive retransmission from Master... this means that I am slave and I already transitioned to Updated state while the neighbor node is still in a Non-Updated state because my last message has been lost
+        // so I must retransmit my last message to Master
         ch[neighbor_id] ! sync(node_id, my_boot_time[node_id], neighbor_boot_time[node_id], my_snapshot_sn[node_id], neighbor_snapshot_sn[node_id], current_sync_sn[node_id], false, false);
     :: else ->
         skip;
@@ -168,7 +182,6 @@ proctype Interface(byte node_id; byte my_initial_boot_time; byte my_initial_snap
   bool rcv_master_bit;
   bool rcv_more_bit;
 
-  //atomic {
       do
       :: nempty(ch[node_id]) && empty(fail_ch[node_id]) ->
       atomic {
@@ -221,7 +234,6 @@ proctype Interface(byte node_id; byte my_initial_boot_time; byte my_initial_snap
                   my_snapshot_sn[node_id] = my_snapshot_sn[node_id] + 1;
               fi;}
       od;
-  //}
 }
 
 
