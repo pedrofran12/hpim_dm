@@ -3,7 +3,7 @@ import logging
 import logging.handlers
 import socketserver
 import struct
-from TestAssert import CustomFilter, Test1, Test2, Test3
+from TestSync import CustomFilter, Test1, Test2, Test3
 import sys
 import threading
 from queue import Queue
