@@ -40,7 +40,7 @@ class NeighborState():
         neighbor.checkpoint_sn = 0
         #
 
-        my_snapshot_mrt = neighbor.my_snapshot_multicast_routing_table[0:5]
+        my_snapshot_mrt = neighbor.my_snapshot_multicast_routing_table[0:neighbor.sync_fragmentation]
         my_more_bit = len(neighbor.my_snapshot_multicast_routing_table) > 0
         my_snapshot_sn = neighbor.my_snapshot_sequencer
 
@@ -104,9 +104,9 @@ class Master(NeighborState):
             print("ENTROU MASTER")
             neighbor.install_tree_state(tree_state)
 
-            my_snapshot_mrt = neighbor.my_snapshot_multicast_routing_table[neighbor.current_sync_sn*5:
-                                                                           (neighbor.current_sync_sn+1)*5]
-            my_more_bit = len(neighbor.my_snapshot_multicast_routing_table) > neighbor.current_sync_sn*5
+            my_snapshot_mrt = neighbor.my_snapshot_multicast_routing_table[neighbor.current_sync_sn*neighbor.sync_fragmentation:
+                                                                           (neighbor.current_sync_sn+1)*neighbor.sync_fragmentation]
+            my_more_bit = len(neighbor.my_snapshot_multicast_routing_table) > neighbor.current_sync_sn*neighbor.sync_fragmentation
             my_snapshot_sn = neighbor.my_snapshot_sequencer
             neighbor_sn = neighbor.neighbor_snapshot_sn
 
@@ -129,9 +129,9 @@ class Master(NeighborState):
 
     @staticmethod
     def sync_timer_expires(neighbor):
-        my_snapshot_mrt = neighbor.my_snapshot_multicast_routing_table[(neighbor.current_sync_sn - 1) * 5:
-                                                                       neighbor.current_sync_sn * 5]
-        my_more_bit = len(neighbor.my_snapshot_multicast_routing_table) > (neighbor.current_sync_sn - 1) * 5
+        my_snapshot_mrt = neighbor.my_snapshot_multicast_routing_table[(neighbor.current_sync_sn - 1) * neighbor.sync_fragmentation:
+                                                                       neighbor.current_sync_sn * neighbor.sync_fragmentation]
+        my_more_bit = len(neighbor.my_snapshot_multicast_routing_table) > (neighbor.current_sync_sn - 1) * neighbor.sync_fragmentation
         my_snapshot_sn = neighbor.my_snapshot_sequencer
         neighbor_sn = neighbor.neighbor_snapshot_sn
 
@@ -173,7 +173,7 @@ class Slave(NeighborState):
                 Slave.sync_timer_expires(neighbor)
         elif not master_bit and neighbor.my_snapshot_sequencer == my_snapshot_sn:
             print("HERE3")
-            my_more_bit = len(neighbor.my_snapshot_multicast_routing_table) > neighbor.current_sync_sn*5
+            my_more_bit = len(neighbor.my_snapshot_multicast_routing_table) > neighbor.current_sync_sn*neighbor.sync_fragmentation
 
             if sync_sn > 0 and not my_more_bit and not more_bit:
                 neighbor.set_hello_hold_time(DEFAULT_HELLO_HOLD_TIME_AFTER_SYNC)
@@ -187,9 +187,9 @@ class Slave(NeighborState):
                 neighbor.current_sync_sn += 1
                 neighbor.install_tree_state(tree_state)
 
-                my_snapshot_mrt = neighbor.my_snapshot_multicast_routing_table[neighbor.current_sync_sn*5:
-                                                                               (neighbor.current_sync_sn+1)*5]
-                my_more_bit = len(neighbor.my_snapshot_multicast_routing_table) > neighbor.current_sync_sn*5
+                my_snapshot_mrt = neighbor.my_snapshot_multicast_routing_table[neighbor.current_sync_sn*neighbor.sync_fragmentation:
+                                                                               (neighbor.current_sync_sn+1)*neighbor.sync_fragmentation]
+                my_more_bit = len(neighbor.my_snapshot_multicast_routing_table) > neighbor.current_sync_sn*neighbor.sync_fragmentation
                 my_snapshot_sn = neighbor.my_snapshot_sequencer
                 neighbor_sn = neighbor.neighbor_snapshot_sn
 
@@ -203,9 +203,9 @@ class Slave(NeighborState):
 
     @staticmethod
     def sync_timer_expires(neighbor):
-        my_snapshot_mrt = neighbor.my_snapshot_multicast_routing_table[neighbor.current_sync_sn * 5:
-                                                                       (neighbor.current_sync_sn + 1) * 5]
-        my_more_bit = len(neighbor.my_snapshot_multicast_routing_table) > neighbor.current_sync_sn * 5
+        my_snapshot_mrt = neighbor.my_snapshot_multicast_routing_table[neighbor.current_sync_sn * neighbor.sync_fragmentation:
+                                                                       (neighbor.current_sync_sn + 1) * neighbor.sync_fragmentation]
+        my_more_bit = len(neighbor.my_snapshot_multicast_routing_table) > neighbor.current_sync_sn * neighbor.sync_fragmentation
         my_snapshot_sn = neighbor.my_snapshot_sequencer
         neighbor_sn = neighbor.neighbor_snapshot_sn
 
@@ -263,6 +263,7 @@ class Neighbor:
         self.time_of_last_update = time.time()
 
         self.current_sync_sn = 0
+        self.sync_fragmentation = 0
 
         # Tree Database storage
         self.tree_interest_state = {}
@@ -274,7 +275,7 @@ class Neighbor:
 
         self.sync_timer = None
         self.neighbor_state = Unknown
-        self.neighbor_logger.debug('Neighbor state transitions to ' + self.neighbor_state.__name__)
+        self.neighbor_logger.debug('Neighbor state of ' + self.ip + ' transitions to ' + self.neighbor_state.__name__)
 
         # checkpoint sn
         self.checkpoint_sn = 0
@@ -285,23 +286,20 @@ class Neighbor:
         self.my_snapshot_multicast_routing_table = []
 
     ######################################################################
-    # Checkpoint SN
-    ######################################################################
-    def get_checkpoint_sn(self):
-        if self.neighbor_state == Master or self.neighbor_state == Slave:
-            return (self.my_snapshot_boot_time, self.my_snapshot_sequencer - 1)
-        else:
-            return (None, None)
-
-    ######################################################################
     # Sync Timer
     ######################################################################
     def set_sync_timer(self):
+        """
+        Set Sync timer... useful when the Sync process is making progress and a Sync message from the neighbor node must be received
+        """
         self.clear_sync_timer()
         self.sync_timer = Timer(10, self.sync_timeout)
         self.sync_timer.start()
 
     def clear_sync_timer(self):
+        """
+        Cancel Sync timer... useful when the Sync process finishes
+        """
         if self.sync_timer is not None:
             self.sync_timer.cancel()
 
@@ -309,17 +307,52 @@ class Neighbor:
     # Sync Timer timeout
     ###########################################
     def sync_timeout(self):
+        """
+        Expiration of Sync timer (mus cause a retransmission of a Sync message)
+        """
         self.neighbor_state.sync_timer_expires(self)
+
+    ######################################################################
+    # Neighbor Liveness Timer
+    ######################################################################
+    def set_hello_hold_time(self, hello_hold_time: int):
+        """
+        Set Neighbor liveness timer due to progress in Sync process or a received Hello message
+        """
+        self.hello_hold_time = hello_hold_time
+        if self.neighbor_liveness_timer is not None:
+            self.neighbor_liveness_timer.cancel()
+
+        if hello_hold_time == protocol_globals.HELLO_HOLD_TIME_TIMEOUT:
+            self.remove()
+        else:
+            self.neighbor_liveness_timer = Timer(hello_hold_time, self.remove)
+            self.neighbor_liveness_timer.start()
+
+    ###########################################
+    # Neighbor Liveness Timer timeout
+    ###########################################
+    def remove(self):
+        """
+        Remove neighbor node because neighbor liveness timer expired
+        """
+        with self.contact_interface.neighbors_lock:
+            print('HELLO TIMER EXPIRED... remove neighbor')
+            self.remove_neighbor_state()
+            self.contact_interface.remove_neighbor(self.ip)
 
     ############################################
     # Sync State
     ############################################
     def set_sync_state(self, state):
+        """
+        Set sync state of this neighbor node (Unknown or Master or Slave or Updated)
+        """
         if self.neighbor_state == state:
             return
 
         self.neighbor_state = state
-        self.neighbor_logger.debug('Neighbor state transitions to ' + state.__name__ +
+        self.neighbor_logger.debug('Neighbor state of ' + self.ip + ' transitions to ' + state.__name__ +
                                    ' with MyBootTime=' + str(self.my_snapshot_boot_time) +
                                    '; MySnapshotSN=' + str(self.my_snapshot_sequencer) +
                                    '; NeighborBootTime=' + str(self.time_of_boot) +
@@ -328,6 +361,11 @@ class Neighbor:
             Main.kernel.recheck_all_trees(self.contact_interface.vif_index)
 
     def install_tree_state(self, tree_state: list):
+        """
+        Store Upstream state regarding trees that were included in a Sync message... Since we allow installing state from
+        IamUpstream/IamNoLongerUpstream/Interest/NoInterest messages concurrently to an ongoing synchronization, verify if
+        trees included in Sync message have state fresher than the one that is already stored (in a non-Sync message)
+        """
         for t in tree_state:
             tree_id = (t.source, t.group)
             if self.last_sequence_number.get(tree_id, 0) > self.neighbor_snapshot_sn:
@@ -337,9 +375,15 @@ class Neighbor:
                                                            route_metric=t.metric, ip_address=self.ip)
 
     def remove_tree_state(self, source, group):
+        """
+        Remove all stored state of the neighbor node regarding trees in Unknown state
+        """
         self.tree_interest_state.pop((source, group), None)
 
     def get_known_trees(self):
+        """
+        Get all trees that I am storing state regarding this neighbor node
+        """
         a = set(self.tree_metric_state.keys())
         b = set(self.tree_interest_state.keys())
         return a.union(b)
@@ -348,22 +392,18 @@ class Neighbor:
     # Send Messages
     ######################################################################
     def send(self, packet):
+        """
+        Send messages destined to this neighbor node... Used in the neighbor state machine implementation
+        """
         self.contact_interface.send(packet, self.ip)
 
     ######################################################################
-    # Receive Synchronization Messages
+    # Receive Messages
     ######################################################################
-    def start_sync_process(self):
-        self.neighbor_state.new_neighbor_or_adjacency_reset(self)
-
-    def start_snapshot(self):
-        (my_snapshot_bt, my_snapshot_sn, my_snapshot_mrt) = self.contact_interface.snapshot_multicast_routing_table()
-        self.my_snapshot_boot_time = my_snapshot_bt
-        self.my_snapshot_sequencer = my_snapshot_sn
-        self.my_snapshot_multicast_routing_table = list(my_snapshot_mrt.values())
-        self.contact_interface.neighbor_start_synchronization(self.ip, my_snapshot_bt, my_snapshot_sn)
-
     def recv_hello(self, boot_time, holdtime, checkpoint_sn):
+        """
+        Process a received Hello message from this neighbor node
+        """
         if boot_time < self.time_of_boot:
             return
         elif boot_time > self.time_of_boot:
@@ -379,17 +419,10 @@ class Neighbor:
         elif holdtime == 0:
             self.set_hello_hold_time(holdtime)
 
-    def set_checkpoint_sn(self, checkpoint_sn):
-        #if checkpoint_sn > self.neighbor_snapshot_sn:
-        #    self.neighbor_snapshot_sn = checkpoint_sn
-        if checkpoint_sn > self.checkpoint_sn:
-            self.checkpoint_sn = checkpoint_sn
-
-            to_remove = {k for k, v in self.last_sequence_number.items() if v <= checkpoint_sn}
-            for k in to_remove:
-                self.last_sequence_number.pop(k)
-
     def recv_sync(self, upstream_trees, my_sn, neighbor_sn, boot_time, sync_sn, master_flag, more_flag, own_interface_boot_time):
+        """
+        Process a received Sync message from this neighbor node
+        """
         if boot_time < self.time_of_boot:
             return
         elif boot_time > self.time_of_boot or own_interface_boot_time > self.my_snapshot_boot_time:
@@ -400,22 +433,10 @@ class Neighbor:
 
         self.neighbor_state.recv_sync(self, upstream_trees, my_sn, neighbor_sn, sync_sn, master_flag, more_flag)
 
-    ################################################################################################
-    def get_tree_state(self, tree):
-        if self.neighbor_state != Updated:
-            # do not interpret stored state if not Updated
-            return (False, None)
-        else:
-            upstream_state = self.tree_metric_state.get(tree, None)
-            interest_state = False
-            if upstream_state is None:
-                interest_state = self.tree_interest_state.get(tree, protocol_globals.INITIAL_FLOOD_ENABLED)
-            print("INTEREST NEIGHBOR ", self.ip, ":", interest_state)
-            print("UPSTREAM NEIGHBOR ", self.ip, ":", upstream_state)
-            return (interest_state, upstream_state)
-
-    # decide if should process control packet
     def recv_reliable_packet(self, sn, tree, boot_time):
+        """
+        Decide if a packet received from this neighbor should be processed
+        """
         if boot_time < self.time_of_boot:
             return False
         elif boot_time > self.time_of_boot:
@@ -424,9 +445,6 @@ class Neighbor:
             self.start_sync_process()
             return False
 
-        #if self.neighbor_state != Updated:
-            # do not interpret message during sync
-            #return False
         if self.neighbor_state == Unknown or self.current_sync_sn == 0:
             #do not interpret control message without having the guarantee of
             # correct <NeighborBootTime; NeighborSnapshotSN> pair
@@ -459,8 +477,11 @@ class Neighbor:
         print("LAST TREE SN ", last_received_sn)
         return False
 
-    # decide if should process ack packet
     def recv_ack(self, my_boot_time, neighbor_boot_time, my_snapshot_sn, neighbor_snapshot):
+        """
+        Decide if a received Ack should be processed... this decision is based on the SNs obtained during the Sync
+        process with this neighbor
+        """
         if neighbor_boot_time < self.time_of_boot:
             return False
         elif neighbor_boot_time > self.time_of_boot:
@@ -473,27 +494,72 @@ class Neighbor:
                self.my_snapshot_boot_time == my_boot_time and self.time_of_boot == neighbor_boot_time and\
                self.my_snapshot_sequencer == my_snapshot_sn and self.neighbor_snapshot_sn == neighbor_snapshot
 
-    ################################################################################################
+    #####################################################
+    # CheckpointSN... Store and clear lower SNs
+    #####################################################
+    def set_checkpoint_sn(self, checkpoint_sn):
+        """
+        By receiving an Hello message with a CheckpointSN store it (if greater than the previously stored CheckpointSN)...
+        By storing a greater CheckpointSN, clear all SNs that are lower than the stored CheckpointSN
+        """
+        if checkpoint_sn > self.checkpoint_sn:
+            self.checkpoint_sn = checkpoint_sn
 
-    def set_hello_hold_time(self, hello_hold_time: int):
-        self.hello_hold_time = hello_hold_time
-        if self.neighbor_liveness_timer is not None:
-            self.neighbor_liveness_timer.cancel()
+            to_remove = {k for k, v in self.last_sequence_number.items() if v <= checkpoint_sn}
+            for k in to_remove:
+                self.last_sequence_number.pop(k)
 
-        if hello_hold_time == protocol_globals.HELLO_HOLD_TIME_TIMEOUT:
-            self.remove()
+    #######################################################
+    # Synchronization methods for starting it
+    #######################################################
+    def start_sync_process(self):
+        """
+        Trigger synchronization with this neighbor node
+        """
+        self.neighbor_state.new_neighbor_or_adjacency_reset(self)
+
+    def start_snapshot(self):
+        """
+        Create my own snapshot and set my SNs (my BootTime and MySnapshotSN)
+        """
+        (my_snapshot_bt, my_snapshot_sn, my_snapshot_mrt) = self.contact_interface.snapshot_multicast_routing_table()
+        self.my_snapshot_boot_time = my_snapshot_bt
+        self.my_snapshot_sequencer = my_snapshot_sn
+        self.my_snapshot_multicast_routing_table = list(my_snapshot_mrt.values())
+        self.sync_fragmentation = protocol_globals.SYNC_FRAGMENTATION_MSG
+        if self.sync_fragmentation == 0:
+            self.sync_fragmentation = (self.contact_interface.get_mtu() - 20 - 8 - 16) // 16
+        self.contact_interface.neighbor_start_synchronization(self.ip, my_snapshot_bt, my_snapshot_sn)
+
+
+    #################################################################
+    # Obtain Upstream and Interest information regarding a neighbor
+    #################################################################
+    def get_tree_state(self, tree):
+        """
+        Obtain Upstream and Interest state regarding neighbor node... This information is obtained based on previous
+        messages received from this neighbor node that were stored in the neighbor structure
+        """
+        if self.neighbor_state != Updated:
+            # do not interpret stored state if not Updated
+            return (False, None)
         else:
-            self.neighbor_liveness_timer = Timer(hello_hold_time, self.remove)
-            self.neighbor_liveness_timer.start()
+            upstream_state = self.tree_metric_state.get(tree, None)
+            interest_state = False
+            if upstream_state is None:
+                interest_state = self.tree_interest_state.get(tree, protocol_globals.INITIAL_FLOOD_ENABLED)
+            print("INTEREST NEIGHBOR ", self.ip, ":", interest_state)
+            print("UPSTREAM NEIGHBOR ", self.ip, ":", upstream_state)
+            return (interest_state, upstream_state)
 
-    def remove(self):
-        with self.contact_interface.neighbors_lock:
-            print('HELLO TIMER EXPIRED... remove neighbor')
-            self.remove_neighbor_state()
 
-            self.contact_interface.remove_neighbor(self.ip)
-
+    #######################################
+    # Remove state regarding neighbor
+    #######################################
     def remove_neighbor_state(self):
+        """
+        Clear all information regarding neighbor node
+        """
         self.neighbor_logger.debug('Removing neighbor ' + self.ip)
         if self.neighbor_liveness_timer is not None:
             self.neighbor_liveness_timer.cancel()

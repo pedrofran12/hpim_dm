@@ -14,3 +14,8 @@ MESSAGE_RETRANSMISSION_TIME = 10
 
 
 HELLO_HOLD_TIME_TIMEOUT = 0
+
+# Control fragmentation of Sync messages
+# Number of trees per Sync message
+# If zero, use information from MTU of interface, otherwise only include a positive given number of trees per Sync message
+SYNC_FRAGMENTATION_MSG = 0
