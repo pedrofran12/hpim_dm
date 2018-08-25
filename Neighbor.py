@@ -11,10 +11,12 @@ from Packet.Packet import Packet
 if protocol_globals.MSG_FORMAT == "BINARY":
     from Packet.PacketProtocolAck import PacketNewProtocolAck as PacketProtocolAck
     from Packet.PacketProtocolSync import PacketNewProtocolSync as PacketProtocolHelloSync
+    from Packet.PacketProtocolHelloOptions import PacketNewProtocolHelloHoldtime as PacketProtocolHelloHoldtime
     from Packet.PacketProtocolHeader import PacketNewProtocolHeader as PacketProtocolHeader
 else:
     from Packet.PacketProtocolAck import PacketProtocolAck
     from Packet.PacketProtocolSync import PacketProtocolHelloSync
+    from Packet.PacketProtocolHelloOptions import PacketProtocolHelloHoldtime
     from Packet.PacketProtocolHeader import PacketProtocolHeader
 
 if TYPE_CHECKING:
@@ -55,7 +57,7 @@ class NeighborState():
         neighbor.set_hello_hold_time(DEFAULT_HELLO_HOLD_TIME_DURING_SYNC)
 
     @staticmethod
-    def recv_sync(neighbor, tree_state, my_snapshot_sn, neighbor_snapshot_sn, sync_sn, master_bit, more_bit):
+    def recv_sync(neighbor, tree_state, my_snapshot_sn, neighbor_snapshot_sn, sync_sn, master_bit, more_bit, hello_options):
         return
 
     @staticmethod
@@ -65,7 +67,7 @@ class NeighborState():
 
 class Updated(NeighborState):
     @staticmethod
-    def recv_sync(neighbor, tree_state, my_snapshot_sn, neighbor_snapshot_sn, sync_sn, master_bit, more_bit):
+    def recv_sync(neighbor, tree_state, my_snapshot_sn, neighbor_snapshot_sn, sync_sn, master_bit, more_bit, hello_options):
         if neighbor.neighbor_snapshot_sn > neighbor_snapshot_sn:
             return
         elif neighbor.neighbor_snapshot_sn < neighbor_snapshot_sn:
@@ -79,6 +81,7 @@ class Updated(NeighborState):
             pkt_s = PacketProtocolHelloSync(my_snapshot_sn, neighbor_snapshot_sn, sync_sn=sync_sn,
                                             master_flag=False, more_flag=False,
                                             neighbor_boot_time=neighbor.time_of_boot)
+            pkt_s.add_hello_option(PacketProtocolHelloHoldtime(holdtime=4 * neighbor.contact_interface.HELLO_PERIOD))
             pkt = Packet(payload=PacketProtocolHeader(pkt_s, neighbor.my_snapshot_boot_time))
             neighbor.send(pkt)
             neighbor.set_hello_hold_time(DEFAULT_HELLO_HOLD_TIME_DURING_SYNC)
@@ -86,7 +89,7 @@ class Updated(NeighborState):
 
 class Master(NeighborState):
     @staticmethod
-    def recv_sync(neighbor, tree_state, my_snapshot_sn, neighbor_snapshot_sn, sync_sn, master_bit, more_bit):
+    def recv_sync(neighbor, tree_state, my_snapshot_sn, neighbor_snapshot_sn, sync_sn, master_bit, more_bit, hello_options):
         if neighbor.current_sync_sn == 0 and neighbor.neighbor_snapshot_sn == 0:
             neighbor.neighbor_snapshot_sn = neighbor_snapshot_sn
 
@@ -114,11 +117,16 @@ class Master(NeighborState):
                                             sync_sn=neighbor.current_sync_sn,
                                             upstream_trees=my_snapshot_mrt, master_flag=False,
                                             more_flag=my_more_bit, neighbor_boot_time=neighbor.time_of_boot)
+            if not my_more_bit:
+                pkt_s.add_hello_option(PacketProtocolHelloHoldtime(holdtime=4 * neighbor.contact_interface.HELLO_PERIOD))
             pkt = Packet(payload=PacketProtocolHeader(pkt_s, neighbor.my_snapshot_boot_time))
             neighbor.send(pkt)
 
             if sync_sn > 0 and not more_bit and not my_more_bit:
-                neighbor.set_hello_hold_time(DEFAULT_HELLO_HOLD_TIME_AFTER_SYNC)
+                if "HOLDTIME" in hello_options:
+                    neighbor.set_hello_hold_time(hello_options["HOLDTIME"].holdtime)
+                else:
+                    neighbor.set_hello_hold_time(DEFAULT_HELLO_HOLD_TIME_AFTER_SYNC)
                 neighbor.set_sync_state(Updated)
                 neighbor.clear_sync_timer()
                 del neighbor.my_snapshot_multicast_routing_table[:]
@@ -139,6 +147,9 @@ class Master(NeighborState):
                                         sync_sn=neighbor.current_sync_sn - 1,
                                         upstream_trees=my_snapshot_mrt, master_flag=False,
                                         more_flag=my_more_bit, neighbor_boot_time=neighbor.time_of_boot)
+        if not my_more_bit:
+            pkt_s.add_hello_option(PacketProtocolHelloHoldtime(holdtime=4 * neighbor.contact_interface.HELLO_PERIOD))
+
         pkt = Packet(payload=PacketProtocolHeader(pkt_s, neighbor.my_snapshot_boot_time))
         neighbor.send(pkt)
         neighbor.set_sync_timer()
@@ -146,7 +157,7 @@ class Master(NeighborState):
 
 class Slave(NeighborState):
     @staticmethod
-    def recv_sync(neighbor, tree_state, my_snapshot_sn, neighbor_snapshot_sn, sync_sn, master_bit, more_bit):
+    def recv_sync(neighbor, tree_state, my_snapshot_sn, neighbor_snapshot_sn, sync_sn, master_bit, more_bit, hello_options):
         if neighbor.current_sync_sn == 0 and neighbor.neighbor_snapshot_sn == 0:
             neighbor.neighbor_snapshot_sn = neighbor_snapshot_sn
 
@@ -168,7 +179,7 @@ class Slave(NeighborState):
                 neighbor.set_sync_state(Master)
                 neighbor.current_sync_sn = 0
                 Master.recv_sync(neighbor, tree_state, my_snapshot_sn, neighbor_snapshot_sn, sync_sn, master_bit,
-                                 more_bit)
+                                 more_bit, hello_options)
             else:
                 Slave.sync_timer_expires(neighbor)
         elif not master_bit and neighbor.my_snapshot_sequencer == my_snapshot_sn:
@@ -176,7 +187,10 @@ class Slave(NeighborState):
             my_more_bit = len(neighbor.my_snapshot_multicast_routing_table) > neighbor.current_sync_sn*neighbor.sync_fragmentation
 
             if sync_sn > 0 and not my_more_bit and not more_bit:
-                neighbor.set_hello_hold_time(DEFAULT_HELLO_HOLD_TIME_AFTER_SYNC)
+                if "HOLDTIME" in hello_options:
+                    neighbor.set_hello_hold_time(hello_options["HOLDTIME"].holdtime)
+                else:
+                    neighbor.set_hello_hold_time(DEFAULT_HELLO_HOLD_TIME_AFTER_SYNC)
                 print("HERE4")
                 neighbor.set_sync_state(Updated)
                 neighbor.clear_sync_timer()
@@ -197,6 +211,8 @@ class Slave(NeighborState):
                                                 sync_sn=neighbor.current_sync_sn,
                                                 upstream_trees=my_snapshot_mrt, master_flag=True,
                                                 more_flag=my_more_bit, neighbor_boot_time=neighbor.time_of_boot)
+                if not my_more_bit:
+                    pkt_s.add_hello_option(PacketProtocolHelloHoldtime(holdtime=4 * neighbor.contact_interface.HELLO_PERIOD))
                 pkt = Packet(payload=PacketProtocolHeader(pkt_s, neighbor.my_snapshot_boot_time))
                 neighbor.send(pkt)
                 neighbor.set_sync_timer()
@@ -213,6 +229,9 @@ class Slave(NeighborState):
                                         sync_sn=neighbor.current_sync_sn,
                                         upstream_trees=my_snapshot_mrt, master_flag=True,
                                         more_flag=my_more_bit, neighbor_boot_time=neighbor.time_of_boot)
+        if not my_more_bit:
+            pkt_s.add_hello_option(PacketProtocolHelloHoldtime(holdtime=4 * neighbor.contact_interface.HELLO_PERIOD))
+
         pkt = Packet(payload=PacketProtocolHeader(pkt_s, neighbor.my_snapshot_boot_time))
         neighbor.send(pkt)
         neighbor.set_sync_timer()
@@ -220,7 +239,7 @@ class Slave(NeighborState):
 
 class Unknown(NeighborState):
     @staticmethod
-    def recv_sync(neighbor, tree_state, my_snapshot_sn, neighbor_snapshot_sn, sync_sn, master_bit, more_bit):
+    def recv_sync(neighbor, tree_state, my_snapshot_sn, neighbor_snapshot_sn, sync_sn, master_bit, more_bit, hello_options):
         if sync_sn == 0 and sync_sn == neighbor.current_sync_sn and master_bit:
             neighbor.set_sync_state(Master)
             neighbor.set_hello_hold_time(DEFAULT_HELLO_HOLD_TIME_DURING_SYNC)
@@ -236,7 +255,7 @@ class Unknown(NeighborState):
             neighbor.checkpoint_sn = 0
             #
 
-            Master.recv_sync(neighbor, tree_state, my_snapshot_sn, neighbor_snapshot_sn, sync_sn, master_bit, more_bit)
+            Master.recv_sync(neighbor, tree_state, my_snapshot_sn, neighbor_snapshot_sn, sync_sn, master_bit, more_bit, hello_options)
         else:
             Unknown.new_neighbor_or_adjacency_reset(neighbor)
 
@@ -419,7 +438,7 @@ class Neighbor:
         elif holdtime == 0:
             self.set_hello_hold_time(holdtime)
 
-    def recv_sync(self, upstream_trees, my_sn, neighbor_sn, boot_time, sync_sn, master_flag, more_flag, own_interface_boot_time):
+    def recv_sync(self, upstream_trees, my_sn, neighbor_sn, boot_time, sync_sn, master_flag, more_flag, own_interface_boot_time, hello_options):
         """
         Process a received Sync message from this neighbor node
         """
@@ -431,7 +450,7 @@ class Neighbor:
             self.neighbor_state.new_neighbor_or_adjacency_reset(self)
             return
 
-        self.neighbor_state.recv_sync(self, upstream_trees, my_sn, neighbor_sn, sync_sn, master_flag, more_flag)
+        self.neighbor_state.recv_sync(self, upstream_trees, my_sn, neighbor_sn, sync_sn, master_flag, more_flag, hello_options)
 
     def recv_reliable_packet(self, sn, tree, boot_time):
         """

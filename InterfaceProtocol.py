@@ -139,13 +139,6 @@ class InterfaceProtocol(Interface):
                     print("A SAIR CHECK_SN")
                     return (time_of_boot, checkpoint_sn)
 
-    #########################
-    # Check neighbor status
-    #######################
-
-
-    #########################
-
     #Random interval for initial Hello message on bootup or triggered Hello message to a rebooting neighbor
     def force_send_hello(self):
         if self.hello_timer is not None:
@@ -206,6 +199,9 @@ class InterfaceProtocol(Interface):
 
                 return (snapshot_bt, snapshot_sn, tree_to_sync_in_msg_format)
 
+    ##############################################
+    # Check neighbor status
+    ##############################################
     def get_tree_state(self, source_group):
         interest_state = False
         upstream_state = None
@@ -312,6 +308,7 @@ class InterfaceProtocol(Interface):
         # All information in Sync msg
         sync_sn = pkt_hs.sync_sequence_number
         upstream_trees = pkt_hs.upstream_trees
+        hello_options = pkt_hs.get_hello_options()
         neighbor_sn = pkt_hs.my_snapshot_sn
         my_sn = pkt_hs.neighbor_snapshot_sn
         master_flag = pkt_hs.master_flag
@@ -330,9 +327,7 @@ class InterfaceProtocol(Interface):
             if ip not in self.neighbors:
                 self.new_neighbor(ip, boot_time, detected_via_non_sync_msg=False)
 
-            self.neighbors[ip].recv_sync(upstream_trees, my_sn, neighbor_sn, boot_time, sync_sn, master_flag, more_flag, my_boot_time)
-
-        return
+            self.neighbors[ip].recv_sync(upstream_trees, my_sn, neighbor_sn, boot_time, sync_sn, master_flag, more_flag, my_boot_time, hello_options)
 
     def receive_interest(self, packet):
         neighbor_source_ip = packet.ip_header.ip_src
