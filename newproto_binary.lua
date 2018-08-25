@@ -342,17 +342,34 @@ function protocol.dissector(tvbuf,pktinfo,root)
       queries_tree:add(pf_sync_sequence_number, tvbuf:range(pos + 12, 4))
       queries_tree:add(pf_master_flag, tvbuf:range(pos + 12, 4))
       queries_tree:add(pf_more_flag, tvbuf:range(pos + 12, 4))
+      local more_flag = (tvbuf:range(pos + 12, 4)):bitfield(1, 1)
       pos = pos + 16
       local pktlen_remaining = pktlen - pos
-      while pktlen_remaining > 0 do
-            local tree_info = queries_tree:add("Tree (".. string.format("%s",tvbuf:range(pos, 4):ipv4()) .. ", " .. string.format("%s",tvbuf:range(pos + 4, 4):ipv4()) .. ")")    
-            tree_info:add(pf_tree_source, tvbuf:range(pos, 4))
-            tree_info:add(pf_tree_group, tvbuf:range(pos + 4, 4))   
-            tree_info:add(pf_assert_metric_preference, tvbuf:range(pos + 8, 4))
-            tree_info:add(pf_assert_metric, tvbuf:range(pos + 12, 4))          
-            pos = pos + 16
-            pktlen_remaining = pktlen_remaining - 16
+      if more_flag == 1 then
+          while pktlen_remaining > 0 do
+                local tree_info = queries_tree:add("Tree (".. string.format("%s",tvbuf:range(pos, 4):ipv4()) .. ", " .. string.format("%s",tvbuf:range(pos + 4, 4):ipv4()) .. ")")    
+                tree_info:add(pf_tree_source, tvbuf:range(pos, 4))
+                tree_info:add(pf_tree_group, tvbuf:range(pos + 4, 4))   
+                tree_info:add(pf_assert_metric_preference, tvbuf:range(pos + 8, 4))
+                tree_info:add(pf_assert_metric, tvbuf:range(pos + 12, 4))          
+                pos = pos + 16
+                pktlen_remaining = pktlen_remaining - 16
+           end
+      else
+          while pktlen_remaining > 0 do
+                local type = tvbuf:range(pos, 2):uint()
+                local length = tvbuf:range(pos + 2, 2):uint()
+                pos = pos + 4
+                if type == 1 then
+                    queries_tree:add(pf_hello_holdtime, tvbuf:range(pos, length))
+                elseif type == 2 then          
+                    queries_tree:add(pf_checkpoint_sequence_number, tvbuf(pos, length))
+          end
+          pos = pos + length
+          pktlen_remaining = pktlen_remaining - (4 + length)
        end
+
+      end        
    end
     -- tell wireshark how much of tvbuff we dissected
     return pos

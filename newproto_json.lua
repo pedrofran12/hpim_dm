@@ -291,13 +291,20 @@ function protocol.dissector(tvbuf,pktinfo,root)
       queries_tree:add(pf_neighbor_boot_time, tostring(tab["DATA"].NEIGHBOR_BOOT_TIME))      
       queries_tree:add(pf_master_flag, tostring(tab["DATA"].MASTER_FLAG))
       queries_tree:add(pf_more_flag, tostring(tab["DATA"].MORE_FLAG))
-      for _, v in pairs(tab["DATA"].TREES) do
-          local tree_info = queries_tree:add("Tree (".. v.SOURCE .. "," .. v.GROUP .. ")")
-          tree_info:add(pf_assert_metric_preference, tostring(v.METRIC_PREFERENCE))
-          tree_info:add(pf_assert_metric, tostring(v.METRIC))
-      end
-   end
-     
+      if tostring(tab["DATA"].MORE_FLAG) == "true" then      
+          for _, v in pairs(tab["DATA"].TREES) do
+              local tree_info = queries_tree:add("Tree (".. v.SOURCE .. "," .. v.GROUP .. ")")
+              tree_info:add(pf_assert_metric_preference, tostring(v.METRIC_PREFERENCE))
+              tree_info:add(pf_assert_metric, tostring(v.METRIC))
+          end
+      else
+	         for k, v in pairs(tab["DATA"].HELLO_OPTIONS) do
+	             if k == "HOLDTIME" then
+	                 queries_tree:add(pf_hello_holdtime, tostring(v))
+               end
+	         end
+       end
+    end 
     return pos
 end
 
