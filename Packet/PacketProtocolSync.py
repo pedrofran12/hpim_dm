@@ -13,6 +13,9 @@ class PacketProtocolHelloSyncEntry():
         self.metric_preference = metric_preference
 
     def bytes(self):
+        """
+        Obtain entry of Protocol Sync in a format to be transmitted (JSON)
+        """
         msg = {"SOURCE": self.source,
                "GROUP": self.group,
                "METRIC": self.metric,
@@ -23,6 +26,10 @@ class PacketProtocolHelloSyncEntry():
 
     @staticmethod
     def parse_bytes(data: bytes):
+        """
+        Parse received entry of Protocol Sync Packet from JSON format
+        and convert it into ProtocolSyncEntry object and PacketProtocolSyncEntries
+        """
         source = data["SOURCE"]
         group = data["GROUP"]
         metric = data["METRIC"]
@@ -51,6 +58,9 @@ class PacketProtocolHelloSync():
         return self.options
 
     def bytes(self) -> bytes:
+        """
+        Obtain Protocol Sync Packet in a format to be transmitted (JSON)
+        """
         trees = []
         for entry in self.upstream_trees:
             trees.append(entry.bytes())
@@ -70,6 +80,10 @@ class PacketProtocolHelloSync():
         return msg
 
     def parse_bytes(data: bytes):
+        """
+        Parse received Protocol Sync Packet and all its entries from JSON format
+        and convert it into ProtocolSync object and PacketProtocolSyncEntries
+        """
         trees = []
         for entry in data["TREES"]:
             trees.append(PacketProtocolHelloSyncEntry.parse_bytes(entry))
@@ -128,12 +142,19 @@ class PacketNewProtocolSyncEntry():
         return PacketNewProtocolSyncEntry.PIM_HDR_SYNC_ENTRY_LEN
 
     def bytes(self):
+        """
+        Obtain entry of Protocol Sync in a format to be transmitted (binary)
+        """
         msg = struct.pack(PacketNewProtocolSyncEntry.PIM_HDR_SYNC_ENTRY, socket.inet_aton(self.source),
                           socket.inet_aton(self.group), self.metric_preference, self.metric)
         return msg
 
     @staticmethod
     def parse_bytes(data: bytes):
+        """
+        Parse received entry of Protocol Sync Packet from binary format
+        and convert it into ProtocolSyncEntry object and PacketProtocolSyncEntries
+        """
         (source, group, metric_preference, metric) = struct.unpack(
             PacketNewProtocolSyncEntry.PIM_HDR_SYNC_ENTRY,
             data[:PacketNewProtocolSyncEntry.PIM_HDR_SYNC_ENTRY_LEN])
@@ -182,6 +203,9 @@ class PacketNewProtocolSync:
         return self.options
 
     def bytes(self) -> bytes:
+        """
+        Obtain entry of Protocol Sync in a format to be transmitted (binary)
+        """
         flags_and_sync_sn = (self.master_flag << 31) | (self.more_flag << 30) | self.sync_sequence_number
 
         msg = struct.pack(PacketNewProtocolSync.PIM_HDR_INSTALL_WITHOUT_TREES, self.my_snapshot_sn,
@@ -199,6 +223,10 @@ class PacketNewProtocolSync:
 
     @staticmethod
     def parse_bytes(data: bytes):
+        """
+        Parse received Protocol Sync Packet and all its entries from binary format
+        and convert it into ProtocolSync object and PacketProtocolSyncEntries
+        """
         (my_snapshot_sn, neighbor_snapshot_sn, neighbor_boot_time, flags_and_sync_sn) = \
             struct.unpack(PacketNewProtocolSync.PIM_HDR_INSTALL_WITHOUT_TREES,
                           data[:PacketNewProtocolSync.PIM_HDR_INSTALL_WITHOUT_TREES_LEN])

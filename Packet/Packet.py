@@ -8,4 +8,7 @@ class Packet(object):
         self.payload = payload
 
     def bytes(self) -> bytes:
+        """
+        Obtain packet in byte format
+        """
         return self.payload.bytes()

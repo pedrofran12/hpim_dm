@@ -48,9 +48,15 @@ class PacketIGMPHeader(PacketPayload):
         self.group_address = group_address
 
     def get_igmp_type(self):
+        """
+        Get IGMP type of packet
+        """
         return self.type
 
     def bytes(self) -> bytes:
+        """
+        Obtain packet in byte format
+        """
         # obter mensagem e criar checksum
         msg_without_chcksum = struct.pack(PacketIGMPHeader.IGMP_HDR, self.type, self.max_resp_time, 0,
                                           socket.inet_aton(self.group_address))
@@ -63,6 +69,9 @@ class PacketIGMPHeader(PacketPayload):
 
     @staticmethod
     def parse_bytes(data: bytes):
+        """
+        From bytes parse and obtain the IGMP Header object and all its payload
+        """
         #print("parseIGMPHdr: ", data)
 
         igmp_hdr = data[0:PacketIGMPHeader.IGMP_HDR_LEN]

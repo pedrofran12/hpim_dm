@@ -11,6 +11,9 @@ class SFMRAssertABC(metaclass=ABCMeta):
 class SFMRAssertWinner(SFMRAssertABC):
     @staticmethod
     def is_assert_winner():
+        """
+        Determine if this state is AssertWinner
+        """
         return True
 
     def __str__(self):
@@ -20,6 +23,9 @@ class SFMRAssertWinner(SFMRAssertABC):
 class SFMRAssertLoser(SFMRAssertABC):
     @staticmethod
     def is_assert_winner():
+        """
+        Determine if this state is AssertWinner
+        """
         return False
 
     def __str__(self):

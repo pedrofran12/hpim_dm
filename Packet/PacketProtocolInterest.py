@@ -13,6 +13,9 @@ class PacketProtocolInterest:
         self.sequence_number = sequence_number
 
     def bytes(self) -> bytes:
+        """
+        Obtain Protocol Interest Packet in a format to be transmitted (JSON)
+        """
         msg = {"SOURCE": self.source,
                "GROUP": self.group,
                "SN": self.sequence_number
@@ -25,6 +28,9 @@ class PacketProtocolInterest:
 
     @classmethod
     def parse_bytes(cls, data: bytes):
+        """
+        Parse received Protocol Interest Packet from JSON format and convert it into ProtocolInterest object
+        """
         source = data["SOURCE"]
         group = data["GROUP"]
         sn = data["SN"]
@@ -70,6 +76,9 @@ class PacketNewProtocolInterest:
         self.sequence_number = sequence_number
 
     def bytes(self) -> bytes:
+        """
+        Obtain Protocol Interest Packet in a format to be transmitted (binary)
+        """
         msg = struct.pack(PacketNewProtocolInterest.PIM_HDR_INTEREST, socket.inet_aton(self.source),
                           socket.inet_aton(self.group), self.sequence_number)
 
@@ -80,6 +89,9 @@ class PacketNewProtocolInterest:
 
     @classmethod
     def parse_bytes(cls, data: bytes):
+        """
+        Parse received Protocol Interest Packet from binary format and convert it into ProtocolInterest object
+        """
         (tree_source, tree_group, sn) = struct.unpack(
             PacketNewProtocolInterest.PIM_HDR_INTEREST,
             data[:PacketNewProtocolInterest.PIM_HDR_INTEREST_LEN])

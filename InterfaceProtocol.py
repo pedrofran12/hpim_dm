@@ -101,17 +101,31 @@ class InterfaceProtocol(Interface):
         self.force_send_hello()
 
     def get_ip(self):
+        """
+        Get IP of this interface
+        """
         return self.ip_interface
 
     def _receive(self, raw_bytes):
+        """
+        Interface received a new control packet
+        """
         if raw_bytes:
             packet = ReceivedPacket(raw_bytes, self)
             self.PKT_FUNCTIONS[packet.payload.get_pim_type()](self, packet)
 
     def send(self, data: Packet, group_ip: str=MCAST_GRP):
+        """
+        Send a new packet destined to group_ip IP
+        """
         super().send(data=data.bytes(), group_ip=group_ip)
 
     def get_sequence_number(self):
+        """
+        Get the new sequence number SN to be transmitted in a new control message
+        This method will increment the last used sequence number and return it
+        It also returns the current BootTime
+        """
         with self.sequencer_lock:
             self.sequencer += 1
 
@@ -124,6 +138,9 @@ class InterfaceProtocol(Interface):
             return (self.time_of_boot, self.sequencer)
 
     def get_checkpoint_sn(self):
+        """
+        Get the CheckpointSN to be transmitted in a new Hello message
+        """
         print("A ENTRAR CHECK_SN")
         with self.neighbors_lock:
             with self.sequencer_lock:
@@ -141,6 +158,9 @@ class InterfaceProtocol(Interface):
 
     #Random interval for initial Hello message on bootup or triggered Hello message to a rebooting neighbor
     def force_send_hello(self):
+        """
+        Force the transmission of a new Hello message
+        """
         if self.hello_timer is not None:
             self.hello_timer.cancel()
 
@@ -149,6 +169,10 @@ class InterfaceProtocol(Interface):
         self.hello_timer.start()
 
     def send_hello(self):
+        """
+        Send a new Hello message
+        Include in it the HelloHoldTime and CheckpointSN
+        """
         self.hello_timer.cancel()
 
         pim_payload = PacketProtocolHello()
@@ -170,6 +194,10 @@ class InterfaceProtocol(Interface):
         self.hello_timer.start()
 
     def remove(self):
+        """
+        Remove this interface
+        Clear all state
+        """
         self.hello_timer.cancel()
         self.hello_timer = None
 
@@ -187,6 +215,10 @@ class InterfaceProtocol(Interface):
         self.clear_reliable_transmission()
 
     def snapshot_multicast_routing_table(self):
+        """
+        Create a new snapshot
+        This method will return the current BootTime, SnapshotSN and all trees to be included in Sync messages
+        """
         with Main.kernel.rwlock.genWlock():
             with self.sequencer_lock:
                 (snapshot_bt, snapshot_sn) = self.get_sequence_number()
@@ -203,6 +235,12 @@ class InterfaceProtocol(Interface):
     # Check neighbor status
     ##############################################
     def get_tree_state(self, source_group):
+        """
+        Get Upstream and Interest state regarding a given tree...
+        Regarding Upstream this method will return the Upstream neighbor that offers the best RPC metric
+        Regarding Interest this method will return "Interested/True" if at least one neighbor is interested
+            or "NotInterested" if all neighbors are not interested in traffic regarding (source_group) tree
+        """
         interest_state = False
         upstream_state = None
         for n in list(self.neighbors.values()):
@@ -221,22 +259,38 @@ class InterfaceProtocol(Interface):
         return (interest_state, upstream_state)
 
     def remove_tree_state(self, source_ip, group_ip):
+        """
+        Remove tree state regarding a given (Source_IP, Group_IP) tree
+        """
         for n in list(self.neighbors.values()):
             n.remove_tree_state(source_ip, group_ip)
 
     # Used to show list of neighbors in CLI interfaces
     def get_neighbors(self):
+        """
+        Get all neighbors
+        """
         with self.neighbors_lock:
             return self.neighbors.values()
 
 
     def did_all_neighbors_acked(self, neighbors_that_acked: set):
+        """
+        Verify if all neighbor have acknowledged a given message
+        Compare if all neighbors that are being monitored are present in neighbors_that_acked set
+        """
         return neighbors_that_acked >= self.neighbors.keys()
 
     def is_neighbor(self, neighbor_ip):
+        """
+        Verify if neighbor_ip is considered a neighbor
+        """
         return neighbor_ip in self.neighbors
 
     def remove_neighbor(self, ip):
+        """
+        Remove known neighbor
+        """
         with self.neighbors_lock:
             if ip not in self.neighbors:
                 return
@@ -270,6 +324,9 @@ class InterfaceProtocol(Interface):
     # Recv packets
     ###########################################
     def new_neighbor(self, neighbor_ip, boot_time, detected_via_non_sync_msg=True):
+        """
+        New neighbor detected... start monitoring it and start synchronization
+        """
         with self.neighbors_lock:
             self.neighbors[neighbor_ip] = Neighbor(self, neighbor_ip, 120, boot_time, self.time_of_boot)
 
@@ -277,6 +334,9 @@ class InterfaceProtocol(Interface):
                 self.neighbors[neighbor_ip].start_sync_process()
 
     def receive_hello(self, packet):
+        """
+        Received an Hello packet
+        """
         ip = packet.ip_header.ip_src
         boot_time = packet.payload.boot_time
         print("ip = ", ip)
@@ -295,6 +355,9 @@ class InterfaceProtocol(Interface):
                 self.new_neighbor(ip, boot_time, True)
 
     def receive_sync(self, packet):
+        """
+        Received an Sync packet
+        """
         ip = packet.ip_header.ip_src
         boot_time = packet.payload.boot_time
 
@@ -330,6 +393,9 @@ class InterfaceProtocol(Interface):
             self.neighbors[ip].recv_sync(upstream_trees, my_sn, neighbor_sn, boot_time, sync_sn, master_flag, more_flag, my_boot_time, hello_options)
 
     def receive_interest(self, packet):
+        """
+        Received an Interest packet
+        """
         neighbor_source_ip = packet.ip_header.ip_src
         boot_time = packet.payload.boot_time
 
@@ -364,6 +430,9 @@ class InterfaceProtocol(Interface):
                 traceback.print_exc()
 
     def receive_no_interest(self, packet):
+        """
+        Received a NoInterest packet
+        """
         neighbor_source_ip = packet.ip_header.ip_src
         boot_time = packet.payload.boot_time
 
@@ -398,6 +467,9 @@ class InterfaceProtocol(Interface):
                 traceback.print_exc()
 
     def receive_i_am_upstream(self, packet):
+        """
+        Received an IamUpstream packet
+        """
         from tree.metric import AssertMetric
         neighbor_source_ip = packet.ip_header.ip_src
         boot_time = packet.payload.boot_time
@@ -434,6 +506,9 @@ class InterfaceProtocol(Interface):
                 traceback.print_exc()
 
     def receive_i_am_no_longer_upstream(self, packet):
+        """
+        Received an IamNoLongerUpstream packet
+        """
         neighbor_source_ip = packet.ip_header.ip_src
         boot_time = packet.payload.boot_time
         pkt_jt = packet.payload.payload
@@ -464,6 +539,9 @@ class InterfaceProtocol(Interface):
 
 
     def receive_ack(self, packet):
+        """
+        Received an Ack packet
+        """
         neighbor_source_ip = packet.ip_header.ip_src
         neighbor_boot_time = packet.payload.boot_time
         pkt_ack = packet.payload.payload  # type: PacketProtocolAck
@@ -519,6 +597,9 @@ class InterfaceProtocol(Interface):
     # Message Transmission
     ########################################################################
     def get_reliable_message_transmission(self, tree):
+        """
+        Get object used to monitor the reliable transmission of messages regarding a given tree
+        """
         with self.reliable_transmission_lock:
             reliable_msg_transmission = self.reliable_transmission_buffer.get(tree, None)
 
@@ -529,50 +610,79 @@ class InterfaceProtocol(Interface):
             return reliable_msg_transmission
 
     def send_i_am_upstream(self, source, group, rpc):
+        """
+        Send a new IamUpstream message
+        """
         tree = (source, group)
         with self.sequencer_lock:
             with self.reliable_transmission_lock:
                 self.get_reliable_message_transmission(tree).send_i_am_upstream(source, group, rpc)
 
     def send_i_am_no_longer_upstream(self, source, group):
+        """
+        Send a new IamNoLongerUpstream message
+        """
         tree = (source, group)
         with self.sequencer_lock:
             with self.reliable_transmission_lock:
                 self.get_reliable_message_transmission(tree).send_i_am_no_longer_upstream(source, group)
 
     def send_interest(self, source, group, dst):
+        """
+        Send a new Interest message
+        """
         tree = (source, group)
         with self.sequencer_lock:
             with self.reliable_transmission_lock:
                 self.get_reliable_message_transmission(tree).send_interest(source, group, dst)
 
     def send_no_interest(self, source, group, dst):
+        """
+        Send a new NoInterest message
+        """
         tree = (source, group)
         with self.sequencer_lock:
             with self.reliable_transmission_lock:
                 self.get_reliable_message_transmission(tree).send_no_interest(source, group, dst)
 
     def neighbor_start_synchronization(self, neighbor_ip, my_snapshot_bt, my_snapshot_sn):
+        """
+        Neighbor started a new synchronization... consider all trees included in the snapshot to be Acknowledged
+        (all packets transmitted with a lower BootTime or lower SN compared to SnapshotSN will be considered to have been
+        acknowledged by it)
+        """
         with self.reliable_transmission_lock:
             for rmt in self.reliable_transmission_buffer.values():
                 rmt.receive_ack(neighbor_ip, my_snapshot_bt, my_snapshot_sn)
 
     def cancel_all_messages(self, tree):
+        """
+        Cancel the reliable monitoring of all messages regarding a given tree
+        """
         with self.reliable_transmission_lock:
             if tree in self.reliable_transmission_buffer:
                 self.reliable_transmission_buffer[tree].cancel_all_messages()
 
     def cancel_interest_message(self, tree, neighbor_ip):
+        """
+        Cancel the reliable monitoring of all interest messages regarding a given tree
+        """
         with self.reliable_transmission_lock:
             if tree in self.reliable_transmission_buffer:
                 self.reliable_transmission_buffer[tree].cancel_message_unicast(neighbor_ip)
 
     def cancel_upstream_message(self, tree):
+        """
+        Cancel the reliable monitoring of all upstream messages regarding a given tree
+        """
         with self.reliable_transmission_lock:
             if tree in self.reliable_transmission_buffer:
                 self.reliable_transmission_buffer[tree].cancel_message_multicast()
 
     def clear_reliable_transmission(self):
+        """
+        Cancel the reliable monitoring of all messages regarding all trees
+        """
         with self.reliable_transmission_lock:
             for rmt in self.reliable_transmission_buffer.values():
                 rmt.cancel_all_messages()

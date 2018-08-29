@@ -21,6 +21,9 @@ class UnicastRouting(object):
 
     @staticmethod
     def get_route(ip_dst: str):
+        """
+        Get route from the unicast routing table regarding the entry of IP ip_dst
+        """
         ip_bytes = socket.inet_aton(ip_dst)
         ip_int = int.from_bytes(ip_bytes, byteorder='big')
         info = None
@@ -48,6 +51,9 @@ class UnicastRouting(object):
 
     @staticmethod
     def get_unicast_info(ip_dst):
+        """
+        Obtain unicast info regarding IP ip_dst, such as RPC, if it is directly connected and root interface index
+        """
         metric_administrative_distance = 0xFFFFFFFF
         metric_cost = 0xFFFFFFFF
         is_directly_connected = False
@@ -85,6 +91,10 @@ class UnicastRouting(object):
 
     @staticmethod
     def unicast_changes(ipdb, msg, action):
+        """
+        Kernel notified about a change
+        Verify the type of change and recheck all trees if necessary
+        """
         print("unicast change?")
         print(action)
         UnicastRouting.lock.acquire()
@@ -152,6 +162,10 @@ class UnicastRouting(object):
             UnicastRouting.lock.release()
 
     def stop(self):
+        """
+        No longer monitor unicast changes....
+        Invoked whenver the protocol is stopped
+        """
         if self._ipdb:
             self._ipdb.release()
         if UnicastRouting.ipdb:

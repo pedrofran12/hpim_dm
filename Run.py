@@ -11,6 +11,9 @@ import Main
 
 
 def client_socket(data_to_send):
+    """
+    Send command to daemon process through a socket
+    """
     # Create a UDS socket
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 
@@ -32,6 +35,9 @@ def client_socket(data_to_send):
 
 class MyDaemon(Daemon):
     def run(self):
+        """
+        Daemon process will run this method until the daemon process explicitly is stopped
+        """
         Main.main()
         server_address = './uds_socket'
 

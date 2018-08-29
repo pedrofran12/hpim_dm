@@ -17,6 +17,10 @@ class PacketProtocolHello:
         return self.options
 
     def bytes(self) -> dict:
+        """
+        Obtain Protocol Hello Packet in a format to be transmitted (JSON)
+        This method will return the Hello and all its options in JSON format
+        """
         res = {}
         for option in self.options.values():
             res.update(option.bytes())
@@ -27,6 +31,9 @@ class PacketProtocolHello:
 
     @staticmethod
     def parse_bytes(data: dict):
+        """
+        Parse received Hello Packet from JSON format and convert it into Hello object
+        """
         pim_payload = PacketProtocolHello()
         for (key, value) in data.items():
             option = PacketProtocolHelloOptions.parse_bytes((key, value))
@@ -88,6 +95,10 @@ class PacketNewProtocolHello:
         return self.options
 
     def bytes(self) -> bytes:
+        """
+        Obtain Protocol Hello Packet in a format to be transmitted (binary)
+        This method will return the Hello and all its options in binary format
+        """
         res = b''
         for option in self.options.values():
             res += option.bytes()
@@ -98,6 +109,9 @@ class PacketNewProtocolHello:
 
     @staticmethod
     def parse_bytes(data: bytes):
+        """
+        Parse received Hello Packet from binary format and convert it into Hello object
+        """
         protocol_payload = PacketNewProtocolHello()
         while data != b'':
             print("DATA", data)

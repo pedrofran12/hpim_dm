@@ -2,6 +2,9 @@ import array
 
 
 def checksum(pkt: bytes) -> bytes:
+    """
+    Calculate checksum from a buch of bytes
+    """
     if len(pkt) % 2 == 1:
         pkt += "\0"
     s = sum(array.array("H", pkt))
@@ -18,6 +21,9 @@ libc = ctypes.CDLL(ctypes.util.find_library('c'))
 
 
 def if_nametoindex(name):
+    """
+    Get index of physical interface from its name
+    """
     if not isinstance(name, str):
         raise TypeError('name must be a string.')
     ret = libc.if_nametoindex(name)
@@ -27,6 +33,9 @@ def if_nametoindex(name):
 
 
 def if_indextoname(index):
+    """
+    Get name of physical interface from its index
+    """
     if not isinstance(index, int):
         raise TypeError('index must be an int.')
     libc.if_indextoname.argtypes = [ctypes.c_uint32, ctypes.c_char_p]

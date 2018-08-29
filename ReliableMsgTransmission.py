@@ -25,6 +25,9 @@ class ReliableMessageTransmission(object):
         self._lock = RLock()
 
     def send_i_am_upstream(self, source, group, rpc):
+        """
+        Send reliably a new IamUpstream message
+        """
         with self._lock:
             self.cancel_all_messages()
 
@@ -40,6 +43,9 @@ class ReliableMessageTransmission(object):
             self._interface.send(self._msg_multicast)
 
     def send_i_am_no_longer_upstream(self, source, group):
+        """
+        Send reliably a new IamNoLongerUpstream message
+        """
         with self._lock:
             self.cancel_all_messages()
 
@@ -52,6 +58,9 @@ class ReliableMessageTransmission(object):
             self._interface.send(self._msg_multicast)
 
     def send_interest(self, source, group, dst):
+        """
+        Send reliably a new Interest message
+        """
         with self._lock:
             self.cancel_message_unicast(dst)
 
@@ -70,6 +79,9 @@ class ReliableMessageTransmission(object):
                 self._neighbors_that_acked.add(dst)
 
     def send_no_interest(self, source, group, dst):
+        """
+        Send reliably a new NoInterest message
+        """
         with self._lock:
             self.cancel_message_unicast(dst)
 
@@ -88,6 +100,9 @@ class ReliableMessageTransmission(object):
                 self._neighbors_that_acked.add(dst)
 
     def receive_ack(self, neighbor_ip, bt, sn):
+        """
+        Received Ack regarding this tree
+        """
         with self._lock:
             msg = self._msg_multicast
             if msg is not None and (bt > msg.payload.boot_time or
@@ -103,10 +118,16 @@ class ReliableMessageTransmission(object):
                     self.cancel_message_unicast(neighbor_ip)
 
     def did_all_neighbors_acked(self):
+        """
+        Verify if all known neighbors have acked a multicast message
+        """
         with self._lock:
             return self._interface.did_all_neighbors_acked(self._neighbors_that_acked)
 
     def cancel_messsage_multicast(self):
+        """
+        Stop reliably monitoring an IamUpstream/IamNoLongerUpstream message
+        """
         with self._lock:
             self._neighbors_that_acked.clear()
             self._msg_multicast = None
@@ -114,12 +135,19 @@ class ReliableMessageTransmission(object):
                 self.clear_retransmission_timer()
 
     def cancel_message_unicast(self, ip):
+        """
+        Stop reliably monitoring an Interest/NoInterest message
+        """
         with self._lock:
             self._msg_unicast.pop(ip, None)
             if self._msg_multicast is None and len(self._msg_unicast) == 0:
                 self.clear_retransmission_timer()
 
     def cancel_all_messages(self):
+        """
+        Stop reliably monitoring any message regarding this tree
+        (IamUpstream/IamNoLongerUpstream/Interest/NoInterest)
+        """
         with self._lock:
             self.clear_retransmission_timer()
             self._neighbors_that_acked.clear()
@@ -131,11 +159,17 @@ class ReliableMessageTransmission(object):
     ##########################################
     # Reliable timer
     def set_retransmission_timer(self):
+        """
+        Set retransmission timer used to control retransmission of control messages
+        """
         self.clear_retransmission_timer()
         self._retransmission_timer = Timer(MESSAGE_RETRANSMISSION_TIME, self.retransmission_timeout)
         self._retransmission_timer.start()
 
     def clear_retransmission_timer(self):
+        """
+        Stop retransmission timer
+        """
         if self._retransmission_timer is not None:
             self._retransmission_timer.cancel()
 
@@ -143,6 +177,9 @@ class ReliableMessageTransmission(object):
     # Timer timeout
     ###########################################
     def retransmission_timeout(self):
+        """
+        Retransmission timer has expired
+        """
         with self._lock:
             # recheck if all neighbors acked
             if self._msg_multicast is not None and self.did_all_neighbors_acked():
@@ -166,6 +203,10 @@ class ReliableMessageTransmission(object):
     # Get Sequence Number for CheckpointSN
     #############################################
     def get_sequence_number(self):
+        """
+        Get the lowest sequence number of a control message that is being currently reliably transmitted...
+        This method will be used to determine the CheckpointSN to be transmitted in Hello messages
+        """
         bt_sn = (None, None)
         with self._lock:
             msg = self._msg_multicast

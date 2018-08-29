@@ -16,6 +16,9 @@ class PacketProtocolAck:
         self.sequence_number = sequence_number
 
     def bytes(self) -> bytes:
+        """
+        Obtain Packet Ack in a format to be transmitted (JSON)
+        """
         msg = {"SOURCE": self.source,
                "GROUP": self.group,
                "NEIGHBOR_BOOT_TIME": self.neighbor_boot_time,
@@ -31,6 +34,9 @@ class PacketProtocolAck:
 
     @classmethod
     def parse_bytes(cls, data: bytes):
+        """
+        Parse received Packet from JSON and create ProtocolAck object
+        """
         source = data["SOURCE"]
         group = data["GROUP"]
         sn = data["SN"]
@@ -82,6 +88,9 @@ class PacketNewProtocolAck:
         self.my_snapshot_sn = my_snapshot_sn
 
     def bytes(self) -> bytes:
+        """
+        Obtain Packet Ack in a format to be transmitted (binary)
+        """
         msg = struct.pack(PacketNewProtocolAck.PIM_HDR_ACK, socket.inet_aton(self.source),
                           socket.inet_aton(self.group), self.neighbor_boot_time, self.neighbor_snapshot_sn,
                           self.my_snapshot_sn, self.sequence_number)
@@ -93,6 +102,9 @@ class PacketNewProtocolAck:
 
     @classmethod
     def parse_bytes(cls, data: bytes):
+        """
+        Parse received Packet from bits/bytes and convert them into ProtocolAck object
+        """
         (tree_source, tree_group, neighbor_boot_time, neighbor_snapshot_sn, my_snapshot_sn, sn) =\
             struct.unpack(PacketNewProtocolAck.PIM_HDR_ACK, data[:PacketNewProtocolAck.PIM_HDR_ACK_LEN])
         return cls(tree_source, tree_group, sn, neighbor_boot_time, neighbor_snapshot_sn, my_snapshot_sn)

@@ -36,6 +36,9 @@ class PacketIpHeader:
 
     @staticmethod
     def parse_bytes(data: bytes):
+        """
+        From bytes parse and obtain the IGMP Header object and all its payload
+        """
         (verhlen, tos, iplen, ipid, frag, ttl, proto, cksum, src, dst) = \
             struct.unpack(PacketIpHeader.IP_HDR, data)
 

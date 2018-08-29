@@ -18,6 +18,10 @@ class PacketProtocolHelloOptions(metaclass=ABCMeta):
 
     @abstractmethod
     def bytes(self) -> bytes:
+        """
+        Obtain Protocol Hello Option in a format to be transmitted (JSON)
+        This method will return the Hello Option in JSON format
+        """
         pass
 
     def __len__(self):
@@ -26,6 +30,9 @@ class PacketProtocolHelloOptions(metaclass=ABCMeta):
 
     @staticmethod
     def parse_bytes(data: tuple, hello_type: int = None):
+        """
+        Parse received Hello Option from JSON and convert it into Hello object
+        """
         hello_type = data[0]
         data = data[1]
         return JSON_MSG_TYPES.get(hello_type, PacketProtocolHelloUnknown).parse_bytes(data, hello_type)
@@ -45,10 +52,17 @@ class PacketProtocolHelloHoldtime(PacketProtocolHelloOptions):
         self.holdtime = int(holdtime)
 
     def bytes(self) -> dict:
+        """
+        Obtain Protocol Hello HoldTime Option in a format to be transmitted (JSON)
+        This method will return the Hello Option in JSON format
+        """
         return {"HOLDTIME": self.holdtime}
 
     @staticmethod
     def parse_bytes(data, hello_type: int = None):
+        """
+        Parse received Hello Option HoldTime from JSON and convert it into Hello object
+        """
         if hello_type is None:
             raise Exception
         holdtime = data
@@ -69,10 +83,17 @@ class PacketProtocolHelloCheckpointSN(PacketProtocolHelloOptions):
         self.checkpoint_sn = checkpoint_sn
 
     def bytes(self) -> dict:
+        """
+        Obtain Protocol Hello Option CheckpointSN in a format to be transmitted (JSON)
+        This method will return the Hello Option in JSON format
+        """
         return {"CHECKPOINT_SN": self.checkpoint_sn}
 
     @staticmethod
     def parse_bytes(data, hello_type: int = None):
+        """
+        Parse received Hello Option CheckpointSN from JSON and convert it into Hello object
+        """
         if hello_type is None:
             raise Exception
         checkpoint_sn = data
@@ -91,10 +112,17 @@ class PacketProtocolHelloUnknown(PacketProtocolHelloOptions):
         super().__init__(hello_type=hello_type)
 
     def bytes(self) -> bytes:
+        """
+        Unknown options are not transmitted... Throw exception
+        """
         raise Exception
 
     @staticmethod
     def parse_bytes(data, hello_type: int = None):
+        """
+        In case the received Hello Option is unknown parse its content (get to know the length of this option
+        in order to parse following options)
+        """
         if hello_type is None:
             raise Exception
         return PacketProtocolHelloUnknown(hello_type)
@@ -122,6 +150,10 @@ class PacketNewProtocolHelloOptions(metaclass=ABCMeta):
         self.length = length
 
     def bytes(self) -> bytes:
+        """
+        Obtain Protocol Hello Option in a format to be transmitted (binary)
+        This method will return the Hello Option in binary format
+        """
         return struct.pack(PacketNewProtocolHelloOptions.PIM_HDR_OPTS, self.type, self.length)
 
     def __len__(self):
@@ -129,6 +161,9 @@ class PacketNewProtocolHelloOptions(metaclass=ABCMeta):
 
     @staticmethod
     def parse_bytes(data: bytes, hello_type: int = None, length: int = None):
+        """
+        Parse received Hello Option from binary and convert it into Hello object
+        """
         (hello_type, length) = struct.unpack(PacketNewProtocolHelloOptions.PIM_HDR_OPTS,
                                         data[:PacketNewProtocolHelloOptions.PIM_HDR_OPTS_LEN])
         #print("hello_type:", type)
@@ -154,10 +189,17 @@ class PacketNewProtocolHelloHoldtime(PacketNewProtocolHelloOptions):
         self.holdtime = int(holdtime)
 
     def bytes(self) -> bytes:
+        """
+        Obtain Protocol Hello HoldTime Option in a format to be transmitted (binary)
+        This method will return the Hello Option in binary format
+        """
         return super().bytes() + struct.pack(self.PIM_HDR_OPT, self.holdtime)
 
     @staticmethod
     def parse_bytes(data: bytes, hello_type: int = None, length: int = None):
+        """
+        Parse received Hello Option HoldTime from binary and convert it into Hello object
+        """
         if hello_type is None or length is None:
             raise Exception
         (holdtime, ) = struct.unpack(PacketNewProtocolHelloHoldtime.PIM_HDR_OPT,
@@ -182,10 +224,17 @@ class PacketNewProtocolHelloCheckpointSN(PacketNewProtocolHelloOptions):
         self.checkpoint_sn = checkpoint_sn
 
     def bytes(self) -> bytes:
+        """
+        Obtain Protocol Hello CheckpointSN Option in a format to be transmitted (binary)
+        This method will return the Hello Option in binary format
+        """
         return super().bytes() + struct.pack(self.PIM_HDR_OPT, self.checkpoint_sn)
 
     @staticmethod
     def parse_bytes(data: bytes, hello_type: int = None, length: int = None):
+        """
+        Parse received Hello Option ChekpointSN from binary and convert it into Hello object
+        """
         if hello_type is None or length is None:
             raise Exception
         (checkpoint_sn, ) = struct.unpack(PacketNewProtocolHelloCheckpointSN.PIM_HDR_OPT,
@@ -210,10 +259,17 @@ class PacketNewProtocolHelloUnknown(PacketNewProtocolHelloOptions):
         #print("PIM Hello Option Unknown... TYPE=", type, "LENGTH=", length)
 
     def bytes(self) -> bytes:
+        """
+        Unknown options are not transmitted... Throw exception
+        """
         raise Exception
 
     @staticmethod
     def parse_bytes(data: bytes, hello_type: int = None, length: int = None):
+        """
+        In case the received Hello Option is unknown parse its content (get to know the length of this option
+        in order to parse following options)
+        """
         if hello_type is None or length is None:
             raise Exception
         return PacketNewProtocolHelloUnknown(hello_type, length)

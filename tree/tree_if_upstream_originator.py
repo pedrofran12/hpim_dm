@@ -38,6 +38,10 @@ class TreeInterfaceUpstreamOriginator(TreeInterface):
 
 
     def socket_recv(self):
+        """
+        Socket used to receive data packets from the Root interface...
+        Useful in order to control the tree state of Originator routers
+        """
         while self.socket_is_enabled:
             try:
                 self.socket_pkt.recvfrom(0)
@@ -53,11 +57,17 @@ class TreeInterfaceUpstreamOriginator(TreeInterface):
     ##########################################
     # Originator timers
     def set_source_active_timer(self):
+        """
+        Set Source Active timer
+        """
         self.clear_source_active_timer()
         self._source_active_timer = Timer(SOURCE_LIFETIME, self.source_active_timeout)
         self._source_active_timer.start()
 
     def clear_source_active_timer(self):
+        """
+        Stop Source Active timer
+        """
         if self._source_active_timer is not None:
             self._source_active_timer.cancel()
 
@@ -66,12 +76,18 @@ class TreeInterfaceUpstreamOriginator(TreeInterface):
     # Timer timeout
     ###########################################
     def source_active_timeout(self):
+        """
+        Source Active timer expired... react to this event
+        """
         self._kernel_entry.sat_expires()
 
     ###########################################
     # Recv packets
     ###########################################
     def recv_data_msg(self):
+        """
+        Root interface received data packet
+        """
         if not self.is_tree_unknown():
             self.set_source_active_timer()
             if self.is_tree_inactive():
@@ -88,9 +104,17 @@ class TreeInterfaceUpstreamOriginator(TreeInterface):
 
     ####################################################################
     def is_forwarding(self):
+        """
+        This interface must not be included in the OIL of the multicast routing table, thus returning False
+        """
         return False
 
     def delete(self):
+        """
+        Tree interface is being removed... due to change of interface roles or
+        due to the removal of the tree by this router
+        Clear all state from this interface regarding this tree
+        """
         self.socket_is_enabled = False
         try:
             from socket import SHUT_RDWR

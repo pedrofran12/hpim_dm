@@ -43,9 +43,15 @@ class KernelEntry:
         self.interface_state = {}  # type: dict(int, TreeInterface)
 
     def get_inbound_interface_index(self):
+        """
+        Get VIF of root interface of this tree
+        """
         return self.inbound_interface_index
 
     def get_outbound_interfaces_indexes(self):
+        """
+        Get OIL of this tree
+        """
         outbound_indexes = [0] * Main.kernel.MAXVIFS
         for (index, state) in self.interface_state.items():
             outbound_indexes[index] = state.is_forwarding()
@@ -53,12 +59,18 @@ class KernelEntry:
 
     @abstractmethod
     def check_tree_state(self):
+        """
+        Verify if tree changes state (Active/Inactive/Unknown)
+        """
         return
 
     ################################################
     # Receive (S,G) data packets or control packets
     ################################################
     def recv_data_msg(self, index):
+        """
+        Receive data packet regarding this tree in interface with VIF index
+        """
         print("recv data")
         self.interface_state[index].recv_data_msg()
 
@@ -66,6 +78,10 @@ class KernelEntry:
     # Code related with tree state
     ###############################################################
     def check_interface_state(self, index, upstream_state, interest_state):
+        """
+        A neighbor changed Upstream state due to the reception of any control packet
+        (IamUpstream or IamNoLongerUpstream or Interest or NoInterest or Sync)
+        """
         if index not in self.interface_state or self.is_tree_unknown():
             return
         print("ENTROU CHECK INTERFACE STATE")
@@ -78,6 +94,10 @@ class KernelEntry:
         print("SAI CHECK INTERFACE STATE")
 
     def check_interest_state(self, index, interest_state):
+        """
+        A neighbor changed Interest state due to the reception of any control packet
+        (IamUpstream or IamNoLongerUpstream or Interest or NoInterest or Sync)
+        """
         if index not in self.interface_state or self.is_tree_unknown():
             return
 
@@ -88,6 +108,10 @@ class KernelEntry:
             self.interface_state[index].change_interest_state(interest_state)
 
     def check_igmp_state(self, index):
+        """
+        Reverify IGMP state of this tree in interface with VIF index...
+        This is invoked whenver interface index enables or disables IGMP
+        """
         print("ENTROU CHECK IGMP STATE")
         if index not in self.interface_state:
             return
@@ -96,6 +120,9 @@ class KernelEntry:
         print("SAI CHECK IGMP STATE")
 
     def get_interface_sync_state(self, vif_index):
+        """
+        Determine if this tree must be included in a new snapshot of interface with VIF vif_index
+        """
         with self.CHANGE_STATE_LOCK:
             if vif_index not in self.interface_state:
                 return None
@@ -103,15 +130,27 @@ class KernelEntry:
                 return self.interface_state[vif_index].get_sync_state()
 
     def is_tree_active(self):
+        """
+        Determine if tree is in Active state
+        """
         return self._tree_state.is_active()
 
     def is_tree_inactive(self):
+        """
+        Determine if tree is in Inactive state
+        """
         return self._tree_state.is_inactive()
 
     def is_tree_unknown(self):
+        """
+        Determine if tree is in Unknown state
+        """
         return self._tree_state.is_unknown()
 
     def set_tree_state(self, tree_state):
+        """
+        Set tree state (Active/Inactive/Unkown)
+        """
         with self.CHANGE_STATE_LOCK:
             self.kernel_entry_logger.debug('Tree transitions to ' + str(tree_state))
             self._tree_state = tree_state
@@ -121,9 +160,15 @@ class KernelEntry:
     ###############################################################
     @abstractmethod
     def network_update(self):
+        """
+        Router suffered an RPC chage... React to this change
+        """
         return
 
     def is_in_tree(self):
+        """
+        Determine if router is interested in receiving data packets
+        """
         for interface in self.interface_state.values():
             if interface.is_forwarding():
                 return True
@@ -131,23 +176,41 @@ class KernelEntry:
 
     @abstractmethod
     def evaluate_in_tree_change(self):
+        """
+        Evaluate if there is a change of interest from this router
+        """
         return
 
     def get_source(self):
+        """
+        Get source IP of this tree
+        """
         return self.source_ip
 
     def get_group(self):
+        """
+        Get group IP of this tree
+        """
         return self.group_ip
 
     def change(self):
+        """
+        Reset multicast routing table due to changes in state
+        """
         with self._multicast_change:
             if self.inbound_interface_index is not None and not self.is_tree_unknown():
                 Main.kernel.set_multicast_route(self)
 
     def remove_entry(self):
+        """
+        Remove entry from the multicast routing table
+        """
         Main.kernel.remove_multicast_route(self)
 
     def delete_state(self):
+        """
+        Delete all stored state regarding this tree
+        """
         for state in self.interface_state.values():
             state.delete()
         self.interface_state.clear()
@@ -157,9 +220,15 @@ class KernelEntry:
     #######################################
     @abstractmethod
     def new_interface(self, index):
+        """
+        New interface with VIF index added
+        """
         return
 
     def remove_interface(self, index):
+        """
+        Interface with VIF index removed
+        """
         with self.CHANGE_STATE_LOCK:
             if index not in self.interface_state:
                 return
@@ -218,6 +287,9 @@ class KernelEntryNonOriginator(KernelEntry):
         print('Tree NonOriginator created')
 
     def check_tree_state(self):
+        """
+        Verify if tree changes state (Active/Inactive/Unknown)
+        """
         with self.CHANGE_STATE_LOCK:
             if self.inbound_interface_index is not None and \
                     len(self.interface_state) > 0 and\
@@ -234,6 +306,9 @@ class KernelEntryNonOriginator(KernelEntry):
                 self._tree_state.transition_to_unknown(self)
 
     def first_check_tree_state(self):
+        """
+        Verify for the first time in which state the tree is at
+        """
         if self.inbound_interface_index is not None and \
                 self._upstream_interface_state.get(self.inbound_interface_index, None) is not None:
             # tree is Active
@@ -252,6 +327,9 @@ class KernelEntryNonOriginator(KernelEntry):
     # Unicast Changes to RPF
     ###############################################################
     def network_update(self):
+        """
+        Router suffered an RPC chage... React to this change
+        """
         with self.CHANGE_STATE_LOCK:
             (metric_administrative_distance, metric_cost, is_directly_connected, new_inbound_interface_index) = \
                 UnicastRouting.get_unicast_info(self.source_ip)
@@ -309,6 +387,9 @@ class KernelEntryNonOriginator(KernelEntry):
                     interface.notify_rpc_change(new_rpc)
 
     def evaluate_in_tree_change(self):
+        """
+        Evaluate if there is a change of interest from this router
+        """
         with self._lock_test2:
             is_in_tree = self.is_in_tree()
             was_in_tree = self._was_in_tree
@@ -323,6 +404,9 @@ class KernelEntryNonOriginator(KernelEntry):
     # New interface configured
     #####################################################
     def new_interface(self, index):
+        """
+        New interface with VIF index added
+        """
         print("NEW_INTERFACE ANTES")
         with self.CHANGE_STATE_LOCK:
             print("NEW_INTERFACE DEPOIS")
@@ -428,6 +512,9 @@ class KernelEntryOriginator(KernelEntry):
         print('Tree Originator created')
 
     def check_tree_state(self):
+        """
+        Verify if tree changes state (Active/Inactive/Unknown)
+        """
         if self.inbound_interface_index is not None and self.sat_is_running and len(self.interface_state) > 0:
             print("PARA ACTIVE")
             # tree is active
@@ -446,10 +533,16 @@ class KernelEntryOriginator(KernelEntry):
     # Code related with tree state
     ###############################################################
     def sat_expires(self):
+        """
+        Source Active has expired
+        """
         self.sat_is_running = False
         self.check_tree_state()
 
     def sat_running(self):
+        """
+        Source Active timer was set
+        """
         self.sat_is_running = True
         self.check_tree_state()
 
@@ -457,6 +550,9 @@ class KernelEntryOriginator(KernelEntry):
     # Unicast Changes to RPF
     ###############################################################
     def network_update(self):
+        """
+        Router suffered an RPC chage... React to this change
+        """
         with self.CHANGE_STATE_LOCK:
             (metric_administrative_distance, metric_cost, is_directly_connected, new_inbound_interface_index) = \
                 UnicastRouting.get_unicast_info(self.source_ip)
@@ -509,12 +605,18 @@ class KernelEntryOriginator(KernelEntry):
                     interface.notify_rpc_change(new_rpc)
 
     def evaluate_in_tree_change(self):
+        """
+        Evaluate if there is a change of interest from this router
+        """
         return
 
     #####################################################
     # New interface configured
     #####################################################
     def new_interface(self, index):
+        """
+        New interface with VIF index added
+        """
         print("NEW_INTERFACE ANTES")
         with self.CHANGE_STATE_LOCK:
             print("NEW_INTERFACE DEPOIS")
@@ -568,6 +670,9 @@ class KernelEntryOriginator(KernelEntry):
             self.evaluate_in_tree_change()
 
     def remove_interface(self, index):
+        """
+        Interface with VIF index removed
+        """
         with self.CHANGE_STATE_LOCK:
             super().remove_interface(index)
             if self.inbound_interface_index is None:

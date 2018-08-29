@@ -15,6 +15,9 @@ class SFMRDownstreamStateABC(metaclass=ABCMeta):
 class SFMRDownstreamInterested(SFMRDownstreamStateABC):
     @staticmethod
     def are_downstream_nodes_interested():
+        """
+        Determine if this state considers downstream nodes to be Interested in receiving data packets
+        """
         return True
 
     def __str__(self):
@@ -24,6 +27,9 @@ class SFMRDownstreamInterested(SFMRDownstreamStateABC):
 class SFMRNoDownstreamInterested(SFMRDownstreamStateABC):
     @staticmethod
     def are_downstream_nodes_interested():
+        """
+        Determine if this state considers downstream nodes to be Interested in receiving data packets
+        """
         return False
 
     def __str__(self):

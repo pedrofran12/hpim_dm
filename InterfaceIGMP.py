@@ -53,12 +53,22 @@ class InterfaceIGMP(Interface):
 
 
     def get_ip(self):
+        """
+        Get IP of this interface
+        :return:
+        """
         return self.ip_interface
 
     def send(self, data: bytes, address: str="224.0.0.1"):
+        """
+        Send a new control packet destined to address
+        """
         super().send(data, address)
 
     def _receive(self, raw_bytes):
+        """
+        Interface received a new control packet
+        """
         if raw_bytes:
             raw_bytes = raw_bytes[14:]
             packet = ReceivedPacket(raw_bytes, self)
@@ -70,30 +80,45 @@ class InterfaceIGMP(Interface):
     # Recv packets
     ###########################################
     def receive_version_1_membership_report(self, packet):
+        """
+        Interface received an IGMP Version 1 Membership Report packet
+        """
         ip_dst = packet.ip_header.ip_dst
         igmp_group = packet.payload.group_address
         if ip_dst == igmp_group and IPv4Address(igmp_group).is_multicast:
             self.interface_state.receive_v1_membership_report(packet)
 
     def receive_version_2_membership_report(self, packet):
+        """
+        Interface received an IGMP Membership Report packet
+        """
         ip_dst = packet.ip_header.ip_dst
         igmp_group = packet.payload.group_address
         if ip_dst == igmp_group and IPv4Address(igmp_group).is_multicast:
             self.interface_state.receive_v2_membership_report(packet)
 
     def receive_leave_group(self, packet):
+        """
+        Interface received an IGMP Leave packet
+        """
         ip_dst = packet.ip_header.ip_dst
         igmp_group = packet.payload.group_address
         if ip_dst == "224.0.0.2" and IPv4Address(igmp_group).is_multicast:
             self.interface_state.receive_leave_group(packet)
 
     def receive_membership_query(self, packet):
+        """
+        Interface received an IGMP Query packet
+        """
         ip_dst = packet.ip_header.ip_dst
         igmp_group = packet.payload.group_address
         if ip_dst == igmp_group or (ip_dst == "224.0.0.1" and igmp_group == "0.0.0.0"):
             self.interface_state.receive_query(packet)
 
     def receive_unknown_type(self, packet):
+        """
+        Interface received an IGMP Unknown packet
+        """
         return
 
     PKT_FUNCTIONS = {
@@ -105,5 +130,9 @@ class InterfaceIGMP(Interface):
 
     ##################
     def remove(self):
+        """
+        Remove this interface
+        Clear all state
+        """
         super().remove()
         self.interface_state.remove()

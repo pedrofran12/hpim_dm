@@ -8,18 +8,30 @@ if TYPE_CHECKING:
 class TreeStateABC(metaclass=ABCMeta):
     @staticmethod
     def is_active():
+        """
+        Verify if the interface state is Active
+        """
         return False
 
     @staticmethod
     def is_inactive():
+        """
+        Verify if the interface state is Active
+        """
         return False
 
     @staticmethod
     def is_unknown():
+        """
+        Verify if the interface state is Active
+        """
         return False
 
     @staticmethod
     def transition_to_active(kernel_entry: 'KernelEntry'):
+        """
+        Tree transitioned to Active state
+        """
         if kernel_entry.is_tree_active():
             return
         kernel_entry.set_tree_state(TreeState.Active)
@@ -30,6 +42,9 @@ class TreeStateABC(metaclass=ABCMeta):
 
     @staticmethod
     def transition_to_inactive(kernel_entry: 'KernelEntry'):
+        """
+        Tree transitioned to Inactive state
+        """
         if kernel_entry.is_tree_inactive():
             return
         kernel_entry.set_tree_state(TreeState.Inactive)
@@ -40,6 +55,9 @@ class TreeStateABC(metaclass=ABCMeta):
 
     @staticmethod
     def transition_to_unknown(kernel_entry: 'KernelEntry'):
+        """
+        Tree transitioned to Unknown state
+        """
         if kernel_entry.is_tree_unknown():
             return
         kernel_entry.set_tree_state(TreeState.Unknown)
@@ -51,6 +69,9 @@ class TreeStateABC(metaclass=ABCMeta):
 class ActiveTree(TreeStateABC):
     @staticmethod
     def is_active():
+        """
+        Verify if the interface state is Active
+        """
         return True
 
     def __str__(self):
@@ -60,6 +81,9 @@ class ActiveTree(TreeStateABC):
 class InactiveTree(TreeStateABC):
     @staticmethod
     def is_inactive():
+        """
+        Verify if the interface state is Inactive
+        """
         return True
 
     def __str__(self):
@@ -69,6 +93,9 @@ class InactiveTree(TreeStateABC):
 class UnknownTree(TreeStateABC):
     @staticmethod
     def is_unknown():
+        """
+        Verify if the interface state is Unknown
+        """
         return True
 
     def __str__(self):

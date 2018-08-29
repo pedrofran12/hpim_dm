@@ -35,6 +35,10 @@ class PacketProtocolHeader(PacketPayload):
         return self.payload.PIM_TYPE
 
     def bytes(self) -> bytes:
+        """
+        Obtain Protocol Packet in a format to be transmitted (JSON)
+        This method will return the Header and Payload in JSON format
+        """
         # obter mensagem e criar checksum
         data = {"TYPE": self.get_pim_type(),
                 "BOOT_TIME": self.boot_time,
@@ -47,6 +51,9 @@ class PacketProtocolHeader(PacketPayload):
 
     @staticmethod
     def parse_bytes(data: bytes):
+        """
+        Parse received Packet from JSON and convert it into Header object... also parse Header's payload
+        """
         msg = json.loads(data.decode())
 
         pkt_type = msg["TYPE"]
@@ -96,6 +103,10 @@ class PacketNewProtocolHeader(PacketPayload):
         return self.payload.PIM_TYPE
 
     def bytes(self) -> bytes:
+        """
+        Obtain Protocol Packet in a format to be transmitted (binary)
+        This method will return the Header and Payload in binary format
+        """
         # obter mensagem e criar checksum
         pim_vrs_type = (PacketNewProtocolHeader.PIM_VERSION << 4) + self.get_pim_type()
         msg = struct.pack(PacketNewProtocolHeader.PIM_HDR, self.boot_time, pim_vrs_type, 0, 0)
@@ -109,6 +120,9 @@ class PacketNewProtocolHeader(PacketPayload):
 
     @staticmethod
     def parse_bytes(data: bytes):
+        """
+        Parse received Packet from bits/bytes and convert them into Header object... also parse Header's payload
+        """
         print("parsePimHdr: ", data)
 
         pim_hdr = data[0:PacketNewProtocolHeader.PIM_HDR_LEN]

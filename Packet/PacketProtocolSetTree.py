@@ -15,6 +15,9 @@ class PacketProtocolUpstream():
         self.sequence_number = sequence_number
 
     def bytes(self) -> bytes:
+        """
+        Obtain Protocol IamUpstream Packet in a format to be transmitted (JSON)
+        """
         msg = {"SOURCE": self.source,
                "GROUP": self.group,
                "METRIC": self.metric,
@@ -26,6 +29,9 @@ class PacketProtocolUpstream():
 
     @classmethod
     def parse_bytes(cls, data: bytes):
+        """
+        Parse received Protocol IamUpstream Packet from JSON format and convert it into ProtocolUpstream object
+        """
         source = data["SOURCE"]
         group = data["GROUP"]
         metric = data["METRIC"]
@@ -73,6 +79,9 @@ class PacketNewProtocolUpstream:
         self.sequence_number = sequence_number
 
     def bytes(self) -> bytes:
+        """
+        Obtain Protocol IamUpstream Packet in a format to be transmitted (binary)
+        """
         msg = struct.pack(PacketNewProtocolUpstream.PIM_HDR_INSTALL, socket.inet_aton(self.source),
                           socket.inet_aton(self.group), self.sequence_number, self.metric_preference, self.metric)
 
@@ -83,6 +92,9 @@ class PacketNewProtocolUpstream:
 
     @classmethod
     def parse_bytes(cls, data: bytes):
+        """
+        Parse received Protocol IamUpstream Packet from binary format and convert it into ProtocolUpstream object
+        """
         (tree_source, tree_group, sn, mp, m) = struct.unpack(PacketNewProtocolUpstream.PIM_HDR_INSTALL,
                                                              data[:PacketNewProtocolUpstream.PIM_HDR_INSTALL_LEN])
         return cls(tree_source, tree_group, mp, m, sn)

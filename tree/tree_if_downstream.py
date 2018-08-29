@@ -59,6 +59,19 @@ class TreeInterfaceDownstream(TreeInterface):
     # Set ASSERT State
     ############################################
     def calculate_assert_winner(self, creating_interface=False):
+        """
+        Calculate the router responsible for forwarding data packets to a link...
+        Based on this calculation, the Assert state is set
+        If tree in Active state and this interface offers a better Assert state compared to all neighbors
+            then this interface transitions to AssertWinner state
+        If tree in Active state and the BestUpstream neighbor offers a better Assert state (RPC and IP)
+            then this interface must transition to AssertLoser state
+        If tree in Inactive state and there are no Upstream neighbors connected to this interface
+            then this interface transitions to AssertWinner state
+        If tree in Inactive state and there are Upstream neighbors connected to this interface
+            then this interface transitions to AssertLoser state
+        If tree in Unknown state then interface must be in AssertWinner state
+        """
         print("CALCULATE ASSERT WINNER")
         if self.is_tree_active():
             if self._best_upstream_router is None:
@@ -96,6 +109,9 @@ class TreeInterfaceDownstream(TreeInterface):
             self.set_assert_state(AssertState.Winner, creating_interface)
 
     def set_assert_state(self, new_state: SFMRAssertABC, creating_interface=False):
+        """
+        Set Assert state (AssertWinner or AssertLoser)
+        """
         with self.get_state_lock():
             if new_state != self._assert_state:
                 self._assert_state = new_state
@@ -108,6 +124,9 @@ class TreeInterfaceDownstream(TreeInterface):
     # Set Downstream Node Interest state
     ##########################################
     def set_downstream_node_interest_state(self, new_state: SFMRDownstreamStateABC):
+        """
+        Set interest state of downstream nodes (DownstreamInterested or NoDownstreamInterested)
+        """
         with self.get_state_lock():
             if new_state != self._downstream_node_interest_state:
                 self._downstream_node_interest_state = new_state
@@ -120,12 +139,20 @@ class TreeInterfaceDownstream(TreeInterface):
     # Tree transitions
     ############################################
     def tree_transition_to_active(self):
+        """
+        The tree of this interface detected that the tree transitioned to Active state
+        The interface must react to this change in order to send some control messages
+        """
         if not self.is_tree_active():
             super().tree_transition_to_active()
             self.calculate_assert_winner()
             SFMRNonRootState.interfaces_roles_dont_change_and_tree_transitions_to_active_state(self)
 
     def tree_transition_to_inactive(self):
+        """
+        The tree of this interface detected that the tree transitioned to Inactive state
+        The interface must react to this change in order to send some control messages
+        """
         if self.is_tree_active() and self._best_upstream_router is None:
             SFMRNonRootState.tree_transitions_from_active_to_inactive_and_best_upstream_neighbor_is_null(self)
         elif self.is_tree_active() and self._best_upstream_router is not None:
@@ -138,6 +165,10 @@ class TreeInterfaceDownstream(TreeInterface):
             self.calculate_assert_winner()
 
     def tree_transition_to_unknown(self):
+        """
+        The tree of this interface detected that the tree transitioned to Unknown state
+        The interface must react to this change in order to send some control messages
+        """
         if self.is_tree_active():
             SFMRNonRootState.tree_transitions_from_active_to_unknown(self)
 
@@ -149,9 +180,16 @@ class TreeInterfaceDownstream(TreeInterface):
     # Recv packets
     ###########################################
     def recv_data_msg(self):
+        """
+        This Non-Root interface received a data packet
+        """
         return
 
     def change_assert_state(self, assert_state):
+        """
+        A neighbor changed Upstream state due to the reception of any control packet
+        (IamUpstream or IamNoLongerUpstream or Interest or NoInterest or Sync)
+        """
         best_upstream_router = self._best_upstream_router
         super().change_assert_state(assert_state)
         self.calculate_assert_winner()
@@ -162,6 +200,10 @@ class TreeInterfaceDownstream(TreeInterface):
             SFMRNonRootState.tree_remains_inactive_and_best_upstream_router_reelected(self)
 
     def change_interest_state(self, interest_state):
+        """
+        A neighbor has changed Interest state due to the reception of any control packet
+        (IamUpstream or IamNoLongerUpstream or Interest or NoInterest or Sync)
+        """
         if interest_state:
             self.set_downstream_node_interest_state(SFMRPruneState.DI)
         else:
@@ -171,11 +213,19 @@ class TreeInterfaceDownstream(TreeInterface):
     # Send packets
     ###########################################
     def send_i_am_upstream(self):
+        """
+        Send an IamUpstream message through this interface
+        """
         (source, group) = self.get_tree_id()
         if self.get_interface() is not None:
             self.get_interface().send_i_am_upstream(source, group, self._my_assert_rpc)
 
     def get_sync_state(self):
+        """
+        Determine if this tree must be included in a new snapshot
+        If tree is Active then this must be included in the snapshot, otherwise this tree is not included
+        in the snapshot (in this point in time the router is not considered to be Upstream)
+        """
         if self.current_tree_state.is_active():
             return self._my_assert_rpc
         else:
@@ -183,22 +233,43 @@ class TreeInterfaceDownstream(TreeInterface):
 
     ##########################################################
     def is_forwarding(self):
+        """
+        Determine if this interface must be included in the OIL at the multicast routing table
+        """
         return self.is_in_tree() and self.is_assert_winner()
 
     def is_in_tree(self):
+        """
+        Verify if this interface is connected to interested hosts/nodes
+        (based on Interest state of all neighbors and IGMP)
+        """
         return self.igmp_has_members() or self.are_downstream_nodes_interested()
 
     def are_downstream_nodes_interested(self):
+        """
+        Determine if there is interest from non-Upstream neighbors based on their interest state
+        """
         return self._downstream_node_interest_state.are_downstream_nodes_interested()
 
     def delete(self):
+        """
+        Tree interface is being removed... due to change of interface roles or
+        due to the removal of the tree by this router
+        Clear all state from this interface regarding this tree
+        """
         super().delete()
         self._my_assert_rpc = None
 
     def is_assert_winner(self):
+        """
+        Determine if this interface is responsible for forwarding multicast data packets
+        """
         return self._assert_state is not None and self._assert_state.is_assert_winner()
 
     def notify_rpc_change(self, new_rpc: Metric):
+        """
+        The router suffered an RPC regarding the subnet of the tree's source
+        """
         if new_rpc == self._my_assert_rpc:
             return
 

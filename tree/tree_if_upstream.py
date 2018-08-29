@@ -60,9 +60,16 @@ class TreeInterfaceUpstream(TreeInterface):
     # Recv packets
     ###########################################
     def recv_data_msg(self):
+        """
+        This root interface received a data packet
+        """
         return
 
     def change_assert_state(self, assert_state):
+        """
+        A neighbor changed Upstream state due to the reception of any control packet
+        (IamUpstream or IamNoLongerUpstream or Interest or NoInterest or Sync)
+        """
         best_upstream_router = self._best_upstream_router
         super().change_assert_state(assert_state)
         print(self.get_tree_id())
@@ -79,12 +86,20 @@ class TreeInterfaceUpstream(TreeInterface):
             SFMRRootState.tree_is_active_and_best_upstream_router_reelected(self)
 
     def change_interest_state(self, interest_state):
+        """
+        A neighbor has changed Interest state due to the reception of any control packet
+        (IamUpstream or IamNoLongerUpstream or Interest or NoInterest or Sync)
+        """
         return
 
     ############################################
     # Tree transitions
     ############################################
     def tree_transition_to_active(self):
+        """
+        The tree of this interface detected that the tree transitioned to Active state
+        The interface must react to this change in order to send some control messages
+        """
         if not self.is_tree_active():
             super().tree_transition_to_active()
             SFMRRootState.tree_transitions_to_active_state(self)
@@ -93,6 +108,9 @@ class TreeInterfaceUpstream(TreeInterface):
     # Change to in/out-tree
     ###########################################
     def send_my_interest(self):
+        """
+        Send an Interest/NoInterest message through this interface based on the IT/OT state of this router
+        """
         if self.is_node_in_tree():
             self.send_interest()
         else:
@@ -100,19 +118,35 @@ class TreeInterfaceUpstream(TreeInterface):
 
     # event 5
     def node_is_out_tree(self):
+        """
+        Node is no longer interested in receiving data packets...
+        React to this event in order to transmit some control packets
+        """
         if self.is_tree_active() and self._best_upstream_router is not None:
             SFMRRootState.transition_to_it_or_ot_and_active_tree(self)
 
     # event 5
     def node_is_in_tree(self):
+        """
+        Node is no longer interested in receiving data packets...
+        React to this event in order to transmit some control packets
+        """
         if self.is_tree_active() and self._best_upstream_router is not None:
             SFMRRootState.transition_to_it_or_ot_and_active_tree(self)
 
     ####################################################################
     def is_forwarding(self):
+        """
+        This interface must not be included in the OIL of the multicast routing table, thus returning False
+        """
         return False
 
     def delete(self):
+        """
+        Tree interface is being removed... due to change of interface roles or
+        due to the removal of the tree by this router
+        Clear all state from this interface regarding this tree
+        """
         self.socket_is_enabled = False
         self.socket_pkt.close()
         super().delete()

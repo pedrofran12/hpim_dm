@@ -18,18 +18,30 @@ logger = None
 
 
 def add_protocol_interface(interface_name):
+    """
+    Add a new interface to be controlled by the protocol
+    """
     kernel.create_protocol_interface(interface_name=interface_name)
 
 
 def add_igmp_interface(interface_name):
+    """
+    Add a new interface to be controll by IGMP
+    """
     kernel.create_igmp_interface(interface_name=interface_name)
 
 
 def remove_interface(interface_name, pim=False, igmp=False):
+    """
+    Remove Protocol/IGMP interface
+    """
     kernel.remove_interface(interface_name, pim=pim, igmp=igmp)
 
 
 def list_neighbors():
+    """
+    List all neighbors in a human readable format
+    """
     interfaces_list = interfaces.values()
     t = PrettyTable(['Interface', 'Neighbor IP', 'State', 'Hello Hold Time', "BootTime", "NeighborSnapshotSN", "Uptime"])
     check_time = time.time()
@@ -45,6 +57,9 @@ def list_neighbors():
 
 
 def list_enabled_interfaces():
+    """
+    List all interfaces of the machine (enabled and not enabled for Protocol and IGMP)
+    """
     t = PrettyTable(['Interface', 'IP', 'Protocol/IGMP Enabled', 'IGMP State'])
     for interface in netifaces.interfaces():
         try:
@@ -65,11 +80,19 @@ def list_enabled_interfaces():
 
 
 def list_state():
+    """
+    List IGMP and Protocol state
+    For IGMP list the state of each group, regarding each interface
+    For Protocol list all trees and state of each interface
+    """
     state_text = "IGMP State:\n" + list_igmp_state() + "\n\n\n\n" + "Multicast Routing State:\n" + list_routing_state()
     return state_text
 
 
 def list_igmp_state():
+    """
+    List IGMP state (state of each group regarding each interface)
+    """
     t = PrettyTable(['Interface', 'RouterState', 'Group Adress', 'GroupState'])
     for (interface_name, interface_obj) in list(igmp_interfaces.items()):
         interface_state = interface_obj.interface_state
@@ -84,6 +107,9 @@ def list_igmp_state():
 
 
 def list_sequence_numbers():
+    """
+    List all stored sequence numbers
+    """
     t = PrettyTable(['Interface', 'BootTime', 'InterfaceSN'])
     for (interface_name, interface_obj) in interfaces.copy().items():
         interface_boot_time = interface_obj.time_of_boot
@@ -108,6 +134,9 @@ def list_sequence_numbers():
 
 
 def list_neighbors_state():
+    """
+    List all stored state regarding each tree of each neighbor (Upstream and Interest state)
+    """
     interfaces_list = interfaces.values()
     t = PrettyTable(['Interface', 'Neighbor', 'Tree', 'RPC Upstream State'])
     for interface in interfaces_list:
@@ -126,6 +155,9 @@ def list_neighbors_state():
 
 
 def list_routing_state():
+    """
+    List Protocol state (all state machines of each tree, regarding each interface)
+    """
     routing_entries = []
     for a in list(kernel.routing.values()):
         for b in list(a.values()):
@@ -162,18 +194,28 @@ def list_routing_state():
 
 
 def change_initial_flood_setting():
+    """
+    Change Initial Flood Setting, used to control the implicit interest of all neighbors
+    (in order to flood or ignore initial packets)
+    """
     protocol_globals.INITIAL_FLOOD_ENABLED ^= True
     kernel.recheck_all_trees_in_all_interfaces()
     return "Flood is enabled?: " + str(protocol_globals.INITIAL_FLOOD_ENABLED)
 
 
 def stop():
+    """
+    Stop process
+    """
     remove_interface("*", pim=True, igmp=True)
     kernel.exit()
     unicast_routing.stop()
 
 
 def test(router_name, server_logger_ip):
+    """
+    Test setting.... Used to send logs to a remote server
+    """
     global logger
     socketHandler = logging.handlers.SocketHandler(server_logger_ip,
                                                    logging.handlers.DEFAULT_TCP_LOGGING_PORT)
@@ -184,6 +226,9 @@ def test(router_name, server_logger_ip):
 
 
 def main():
+    """
+    Start process
+    """
     # logging
     global logger
     logger = logging.getLogger('protocol')
