@@ -275,57 +275,57 @@ init {
   node_info[0].luri = true
   node_info[0].node_interface[0] = root
   node_info[0].node_interface[1] = non_root
-  node_info[0].node_interface[2] = non_root
   node_info[0].my_rpc = 0
-  node_info[0].neighbors_at_each_interface[1] = 1 << 3
-  node_info[0].neighbors_at_each_interface[2] = 1 << 5
+  node_info[0].neighbors_at_each_interface[1] = 1 << 2
 
-  node_info[1].node_interface[3] = root
-  node_info[1].node_interface[4] = non_root
-  node_info[1].my_rpc = 10
-  node_info[1].neighbors_at_each_interface[3] = 1 << 1
-  node_info[1].neighbors_at_each_interface[4] = (1 << 7) | (1 << 6)
+  node_info[1].node_interface[2] = root
+  node_info[1].node_interface[3] = non_root
+  node_info[1].my_rpc = 20
+  node_info[1].neighbors_at_each_interface[2] = (1 << 1)
+  node_info[1].neighbors_at_each_interface[3] = (1 << 4) | (1 << 9)
 
-  node_info[2].node_interface[5] = root
-  node_info[2].node_interface[6] = non_root
-  node_info[2].my_rpc = 10
-  node_info[2].neighbors_at_each_interface[5] = 1 << 2
-  node_info[2].neighbors_at_each_interface[6] = (1 << 4) | (1 << 7)
+  node_info[2].node_interface[4] = root
+  node_info[2].node_interface[5] = non_root
+  node_info[2].my_rpc = 30
+  node_info[2].neighbors_at_each_interface[4] = (1 << 3) | (1 << 9)
+  node_info[2].neighbors_at_each_interface[5] = 1 << 6
 
-  node_info[3].node_interface[7] = root
-  node_info[3].node_interface[8] = non_root
-  node_info[3].my_rpc = 20
-  node_info[3].neighbors_at_each_interface[7] = (1 << 4) | (1 << 6)
-  node_info[3].neighbors_at_each_interface[8] = 1 << 9
+  node_info[3].node_interface[6] = root
+  node_info[3].node_interface[7] = non_root
+  node_info[3].my_rpc = 40
+  node_info[3].neighbors_at_each_interface[6] = 1 << 5
+  node_info[3].neighbors_at_each_interface[7] = 1 << 8
 
-  node_info[4].node_interface[9] = root
-  node_info[4].my_rpc = 30
-  node_info[4].neighbors_at_each_interface[9] = 1 << 8
+  node_info[4].node_interface[8] = root
+  node_info[4].node_interface[9] = non_root
+  node_info[4].my_rpc = 50
+  node_info[4].neighbors_at_each_interface[8] = 1 << 7
+  node_info[4].neighbors_at_each_interface[9] = (1 << 3) | (1 << 4)
 
 	atomic{
     run InterfaceReceive(0, 1);
     run InterfaceSend(0, 1);
 
-    run InterfaceSend(0, 2);
-    run InterfaceReceive(0, 2);
+    run InterfaceSend(1, 2);
+    run InterfaceReceive(1, 2);
 
     run InterfaceReceive(1, 3);
     run InterfaceSend(1, 3);
 
-    run InterfaceReceive(1, 4);
-    run InterfaceSend(1, 4);
+    run InterfaceReceive(2, 4);
+    run InterfaceSend(2, 4);
 
     run InterfaceReceive(2, 5);
     run InterfaceSend(2, 5);
 
-    run InterfaceReceive(2, 6);
-    run InterfaceSend(2, 6);
+    run InterfaceReceive(3, 6);
+    run InterfaceSend(3, 6);
 
     run InterfaceReceive(3, 7);
     run InterfaceSend(3, 7);
 
-    run InterfaceReceive(3, 8);
-    run InterfaceSend(3, 8);
+    run InterfaceReceive(4, 8);
+    run InterfaceSend(4, 8);
 
     run InterfaceReceive(4, 9);
     run InterfaceSend(4, 9);
@@ -333,9 +333,6 @@ init {
     node_info[0].tree_state = active_tree
 	}
 
-  atomic {
-    nodeFailure(1);
-  }
 }
 
-ltl ltl_test {(<>([](CURRENT_TREE_STATE(0)==active_tree && CURRENT_TREE_STATE(2)==active_tree && CURRENT_TREE_STATE(3)==active_tree  && CURRENT_TREE_STATE(4)==active_tree)))}
+ltl ltl_test {(<>([](CURRENT_TREE_STATE(0)==active_tree && CURRENT_TREE_STATE(1)==active_tree && CURRENT_TREE_STATE(2)==active_tree && CURRENT_TREE_STATE(3)==active_tree  && CURRENT_TREE_STATE(4)==active_tree)))}
