@@ -338,4 +338,4 @@ init {
   }
 }
 
-ltl ltl_test {(<>([](CURRENT_TREE_STATE(1)==unknown_tree && CURRENT_TREE_STATE(2)==unknown_tree && CURRENT_TREE_STATE(3)==unknown_tree  && CURRENT_TREE_STATE(4)==unknown_tree)))}
+ltl ltl_test {(<>([](CURRENT_TREE_STATE(1)==unknown_tree && CURRENT_TREE_STATE(2)==unknown_tree && CURRENT_TREE_STATE(3)==unknown_tree && CURRENT_TREE_STATE(4)==unknown_tree)))}

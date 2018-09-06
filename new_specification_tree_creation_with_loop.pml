@@ -335,4 +335,4 @@ init {
 
 }
 
-ltl ltl_test {(<>([](CURRENT_TREE_STATE(0)==active_tree && CURRENT_TREE_STATE(1)==active_tree && CURRENT_TREE_STATE(2)==active_tree && CURRENT_TREE_STATE(3)==active_tree  && CURRENT_TREE_STATE(4)==active_tree)))}
+ltl ltl_test {(<>([](CURRENT_TREE_STATE(0)==active_tree && CURRENT_TREE_STATE(1)==active_tree && CURRENT_TREE_STATE(2)==active_tree && CURRENT_TREE_STATE(3)==active_tree && CURRENT_TREE_STATE(4)==active_tree)))}
