@@ -1,12 +1,8 @@
 source: router1
 router2: router1
-router3: router1
-router4: router1
-switch1: router2 router3 router4
+router3: switch1
+router4: router3
 router5: switch1
-router6: switch1
-router7: router5
-log_server: switch1
-client0: router7
-client1: router6
-
+switch1: router2
+client0: router4
+client1: router5

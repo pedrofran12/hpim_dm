@@ -2,6 +2,8 @@ ip addr add dev eth0 10.4.4.4/24
 ip link set dev eth0 up
 ip addr add dev eth1 10.5.5.4/24
 ip link set dev eth1 up
+ip addr add dev eth2 10.6.6.4/24
+ip link set dev eth2 up
 
 #default route para obter conectividade internet
 #ip route add 0.0.0.0/0 via 10.4.4.1
@@ -22,4 +24,3 @@ done
 #apt-get update && apt-get --assume-yes install python3 python3-pip
 
 echo VTYSH_PAGER=more > /etc/environment
-

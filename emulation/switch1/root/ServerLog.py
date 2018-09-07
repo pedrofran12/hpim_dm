@@ -3,7 +3,7 @@ import logging
 import logging.handlers
 import socketserver
 import struct
-from TestAssert import CustomFilter, Test1, Test2, Test3
+from TestLoop import CustomFilter, Test1, Test2
 import sys
 import threading
 from queue import Queue
@@ -24,7 +24,7 @@ def worker():
 class TestHandler(logging.StreamHandler):
     currentTest = Test1()
     currentTest.print_test()
-    nextTests = [Test2(), Test3()]
+    nextTests = [Test2()]
     main = None
 
     def emit(self, record):
@@ -105,7 +105,7 @@ def main():
     t = threading.Thread(target=worker)
     t.start()
 
-    tcpserver = LogRecordSocketReceiver(host='10.5.5.7')
+    tcpserver = LogRecordSocketReceiver(host='10.3.3.7')
     print('About to start TCP server...')
     tcpserver.serve_until_stopped()
 

@@ -2,10 +2,6 @@ ip addr add dev eth0 10.1.1.1/24
 ip link set dev eth0 up
 ip addr add dev eth1 10.2.2.1/24
 ip link set dev eth1 up
-ip addr add dev eth2 10.3.3.1/24
-ip link set dev eth2 up
-ip addr add dev eth3 10.4.4.1/24
-ip link set dev eth3 up
 
 
 #NAT for private ip's
@@ -17,4 +13,3 @@ ip link set dev eth3 up
 #apt-get update && apt-get --assume-yes install python3 python3-pip
 
 echo VTYSH_PAGER=more > /etc/environment
-
