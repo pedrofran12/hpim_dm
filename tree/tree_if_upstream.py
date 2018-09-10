@@ -5,7 +5,7 @@ from threading import Thread
 import Main
 from . import DataPacketsSocket
 from .tree_interface import TreeInterface
-from .root_state_machine import SFMRRootState
+from .root_state_machine import SFMRNewRootState #SFMRRootState
 
 
 class TreeInterfaceUpstream(TreeInterface):
@@ -19,17 +19,26 @@ class TreeInterfaceUpstream(TreeInterface):
         TreeInterface.__init__(self, kernel_entry, interface_id, best_upstream_router, current_tree_state, logger)
 
         # event 1
-        if not previous_tree_state.is_active() and current_tree_state.is_active() and not was_non_root:
-            SFMRRootState.tree_transitions_to_active_state(self)
+        if was_non_root and previous_tree_state.is_active() and current_tree_state.is_active():
+            SFMRNewRootState.interfaces_roles_change_and_tree_remains_active(self)
         # event 2
-        elif was_non_root and previous_tree_state.is_active() and current_tree_state.is_active():
-            SFMRRootState.tree_remains_in_active_state_and_non_root_transitions_to_root_interface(self)
+        elif was_non_root and previous_tree_state.is_inactive() and current_tree_state.is_active():
+            SFMRNewRootState.interfaces_roles_change_and_tree_was_inactive_and_transitions_to_active(self)
         # event 3
-        elif was_non_root and previous_tree_state.is_active() and current_tree_state.is_inactive():
-            SFMRRootState.tree_transitions_from_active_to_inactive_state_due_to_transition_from_non_root_to_root_interface(self)
+        elif was_non_root and previous_tree_state.is_active() and current_tree_state.is_inactive() and \
+                best_upstream_router is None:
+            SFMRNewRootState.interfaces_roles_change_and_tree_was_active_and_transitions_to_inactive_and_best_upstream_neighbor_is_null(self)
         # event 4
-        elif was_non_root and not previous_tree_state.is_active() and current_tree_state.is_active():
-            SFMRRootState.tree_transitions_to_active_state_and_non_root_interface_transitions_to_root(self)
+        elif was_non_root and previous_tree_state.is_active() and current_tree_state.is_inactive() and \
+                best_upstream_router is not None:
+            SFMRNewRootState.interfaces_roles_change_and_tree_was_active_and_transitions_to_inactive_and_best_upstream_neighbor_not_null(self)
+        # event 5
+        elif was_non_root and previous_tree_state.is_inactive() and current_tree_state.is_inactive() and \
+                best_upstream_router is not None:
+            SFMRNewRootState.interfaces_roles_change_and_tree_remains_inactive_and_best_upstream_neighbor_not_null(self)
+        # event 6
+        elif not was_non_root and best_upstream_router is not None:
+            SFMRNewRootState.interfaces_roles_dont_change_and_best_upstream_neighbor_reelected(self)
 
         # Originator state
         # TODO TESTE SOCKET RECV DATA PCKTS
@@ -77,32 +86,13 @@ class TreeInterfaceUpstream(TreeInterface):
         print("best:", best_upstream_router)
         print("new best", assert_state)
 
-        if assert_state is None or not self.is_tree_active():
-            print("ASSERT IS NONE OR TREE NOT ACTIVE")
+        if assert_state is None:
+            print("ASSERT IS NONE")
             return
         elif best_upstream_router is None or best_upstream_router is not assert_state:
-            print("TREE ACTIVE AND ASSERT REELECTED")
-            # EVENT 6 and 7
-            SFMRRootState.tree_is_active_and_best_upstream_router_reelected(self)
-
-    def change_interest_state(self, interest_state):
-        """
-        A neighbor has changed Interest state due to the reception of any control packet
-        (IamUpstream or IamNoLongerUpstream or Interest or NoInterest or Sync)
-        """
-        return
-
-    ############################################
-    # Tree transitions
-    ############################################
-    def tree_transition_to_active(self):
-        """
-        The tree of this interface detected that the tree transitioned to Active state
-        The interface must react to this change in order to send some control messages
-        """
-        if not self.is_tree_active():
-            super().tree_transition_to_active()
-            SFMRRootState.tree_transitions_to_active_state(self)
+            print("BEST UPSTREAM REELECTED")
+            # EVENT 6 and 8
+            SFMRNewRootState.interfaces_roles_dont_change_and_best_upstream_neighbor_reelected(self)
 
     ###########################################
     # Change to in/out-tree
@@ -116,23 +106,23 @@ class TreeInterfaceUpstream(TreeInterface):
         else:
             self.send_no_interest()
 
-    # event 5
     def node_is_out_tree(self):
         """
         Node is no longer interested in receiving data packets...
         React to this event in order to transmit some control packets
         """
-        if self.is_tree_active() and self._best_upstream_router is not None:
-            SFMRRootState.transition_to_it_or_ot_and_active_tree(self)
+        if self._best_upstream_router is not None:
+            # event 7
+            SFMRNewRootState.interfaces_roles_dont_change_and_router_transition_to_it_or_ot(self)
 
-    # event 5
     def node_is_in_tree(self):
         """
         Node is no longer interested in receiving data packets...
         React to this event in order to transmit some control packets
         """
-        if self.is_tree_active() and self._best_upstream_router is not None:
-            SFMRRootState.transition_to_it_or_ot_and_active_tree(self)
+        if self._best_upstream_router is not None:
+            # event 7
+            SFMRNewRootState.interfaces_roles_dont_change_and_router_transition_to_it_or_ot(self)
 
     ####################################################################
     def is_forwarding(self):

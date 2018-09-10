@@ -202,8 +202,7 @@ class PacketNewProtocolHelloHoldtime(PacketNewProtocolHelloOptions):
         """
         if hello_type is None or length is None:
             raise Exception
-        (holdtime, ) = struct.unpack(PacketNewProtocolHelloHoldtime.PIM_HDR_OPT,
-                                     data[:PacketNewProtocolHelloHoldtime.PIM_HDR_OPT_LEN])
+        (holdtime, ) = struct.unpack(PacketNewProtocolHelloHoldtime.PIM_HDR_OPT, data[:length])
         print("HOLDTIME:", holdtime)
         return PacketNewProtocolHelloHoldtime(holdtime=holdtime)
 
@@ -237,8 +236,7 @@ class PacketNewProtocolHelloCheckpointSN(PacketNewProtocolHelloOptions):
         """
         if hello_type is None or length is None:
             raise Exception
-        (checkpoint_sn, ) = struct.unpack(PacketNewProtocolHelloCheckpointSN.PIM_HDR_OPT,
-                                     data[:PacketNewProtocolHelloCheckpointSN.PIM_HDR_OPT_LEN])
+        (checkpoint_sn, ) = struct.unpack(PacketNewProtocolHelloCheckpointSN.PIM_HDR_OPT, data[:length])
         print("CheckpointSN:", checkpoint_sn)
         return PacketNewProtocolHelloCheckpointSN(checkpoint_sn=checkpoint_sn)
 

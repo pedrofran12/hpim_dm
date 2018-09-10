@@ -14,9 +14,9 @@ class TreeInterface(metaclass=ABCMeta):
         self._interface_id = interface_id
         self.logger = logger
 
-        self._best_upstream_router = best_upstream_router # current assert winner
+        self._best_upstream_router = best_upstream_router  # current assert winner
 
-        self.current_tree_state = current_tree_state # current tree state
+        self.current_tree_state = current_tree_state  # current tree state
 
         # Local Membership State
         self._igmp_lock = RLock()

@@ -84,7 +84,6 @@ class Updated(NeighborState):
             pkt_s.add_hello_option(PacketProtocolHelloHoldtime(holdtime=4 * neighbor.contact_interface.HELLO_PERIOD))
             pkt = Packet(payload=PacketProtocolHeader(pkt_s, neighbor.my_snapshot_boot_time))
             neighbor.send(pkt)
-            neighbor.set_hello_hold_time(DEFAULT_HELLO_HOLD_TIME_DURING_SYNC)
 
 
 class Master(NeighborState):

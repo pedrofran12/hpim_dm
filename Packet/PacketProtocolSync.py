@@ -197,7 +197,7 @@ class PacketNewProtocolSync:
         self.upstream_trees.append(t)
 
     def add_hello_option(self, option: 'PacketNewProtocolHelloOptions'):
-        self.options[option.type] = option
+        self.options[option.TYPE] = option
 
     def get_hello_options(self):
         return self.options

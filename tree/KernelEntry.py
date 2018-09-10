@@ -293,7 +293,9 @@ class KernelEntryNonOriginator(KernelEntry):
         with self.CHANGE_STATE_LOCK:
             if self.inbound_interface_index is not None and \
                     len(self.interface_state) > 0 and\
-                    self._upstream_interface_state.get(self.inbound_interface_index, None) is not None:
+                    self._upstream_interface_state.get(self.inbound_interface_index, None) is not None and \
+                    (not self._rpc.is_better_than(self._upstream_interface_state.get(self.inbound_interface_index))
+                    and self._rpc != self._upstream_interface_state.get(self.inbound_interface_index)):
                 # tree is Active
                 print("PARA ACTIVE")
                 self._tree_state.transition_to_active(self)
@@ -310,7 +312,9 @@ class KernelEntryNonOriginator(KernelEntry):
         Verify for the first time in which state the tree is at
         """
         if self.inbound_interface_index is not None and \
-                self._upstream_interface_state.get(self.inbound_interface_index, None) is not None:
+                self._upstream_interface_state.get(self.inbound_interface_index, None) is not None and \
+                (not self._rpc.is_better_than(self._upstream_interface_state.get(self.inbound_interface_index))
+                 and self._rpc != self._upstream_interface_state.get(self.inbound_interface_index)):
             # tree is Active
             print("PARA ACTIVE")
             self.set_tree_state(TreeState.Active)
@@ -355,9 +359,12 @@ class KernelEntryNonOriginator(KernelEntry):
                     old_downstream_interface.delete()
 
                 new_tree_state = self._tree_state
-                if self.is_tree_active() and root_upstream_state is None:
+                if (self.is_tree_active() and root_upstream_state is None) or \
+                        (self.is_tree_active() and root_upstream_state is not None and
+                         (new_rpc.is_better_than(root_upstream_state) or new_rpc == root_upstream_state)):
                     new_tree_state = TreeState.Inactive
-                elif self.is_tree_inactive() and root_upstream_state is not None:
+                elif self.is_tree_inactive() and root_upstream_state is not None and \
+                        not new_rpc.is_better_than(root_upstream_state) and new_rpc != root_upstream_state:
                     new_tree_state = TreeState.Active
 
                 # change type of interfaces
@@ -376,13 +383,20 @@ class KernelEntryNonOriginator(KernelEntry):
                     self.interface_state[new_inbound_interface_index] = new_upstream_interface
                 self.inbound_interface_index = new_inbound_interface_index
 
-                self.check_tree_state()
+                if self._rpc != new_rpc:
+                    self._rpc = new_rpc
+                    self.check_tree_state()
+                    for interface in self.interface_state.values():
+                        interface.notify_rpc_change(new_rpc)
+                else:
+                    self.check_tree_state()
 
                 # atualizar tabela de encaminhamento multicast
                 self.change()
                 self.evaluate_in_tree_change()
-            if self._rpc != new_rpc:
+            elif self._rpc != new_rpc:
                 self._rpc = new_rpc
+                self.check_tree_state()
                 for interface in self.interface_state.values():
                     interface.notify_rpc_change(new_rpc)
 
@@ -480,10 +494,11 @@ class KernelEntryOriginator(KernelEntry):
     def __init__(self, source_ip: str, group_ip: str, upstream_state_dic, interest_state_dic):
         super().__init__(source_ip, group_ip, upstream_state_dic, interest_state_dic)
         self.sat_is_running = False
-        self._tree_state = TreeState.Inactive
         if self.inbound_interface_index is not None:
             self.sat_is_running = True
-            self._tree_state = TreeState.Active
+            self.set_tree_state(TreeState.Active)
+        else:
+            self.set_tree_state(TreeState.Inactive)
 
         with self.CHANGE_STATE_LOCK:
             for i in Main.kernel.vif_index_to_name_dic.keys():
