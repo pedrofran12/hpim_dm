@@ -185,18 +185,18 @@ class TreeInterfaceDownstream(TreeInterface):
         """
         return
 
-    def change_assert_state(self, assert_state):
+    def change_best_upstream_neighbor_state(self, new_best_upstream_neighbor_state):
         """
         A neighbor changed Upstream state due to the reception of any control packet
         (IamUpstream or IamNoLongerUpstream or Interest or NoInterest or Sync)
         """
-        best_upstream_router = self._best_upstream_router
-        super().change_assert_state(assert_state)
+        previous_best_upstream_router = self._best_upstream_router
+        super().change_best_upstream_neighbor_state(new_best_upstream_neighbor_state)
         self.calculate_assert_winner()
 
         # Event 6 and 7
-        if self.current_tree_state.is_inactive() and assert_state is not None and \
-                 (best_upstream_router is None or best_upstream_router is not assert_state):
+        if self.current_tree_state.is_inactive() and new_best_upstream_neighbor_state is not None and \
+                 (previous_best_upstream_router is None or previous_best_upstream_router is not new_best_upstream_neighbor_state):
             SFMRNonRootState.tree_remains_inactive_and_best_upstream_router_reelected(self)
 
     def change_interest_state(self, interest_state):

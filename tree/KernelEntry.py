@@ -87,7 +87,7 @@ class KernelEntry:
         print("ENTROU CHECK INTERFACE STATE")
         self._upstream_interface_state[index] = upstream_state
 
-        self.interface_state[index].change_assert_state(upstream_state)
+        self.interface_state[index].change_best_upstream_neighbor_state(upstream_state)
         self.check_interest_state(index, interest_state)
 
         self.check_tree_state()

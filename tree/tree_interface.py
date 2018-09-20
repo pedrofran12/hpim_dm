@@ -145,12 +145,12 @@ class TreeInterface(metaclass=ABCMeta):
         """
         return
 
-    def change_assert_state(self, assert_state):
+    def change_best_upstream_neighbor_state(self, new_best_upstream_neighbor_state):
         """
         A neighbor changed Upstream state due to the reception of any control packet
         (IamUpstream or IamNoLongerUpstream or Interest or NoInterest or Sync)
         """
-        self._best_upstream_router = assert_state
+        self._best_upstream_router = new_best_upstream_neighbor_state
 
     ###########################################################
     # Interest state

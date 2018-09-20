@@ -28,7 +28,6 @@ DEFAULT_HELLO_HOLD_TIME_AFTER_SYNC = 120
 class NeighborState():
     @staticmethod
     def new_neighbor_or_adjacency_reset(neighbor):
-        print("NEW NEIG")
         neighbor.set_sync_state(Slave)
 
         neighbor.start_snapshot()
@@ -99,11 +98,9 @@ class Master(NeighborState):
             return
 
         if sync_sn != neighbor.current_sync_sn:
-            print("EXIT MASTER")
             return
 
         if master_bit and (sync_sn > 0 and neighbor.my_snapshot_sequencer == my_snapshot_sn or sync_sn == 0):
-            print("ENTROU MASTER")
             neighbor.install_tree_state(tree_state)
 
             my_snapshot_mrt = neighbor.my_snapshot_multicast_routing_table[neighbor.current_sync_sn*neighbor.sync_fragmentation:
@@ -170,11 +167,9 @@ class Slave(NeighborState):
             return
 
         if sync_sn == 0 and master_bit:
-            print("HERE1")
             my_ip = ipaddress.ip_address(neighbor.contact_interface.get_ip())
             neighbor_ip = ipaddress.ip_address(neighbor.ip)
             if my_ip < neighbor_ip:
-                print("HERE2")
                 neighbor.set_sync_state(Master)
                 neighbor.current_sync_sn = 0
                 Master.recv_sync(neighbor, tree_state, my_snapshot_sn, neighbor_snapshot_sn, sync_sn, master_bit,
@@ -182,7 +177,6 @@ class Slave(NeighborState):
             else:
                 Slave.sync_timer_expires(neighbor)
         elif not master_bit and neighbor.my_snapshot_sequencer == my_snapshot_sn:
-            print("HERE3")
             my_more_bit = len(neighbor.my_snapshot_multicast_routing_table) > neighbor.current_sync_sn*neighbor.sync_fragmentation
 
             if sync_sn > 0 and not my_more_bit and not more_bit:
@@ -190,13 +184,11 @@ class Slave(NeighborState):
                     neighbor.set_hello_hold_time(hello_options["HOLDTIME"].holdtime)
                 else:
                     neighbor.set_hello_hold_time(DEFAULT_HELLO_HOLD_TIME_AFTER_SYNC)
-                print("HERE4")
                 neighbor.set_sync_state(Updated)
                 neighbor.clear_sync_timer()
                 del neighbor.my_snapshot_multicast_routing_table[:]
             else:
                 neighbor.set_hello_hold_time(DEFAULT_HELLO_HOLD_TIME_DURING_SYNC)
-                print("HERE5")
                 neighbor.current_sync_sn += 1
                 neighbor.install_tree_state(tree_state)
 

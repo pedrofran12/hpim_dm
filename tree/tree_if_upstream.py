@@ -74,22 +74,22 @@ class TreeInterfaceUpstream(TreeInterface):
         """
         return
 
-    def change_assert_state(self, assert_state):
+    def change_best_upstream_neighbor_state(self, best_upstream_neighbor_state):
         """
         A neighbor changed Upstream state due to the reception of any control packet
         (IamUpstream or IamNoLongerUpstream or Interest or NoInterest or Sync)
         """
-        best_upstream_router = self._best_upstream_router
-        super().change_assert_state(assert_state)
+        previous_best_upstream_router = self._best_upstream_router
+        super().change_best_upstream_neighbor_state(best_upstream_neighbor_state)
         print(self.get_tree_id())
         print("UPSTREAM CHANGE ASSERT STATE")
-        print("best:", best_upstream_router)
-        print("new best", assert_state)
+        print("best:", previous_best_upstream_router)
+        print("new best", best_upstream_neighbor_state)
 
-        if assert_state is None:
+        if best_upstream_neighbor_state is None:
             print("ASSERT IS NONE")
             return
-        elif best_upstream_router is None or best_upstream_router is not assert_state:
+        elif previous_best_upstream_router is None or previous_best_upstream_router is not best_upstream_neighbor_state:
             print("BEST UPSTREAM REELECTED")
             # EVENT 6 and 8
             SFMRNewRootState.interfaces_roles_dont_change_and_best_upstream_neighbor_reelected(self)
