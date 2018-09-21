@@ -47,9 +47,12 @@ class TreeInterfaceDownstream(TreeInterface):
         elif previous_tree_state.is_active() and current_tree_state.is_unknown():
             SFMRNonRootState.tree_transitions_from_active_to_unknown(self)
         # Event 5
-        elif previous_tree_state.is_active() and current_tree_state.is_inactive() and best_upstream_router is not None:
-            SFMRNonRootState.tree_transitions_from_active_to_inactive_and_best_upstream_neighbor_is_not_null(self)
-        # Event 8
+        elif not was_root and previous_tree_state.is_active() and current_tree_state.is_inactive() and best_upstream_router is not None:
+            SFMRNonRootState.interface_roles_dont_change_and_tree_transitions_from_active_to_inactive_and_best_upstream_neighbor_is_not_null(self)
+        # Event 6
+        elif was_root and previous_tree_state.is_active() and current_tree_state.is_inactive() and best_upstream_router is not None:
+            SFMRNonRootState.interface_roles_change_and_tree_transitions_from_active_to_inactive_and_best_upstream_neighbor_is_not_null(self)
+        # Event 9
         elif previous_tree_state.is_unknown() and current_tree_state.is_inactive() and best_upstream_router is not None:
             SFMRNonRootState.tree_transitions_from_unknown_to_inactive_and_best_upstream_is_not_null(self)
 
@@ -156,7 +159,7 @@ class TreeInterfaceDownstream(TreeInterface):
         if self.is_tree_active() and self._best_upstream_router is None:
             SFMRNonRootState.tree_transitions_from_active_to_inactive_and_best_upstream_neighbor_is_null(self)
         elif self.is_tree_active() and self._best_upstream_router is not None:
-            SFMRNonRootState.tree_transitions_from_active_to_inactive_and_best_upstream_neighbor_is_not_null(self)
+            SFMRNonRootState.interface_roles_dont_change_and_tree_transitions_from_active_to_inactive_and_best_upstream_neighbor_is_not_null(self)
         elif self.is_tree_unknown() and self._best_upstream_router is not None:
             SFMRNonRootState.tree_transitions_from_unknown_to_inactive_and_best_upstream_is_not_null(self)
 
@@ -194,7 +197,7 @@ class TreeInterfaceDownstream(TreeInterface):
         super().change_best_upstream_neighbor_state(new_best_upstream_neighbor_state)
         self.calculate_assert_winner()
 
-        # Event 6 and 7
+        # Event 7 and 8
         if self.current_tree_state.is_inactive() and new_best_upstream_neighbor_state is not None and \
                  (previous_best_upstream_router is None or previous_best_upstream_router is not new_best_upstream_neighbor_state):
             SFMRNonRootState.tree_remains_inactive_and_best_upstream_router_reelected(self)
@@ -275,5 +278,5 @@ class TreeInterfaceDownstream(TreeInterface):
 
         self._my_assert_rpc = AssertMetric(new_rpc.metric_preference, new_rpc.route_metric, self.get_ip())
         if self.current_tree_state.is_active():
-            SFMRNonRootState.tree_is_active_and_my_rpc_changes(self)
+            SFMRNonRootState.tree_remains_active_and_my_rpc_changes(self)
         self.calculate_assert_winner()
