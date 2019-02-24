@@ -41,20 +41,20 @@ class TreeInterfaceDownstream(TreeInterface):
         elif was_root and current_tree_state.is_active():
             SFMRNonRootState.interfaces_roles_change_and_tree_remains_or_transitions_to_active_state(self)
         # Event 3
-        elif previous_tree_state.is_active() and current_tree_state.is_inactive() and best_upstream_router is None:
-            SFMRNonRootState.tree_transitions_from_active_to_inactive_and_best_upstream_neighbor_is_null(self)
+        elif previous_tree_state.is_active() and current_tree_state.is_unsure() and best_upstream_router is None:
+            SFMRNonRootState.tree_transitions_from_active_to_unsure_and_best_upstream_neighbor_is_null(self)
         # Event 4
-        elif previous_tree_state.is_active() and current_tree_state.is_unknown():
-            SFMRNonRootState.tree_transitions_from_active_to_unknown(self)
+        elif previous_tree_state.is_active() and current_tree_state.is_inactive():
+            SFMRNonRootState.tree_transitions_from_active_to_inactive(self)
         # Event 5
-        elif not was_root and previous_tree_state.is_active() and current_tree_state.is_inactive() and best_upstream_router is not None:
-            SFMRNonRootState.interface_roles_dont_change_and_tree_transitions_from_active_to_inactive_and_best_upstream_neighbor_is_not_null(self)
+        elif not was_root and previous_tree_state.is_active() and current_tree_state.is_unsure() and best_upstream_router is not None:
+            SFMRNonRootState.interface_roles_dont_change_and_tree_transitions_from_active_to_unsure_and_best_upstream_neighbor_is_not_null(self)
         # Event 6
-        elif was_root and previous_tree_state.is_active() and current_tree_state.is_inactive() and best_upstream_router is not None:
-            SFMRNonRootState.interface_roles_change_and_tree_transitions_from_active_to_inactive_and_best_upstream_neighbor_is_not_null(self)
+        elif was_root and previous_tree_state.is_active() and current_tree_state.is_unsure() and best_upstream_router is not None:
+            SFMRNonRootState.interface_roles_change_and_tree_transitions_from_active_to_unsure_and_best_upstream_neighbor_is_not_null(self)
         # Event 9
-        elif previous_tree_state.is_unknown() and current_tree_state.is_inactive() and best_upstream_router is not None:
-            SFMRNonRootState.tree_transitions_from_unknown_to_inactive_and_best_upstream_is_not_null(self)
+        elif previous_tree_state.is_inactive() and current_tree_state.is_unsure() and best_upstream_router is not None:
+            SFMRNonRootState.tree_transitions_from_inactive_to_unsure_and_best_upstream_is_not_null(self)
 
         self.logger.debug('Created NonRootInterface')
 
@@ -69,11 +69,11 @@ class TreeInterfaceDownstream(TreeInterface):
             then this interface transitions to AssertWinner state
         If tree in Active state and the BestUpstream neighbor offers a better Assert state (RPC and IP)
             then this interface must transition to AssertLoser state
-        If tree in Inactive state and there are no Upstream neighbors connected to this interface
+        If tree in Unsure state and there are no Upstream neighbors connected to this interface
             then this interface transitions to AssertWinner state
-        If tree in Inactive state and there are Upstream neighbors connected to this interface
+        If tree in Unsure state and there are Upstream neighbors connected to this interface
             then this interface transitions to AssertLoser state
-        If tree in Unknown state then interface must be in AssertWinner state
+        If tree in Inactive state then interface must be in AssertWinner state
         """
         print("CALCULATE ASSERT WINNER")
         if self.is_tree_active():
@@ -100,15 +100,15 @@ class TreeInterfaceDownstream(TreeInterface):
                                          '; METRIC: ' + str(self._my_assert_rpc.route_metric) + '; IP: ' +
                                          self._my_assert_rpc.get_ip())
                 self.set_assert_state(AssertState.Loser, creating_interface)
-        elif self.is_tree_inactive():
+        elif self.is_tree_unsure():
             if self._best_upstream_router is None:
-                self.assert_logger.debug('TREE IS INACTIVE AND NO UPSTREAM NEIGHBOR')
+                self.assert_logger.debug('TREE IS UNSURE AND NO UPSTREAM NEIGHBOR')
                 self.set_assert_state(AssertState.Winner)
             else:
-                self.assert_logger.debug('TREE IS INACTIVE AND UPSTREAM NEIGHBOR CONNECTED TO THIS INTERFACE')
+                self.assert_logger.debug('TREE IS UNSURE AND UPSTREAM NEIGHBOR CONNECTED TO THIS INTERFACE')
                 self.set_assert_state(AssertState.Loser, creating_interface)
         else:
-            self.assert_logger.debug('TREE IS UNKNOWN AND UPSTREAM NEIGHBOR CONNECTED TO THIS INTERFACE')
+            self.assert_logger.debug('TREE IS INACTIVE AND UPSTREAM NEIGHBOR CONNECTED TO THIS INTERFACE')
             self.set_assert_state(AssertState.Winner, creating_interface)
 
     def set_assert_state(self, new_state: SFMRAssertABC, creating_interface=False):
@@ -151,32 +151,32 @@ class TreeInterfaceDownstream(TreeInterface):
             self.calculate_assert_winner()
             SFMRNonRootState.interfaces_roles_dont_change_and_tree_transitions_to_active_state(self)
 
+    def tree_transition_to_unsure(self):
+        """
+        The tree of this interface detected that the tree transitioned to Unsure state
+        The interface must react to this change in order to send some control messages
+        """
+        if self.is_tree_active() and self._best_upstream_router is None:
+            SFMRNonRootState.tree_transitions_from_active_to_unsure_and_best_upstream_neighbor_is_null(self)
+        elif self.is_tree_active() and self._best_upstream_router is not None:
+            SFMRNonRootState.interface_roles_dont_change_and_tree_transitions_from_active_to_unsure_and_best_upstream_neighbor_is_not_null(self)
+        elif self.is_tree_inactive() and self._best_upstream_router is not None:
+            SFMRNonRootState.tree_transitions_from_inactive_to_unsure_and_best_upstream_is_not_null(self)
+
+        if not self.is_tree_unsure():
+            super().tree_transition_to_unsure()
+            self.calculate_assert_winner()
+
     def tree_transition_to_inactive(self):
         """
         The tree of this interface detected that the tree transitioned to Inactive state
         The interface must react to this change in order to send some control messages
         """
-        if self.is_tree_active() and self._best_upstream_router is None:
-            SFMRNonRootState.tree_transitions_from_active_to_inactive_and_best_upstream_neighbor_is_null(self)
-        elif self.is_tree_active() and self._best_upstream_router is not None:
-            SFMRNonRootState.interface_roles_dont_change_and_tree_transitions_from_active_to_inactive_and_best_upstream_neighbor_is_not_null(self)
-        elif self.is_tree_unknown() and self._best_upstream_router is not None:
-            SFMRNonRootState.tree_transitions_from_unknown_to_inactive_and_best_upstream_is_not_null(self)
+        if self.is_tree_active():
+            SFMRNonRootState.tree_transitions_from_active_to_inactive(self)
 
         if not self.is_tree_inactive():
             super().tree_transition_to_inactive()
-            self.calculate_assert_winner()
-
-    def tree_transition_to_unknown(self):
-        """
-        The tree of this interface detected that the tree transitioned to Unknown state
-        The interface must react to this change in order to send some control messages
-        """
-        if self.is_tree_active():
-            SFMRNonRootState.tree_transitions_from_active_to_unknown(self)
-
-        if not self.is_tree_unknown():
-            super().tree_transition_to_unknown()
             self.calculate_assert_winner()
 
     ###########################################
@@ -198,9 +198,9 @@ class TreeInterfaceDownstream(TreeInterface):
         self.calculate_assert_winner()
 
         # Event 7 and 8
-        if self.current_tree_state.is_inactive() and new_best_upstream_neighbor_state is not None and \
+        if self.current_tree_state.is_unsure() and new_best_upstream_neighbor_state is not None and \
                  (previous_best_upstream_router is None or previous_best_upstream_router is not new_best_upstream_neighbor_state):
-            SFMRNonRootState.tree_remains_inactive_and_best_upstream_router_reelected(self)
+            SFMRNonRootState.tree_remains_unsure_and_best_upstream_router_reelected(self)
 
     def change_interest_state(self, interest_state):
         """

@@ -22,20 +22,20 @@ class TreeInterfaceUpstream(TreeInterface):
         if was_non_root and previous_tree_state.is_active() and current_tree_state.is_active():
             SFMRNewRootState.interfaces_roles_change_and_tree_remains_active(self)
         # event 2
-        elif was_non_root and previous_tree_state.is_inactive() and current_tree_state.is_active():
-            SFMRNewRootState.interfaces_roles_change_and_tree_was_inactive_and_transitions_to_active(self)
+        elif was_non_root and previous_tree_state.is_unsure() and current_tree_state.is_active():
+            SFMRNewRootState.interfaces_roles_change_and_tree_was_unsure_and_transitions_to_active(self)
         # event 3
-        elif was_non_root and previous_tree_state.is_active() and current_tree_state.is_inactive() and \
+        elif was_non_root and previous_tree_state.is_active() and current_tree_state.is_unsure() and \
                 best_upstream_router is None:
-            SFMRNewRootState.interfaces_roles_change_and_tree_was_active_and_transitions_to_inactive_and_best_upstream_neighbor_is_null(self)
+            SFMRNewRootState.interfaces_roles_change_and_tree_was_active_and_transitions_to_unsure_and_best_upstream_neighbor_is_null(self)
         # event 4
-        elif was_non_root and previous_tree_state.is_active() and current_tree_state.is_inactive() and \
+        elif was_non_root and previous_tree_state.is_active() and current_tree_state.is_unsure() and \
                 best_upstream_router is not None:
-            SFMRNewRootState.interfaces_roles_change_and_tree_was_active_and_transitions_to_inactive_and_best_upstream_neighbor_not_null(self)
+            SFMRNewRootState.interfaces_roles_change_and_tree_was_active_and_transitions_to_unsure_and_best_upstream_neighbor_not_null(self)
         # event 5
-        elif was_non_root and previous_tree_state.is_inactive() and current_tree_state.is_inactive() and \
+        elif was_non_root and previous_tree_state.is_unsure() and current_tree_state.is_unsure() and \
                 best_upstream_router is not None:
-            SFMRNewRootState.interfaces_roles_change_and_tree_remains_inactive_and_best_upstream_neighbor_not_null(self)
+            SFMRNewRootState.interfaces_roles_change_and_tree_remains_unsure_and_best_upstream_neighbor_not_null(self)
         # event 6
         elif not was_non_root and best_upstream_router is not None:
             SFMRNewRootState.interfaces_roles_dont_change_and_best_upstream_neighbor_reelected(self)

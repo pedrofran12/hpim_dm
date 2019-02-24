@@ -64,13 +64,13 @@ class NeighborState():
         return
 
 
-class Updated(NeighborState):
+class Synced(NeighborState):
     @staticmethod
     def recv_sync(neighbor, tree_state, my_snapshot_sn, neighbor_snapshot_sn, sync_sn, master_bit, more_bit, hello_options):
         if neighbor.neighbor_snapshot_sn > neighbor_snapshot_sn:
             return
         elif neighbor.neighbor_snapshot_sn < neighbor_snapshot_sn:
-            Updated.new_neighbor_or_adjacency_reset(neighbor)
+            Synced.new_neighbor_or_adjacency_reset(neighbor)
             return
 
         if sync_sn != neighbor.current_sync_sn:
@@ -123,7 +123,7 @@ class Master(NeighborState):
                     neighbor.set_hello_hold_time(hello_options["HOLDTIME"].holdtime)
                 else:
                     neighbor.set_hello_hold_time(DEFAULT_HELLO_HOLD_TIME_AFTER_SYNC)
-                neighbor.set_sync_state(Updated)
+                neighbor.set_sync_state(Synced)
                 neighbor.clear_sync_timer()
                 del neighbor.my_snapshot_multicast_routing_table[:]
             else:
@@ -184,7 +184,7 @@ class Slave(NeighborState):
                     neighbor.set_hello_hold_time(hello_options["HOLDTIME"].holdtime)
                 else:
                     neighbor.set_hello_hold_time(DEFAULT_HELLO_HOLD_TIME_AFTER_SYNC)
-                neighbor.set_sync_state(Updated)
+                neighbor.set_sync_state(Synced)
                 neighbor.clear_sync_timer()
                 del neighbor.my_snapshot_multicast_routing_table[:]
             else:
@@ -356,7 +356,7 @@ class Neighbor:
     ############################################
     def set_sync_state(self, state):
         """
-        Set sync state of this neighbor node (Unknown or Master or Slave or Updated)
+        Set sync state of this neighbor node (Unknown or Master or Slave or Synced)
         """
         if self.neighbor_state == state:
             return
@@ -367,7 +367,7 @@ class Neighbor:
                                    '; MySnapshotSN=' + str(self.my_snapshot_sequencer) +
                                    '; NeighborBootTime=' + str(self.time_of_boot) +
                                    '; NeighborSnapshotSN=' + str(self.neighbor_snapshot_sn))
-        if state == Updated:
+        if state == Synced:
             Main.kernel.recheck_all_trees(self.contact_interface.vif_index)
 
     def install_tree_state(self, tree_state: list):
@@ -422,7 +422,7 @@ class Neighbor:
             self.neighbor_state.new_neighbor_or_adjacency_reset(self)
             return
 
-        if self.neighbor_state == Updated:
+        if self.neighbor_state == Synced:
             self.time_of_last_update = time.time()
             self.set_hello_hold_time(holdtime)
             self.set_checkpoint_sn(checkpoint_sn)
@@ -550,8 +550,8 @@ class Neighbor:
         Obtain Upstream and Interest state regarding neighbor node... This information is obtained based on previous
         messages received from this neighbor node that were stored in the neighbor structure
         """
-        if self.neighbor_state != Updated:
-            # do not interpret stored state if not Updated
+        if self.neighbor_state != Synced:
+            # do not interpret stored state if not Synced
             return (False, None)
         else:
             upstream_state = self.tree_metric_state.get(tree, None)

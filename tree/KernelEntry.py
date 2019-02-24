@@ -22,7 +22,7 @@ class KernelEntry:
 
         self.source_ip = source_ip
         self.group_ip = group_ip
-        self._tree_state = TreeState.Unknown
+        self._tree_state = TreeState.Inactive
 
         self._interest_interface_state = interest_state_dic
         self._upstream_interface_state = upstream_state_dic
@@ -60,7 +60,7 @@ class KernelEntry:
     @abstractmethod
     def check_tree_state(self):
         """
-        Verify if tree changes state (Active/Inactive/Unknown)
+        Verify if tree changes state (Active/Unsure/Inactive)
         """
         return
 
@@ -82,7 +82,7 @@ class KernelEntry:
         A neighbor changed Upstream state due to the reception of any control packet
         (IamUpstream or IamNoLongerUpstream or Interest or NoInterest or Sync)
         """
-        if index not in self.interface_state or self.is_tree_unknown():
+        if index not in self.interface_state or self.is_tree_inactive():
             return
         print("ENTROU CHECK INTERFACE STATE")
         self._upstream_interface_state[index] = upstream_state
@@ -98,7 +98,7 @@ class KernelEntry:
         A neighbor changed Interest state due to the reception of any control packet
         (IamUpstream or IamNoLongerUpstream or Interest or NoInterest or Sync)
         """
-        if index not in self.interface_state or self.is_tree_unknown():
+        if index not in self.interface_state or self.is_tree_inactive():
             return
 
         current_interest_state = self._interest_interface_state.get(index, None)
@@ -135,21 +135,21 @@ class KernelEntry:
         """
         return self._tree_state.is_active()
 
+    def is_tree_unsure(self):
+        """
+        Determine if tree is in Unsure state
+        """
+        return self._tree_state.is_unsure()
+
     def is_tree_inactive(self):
         """
         Determine if tree is in Inactive state
         """
         return self._tree_state.is_inactive()
 
-    def is_tree_unknown(self):
-        """
-        Determine if tree is in Unknown state
-        """
-        return self._tree_state.is_unknown()
-
     def set_tree_state(self, tree_state):
         """
-        Set tree state (Active/Inactive/Unkown)
+        Set tree state (Active/Unsure/Inactive)
         """
         with self.CHANGE_STATE_LOCK:
             self.kernel_entry_logger.debug('Tree transitions to ' + str(tree_state))
@@ -198,7 +198,7 @@ class KernelEntry:
         Reset multicast routing table due to changes in state
         """
         with self._multicast_change:
-            if self.inbound_interface_index is not None and not self.is_tree_unknown():
+            if self.inbound_interface_index is not None and not self.is_tree_inactive():
                 Main.kernel.set_multicast_route(self)
 
     def remove_entry(self):
@@ -268,7 +268,7 @@ class KernelEntryNonOriginator(KernelEntry):
                                                                           best_upstream_router=upstream_state,
                                                                           interest_state=interest_state,
                                                                           was_root=False,
-                                                                          previous_tree_state=TreeState.Unknown,
+                                                                          previous_tree_state=TreeState.Inactive,
                                                                           current_tree_state=self._tree_state)
 
                 except:
@@ -280,7 +280,7 @@ class KernelEntryNonOriginator(KernelEntry):
             if self.inbound_interface_index is not None:
                 self.interface_state[self.inbound_interface_index] = \
                     TreeInterfaceUpstream(self, self.inbound_interface_index, upstream_state, was_non_root=False,
-                                          previous_tree_state=TreeState.Unknown, current_tree_state=self._tree_state)
+                                          previous_tree_state=TreeState.Inactive, current_tree_state=self._tree_state)
 
         self.change()
         self.evaluate_in_tree_change()
@@ -288,7 +288,7 @@ class KernelEntryNonOriginator(KernelEntry):
 
     def check_tree_state(self):
         """
-        Verify if tree changes state (Active/Inactive/Unknown)
+        Verify if tree changes state (Active/Unsure/Inactive)
         """
         with self.CHANGE_STATE_LOCK:
             if self.inbound_interface_index is not None and \
@@ -301,11 +301,11 @@ class KernelEntryNonOriginator(KernelEntry):
                 self._tree_state.transition_to_active(self)
             elif len(self.interface_state) > 0 and \
                     not all(value is None for value in self._upstream_interface_state.values()):
+                print("PARA UNSURE")
+                self._tree_state.transition_to_unsure(self)
+            else:
                 print("PARA INACTIVE")
                 self._tree_state.transition_to_inactive(self)
-            else:
-                print("PARA UNKNOWN")
-                self._tree_state.transition_to_unknown(self)
 
     def first_check_tree_state(self):
         """
@@ -319,13 +319,13 @@ class KernelEntryNonOriginator(KernelEntry):
             print("PARA ACTIVE")
             self.set_tree_state(TreeState.Active)
         elif not all(value is None for value in self._upstream_interface_state.values()):
+            print("PARA UNSURE")
+            # tree is Unsure
+            self.set_tree_state(TreeState.Unsure)
+        else:
             print("PARA INACTIVE")
             # tree is Inactive
             self.set_tree_state(TreeState.Inactive)
-        else:
-            print("PARA UNKNOWN")
-            # tree is Unknown
-            self.set_tree_state(TreeState.Unknown)
 
     ###############################################################
     # Unicast Changes to RPF
@@ -340,7 +340,7 @@ class KernelEntryNonOriginator(KernelEntry):
             new_rpc = Metric(metric_administrative_distance, metric_cost)
 
             if is_directly_connected:
-                self._tree_state.transition_to_unknown(self)
+                self._tree_state.transition_to_inactive(self)
                 return
             if new_inbound_interface_index != self.inbound_interface_index:
                 # get old interfaces
@@ -362,8 +362,8 @@ class KernelEntryNonOriginator(KernelEntry):
                 if (self.is_tree_active() and root_upstream_state is None) or \
                         (self.is_tree_active() and root_upstream_state is not None and
                          (new_rpc.is_better_than(root_upstream_state) or new_rpc == root_upstream_state)):
-                    new_tree_state = TreeState.Inactive
-                elif self.is_tree_inactive() and root_upstream_state is not None and \
+                    new_tree_state = TreeState.Unsure
+                elif self.is_tree_unsure() and root_upstream_state is not None and \
                         not new_rpc.is_better_than(root_upstream_state) and new_rpc != root_upstream_state:
                     new_tree_state = TreeState.Active
 
@@ -460,7 +460,7 @@ class KernelEntryNonOriginator(KernelEntry):
 
                 new_tree_state = self._tree_state
                 if self.is_tree_active() and root_upstream_state is None:
-                    new_tree_state = TreeState.Inactive
+                    new_tree_state = TreeState.Unsure
 
                 # change type of interfaces
                 if self.inbound_interface_index is not None:
@@ -498,7 +498,7 @@ class KernelEntryOriginator(KernelEntry):
             self.sat_is_running = True
             self.set_tree_state(TreeState.Active)
         else:
-            self.set_tree_state(TreeState.Inactive)
+            self.set_tree_state(TreeState.Unsure)
 
         with self.CHANGE_STATE_LOCK:
             for i in Main.kernel.vif_index_to_name_dic.keys():
@@ -511,7 +511,7 @@ class KernelEntryOriginator(KernelEntry):
                                                                           best_upstream_router=upstream_state,
                                                                           interest_state=interest_state,
                                                                           was_root=False,
-                                                                          previous_tree_state=TreeState.Unknown,
+                                                                          previous_tree_state=TreeState.Inactive,
                                                                           current_tree_state=self._tree_state)
                 except:
                     import traceback
@@ -528,7 +528,7 @@ class KernelEntryOriginator(KernelEntry):
 
     def check_tree_state(self):
         """
-        Verify if tree changes state (Active/Inactive/Unknown)
+        Verify if tree changes state (Active/Unsure/Inactive)
         """
         if self.inbound_interface_index is not None and self.sat_is_running and len(self.interface_state) > 0:
             print("PARA ACTIVE")
@@ -536,13 +536,13 @@ class KernelEntryOriginator(KernelEntry):
             self._tree_state.transition_to_active(self)
         elif len(self.interface_state) == 0 or\
                 (not self.sat_is_running and all(v is None for v in self._upstream_interface_state.values())):
-            # tree is unknown
-            print("PARA UNKNOWN")
-            self._tree_state.transition_to_unknown(self)
-        elif self.inbound_interface_index is None or not self.sat_is_running:
+            # tree is Inactive
             print("PARA INACTIVE")
-            # tree is inactive
             self._tree_state.transition_to_inactive(self)
+        elif self.inbound_interface_index is None or not self.sat_is_running:
+            print("PARA UNSURE")
+            # tree is Unsure
+            self._tree_state.transition_to_unsure(self)
 
     ###############################################################
     # Code related with tree state
@@ -574,7 +574,7 @@ class KernelEntryOriginator(KernelEntry):
             new_rpc = Metric(metric_administrative_distance, metric_cost)
 
             if not is_directly_connected:
-                self._tree_state.transition_to_unknown(self)
+                self._tree_state.transition_to_inactive(self)
                 return
             if new_inbound_interface_index != self.inbound_interface_index:
                 # get old interfaces
@@ -588,7 +588,7 @@ class KernelEntryOriginator(KernelEntry):
 
                 if new_inbound_interface_index is None:
                     self.sat_is_running = False
-                    new_tree_state = TreeState.Inactive
+                    new_tree_state = TreeState.Unsure
                 else:
                     new_tree_state = TreeState.Active
 

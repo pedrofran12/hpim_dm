@@ -12,7 +12,7 @@ This repository stores the implementation of this protocol. The implementation i
 
 
 # Installation
-You may need sudo permitions, in order to run this protocol. This is required because we use raw sockets to exchange control messages. For this reason, some sockets to work properly need to have super user permissions.
+You may need sudo permissions, in order to run this protocol. This is required because we use raw sockets to exchange control messages. For this reason, some sockets to work properly need to have super user permissions.
 
 First clone this repository:
   `git clone https://github.com/pedrofran12/hpim_dm.git`
@@ -20,12 +20,12 @@ First clone this repository:
 Then enter in the cloned repository and install all dependencies:
    `pip3 install -r requirements.txt`
  
-And thats it :D
+And that's it :D
 
 
 # Run protocol
 
-In order to interact with the protocol you need to allways execute Run.py file. You can interact with the protocol by executing this file and specifying a command and corresponding arguments:
+In order to interact with the protocol you need to always execute Run.py file. You can interact with the protocol by executing this file and specifying a command and corresponding arguments:
 
    `sudo python3 Run.py -COMMAND ARGUMENTS`
 

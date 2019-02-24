@@ -88,9 +88,9 @@ class TreeInterfaceUpstreamOriginator(TreeInterface):
         """
         Root interface received data packet
         """
-        if not self.is_tree_unknown():
+        if not self.is_tree_inactive():
             self.set_source_active_timer()
-            if self.is_tree_inactive():
+            if self.is_tree_unsure():
                 self._kernel_entry.sat_running()
 
     ###########################################

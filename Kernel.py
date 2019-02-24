@@ -429,11 +429,11 @@ class Kernel:
                 return
 
             (interest_state, upstream_state) = interface.get_tree_state(source_group)
-            tree_is_not_unknown = upstream_state is not None
+            tree_is_not_inactive = upstream_state is not None
             print("RCV INSTALL/UNINSTALL")
             print("INTERESSE: ", interest_state)
 
-            if tree_is_not_unknown and (ip_src not in self.routing or ip_dst not in self.routing.get(ip_src, {})):
+            if tree_is_not_inactive and (ip_src not in self.routing or ip_dst not in self.routing.get(ip_src, {})):
                 self.create_entry(ip_src, ip_dst)
             elif ip_src in self.routing and ip_dst in self.routing[ip_src]:
                 self.routing[ip_src][ip_dst].check_interface_state(interface.vif_index, upstream_state, interest_state)

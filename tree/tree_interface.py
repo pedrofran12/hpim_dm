@@ -81,17 +81,17 @@ class TreeInterface(metaclass=ABCMeta):
         """
         return self.current_tree_state.is_active()
 
+    def is_tree_unsure(self):
+        """
+        Verify if this interface considers the tree to be in Unsure state
+        """
+        return self.current_tree_state.is_unsure()
+
     def is_tree_inactive(self):
         """
         Verify if this interface considers the tree to be in Inactive state
         """
         return self.current_tree_state.is_inactive()
-
-    def is_tree_unknown(self):
-        """
-        Verify if this interface considers the tree to be in Unknown state
-        """
-        return self.current_tree_state.is_unknown()
 
     #############################################################
     @abstractmethod
@@ -173,19 +173,19 @@ class TreeInterface(metaclass=ABCMeta):
         """
         self.current_tree_state = TreeState.Active
 
+    def tree_transition_to_unsure(self):
+        """
+        The tree of this interface detected that the tree transitioned to Unsure state
+        The interface must react to this change in order to send some control messages
+        """
+        self.current_tree_state = TreeState.Unsure
+
     def tree_transition_to_inactive(self):
         """
         The tree of this interface detected that the tree transitioned to Inactive state
         The interface must react to this change in order to send some control messages
         """
         self.current_tree_state = TreeState.Inactive
-
-    def tree_transition_to_unknown(self):
-        """
-        The tree of this interface detected that the tree transitioned to Unknown state
-        The interface must react to this change in order to send some control messages
-        """
-        self.current_tree_state = TreeState.Unknown
 
 
     #############################################################
@@ -254,7 +254,6 @@ class TreeInterface(metaclass=ABCMeta):
     def get_tree_id(self):
         """
         Get tree id, i.e. pair (Source, Group) IPs
-        :return:
         """
         return (self._kernel_entry.source_ip, self._kernel_entry.group_ip)
 

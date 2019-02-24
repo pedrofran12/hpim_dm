@@ -24,62 +24,62 @@ class SFMRNonRootState:
         interface.send_i_am_upstream()
 
     @staticmethod
-    def tree_transitions_from_active_to_inactive_and_best_upstream_neighbor_is_null(interface: 'TreeInterfaceDownstream'):
+    def tree_transitions_from_active_to_unsure_and_best_upstream_neighbor_is_null(interface: 'TreeInterfaceDownstream'):
         """
-        Tree transitions from Active to Inactive state AND
+        Tree transitions from Active to Unsure state AND
         BestUpstream neighbor is null
         """
-        interface.logger.debug('tree_transitions_from_active_to_inactive_and_best_upstream_neighbor_is_null')
+        interface.logger.debug('tree_transitions_from_active_to_unsure_and_best_upstream_neighbor_is_null')
         interface.send_i_am_no_longer_upstream()
 
     @staticmethod
-    def tree_transitions_from_active_to_unknown(interface: 'TreeInterfaceDownstream'):
+    def tree_transitions_from_active_to_inactive(interface: 'TreeInterfaceDownstream'):
         """
-        Tree transitions from Active to Unknown state
+        Tree transitions from Active to Inactive state
         """
-        interface.logger.debug('tree_transitions_from_active_to_unknown')
+        interface.logger.debug('tree_transitions_from_active_to_inactive')
         interface.send_i_am_no_longer_upstream()
 
     @staticmethod
-    def interface_roles_dont_change_and_tree_transitions_from_active_to_inactive_and_best_upstream_neighbor_is_not_null(interface: 'TreeInterfaceDownstream'):
+    def interface_roles_dont_change_and_tree_transitions_from_active_to_unsure_and_best_upstream_neighbor_is_not_null(interface: 'TreeInterfaceDownstream'):
         """
-        Tree transitions from Active to Inactive state AND
+        Tree transitions from Active to Unsure state AND
         BestUpstream neighbor is not null
         """
-        interface.logger.debug('interface_roles_dont_change_and_tree_transitions_from_active_to_inactive_and_best_upstream_neighbor_is_not_null')
+        interface.logger.debug('interface_roles_dont_change_and_tree_transitions_from_active_to_unsure_and_best_upstream_neighbor_is_not_null')
         interface.send_i_am_no_longer_upstream()
         interface.send_no_interest()
 
     @staticmethod
-    def interface_roles_change_and_tree_transitions_from_active_to_inactive_and_best_upstream_neighbor_is_not_null(interface: 'TreeInterfaceDownstream'):
+    def interface_roles_change_and_tree_transitions_from_active_to_unsure_and_best_upstream_neighbor_is_not_null(interface: 'TreeInterfaceDownstream'):
         """
-        Tree transitions from Active to Inactive state AND
+        Tree transitions from Active to Unsure state AND
         BestUpstream neighbor is not null
         """
-        interface.logger.debug('interface_roles_change_and_tree_transitions_from_active_to_inactive_and_best_upstream_neighbor_is_not_null')
+        interface.logger.debug('interface_roles_change_and_tree_transitions_from_active_to_unsure_and_best_upstream_neighbor_is_not_null')
         interface.send_no_interest()
 
     @staticmethod
-    def tree_remains_inactive_and_best_upstream_router_reelected(interface: 'TreeInterfaceDownstream'):
+    def tree_remains_unsure_and_best_upstream_router_reelected(interface: 'TreeInterfaceDownstream'):
         """
-        Tree remains in Inactive state AND
+        Tree remains in Unsure state AND
         BestUpstream neighbor changes
 
         OR
 
-        Tree remains in Inactive state AND
+        Tree remains in Unsure state AND
         BestUpstream neighbor transmitted IamUpstream message that doesnt cause a change of the BestUpstream neighbor
         """
-        interface.logger.debug('interfaces_roles_dont_change_and_tree_transitions_to_active_state')
+        interface.logger.debug('tree_remains_unsure_and_best_upstream_router_reelected')
         interface.send_no_interest()
 
     @staticmethod
-    def tree_transitions_from_unknown_to_inactive_and_best_upstream_is_not_null(interface: 'TreeInterfaceDownstream'):
+    def tree_transitions_from_inactive_to_unsure_and_best_upstream_is_not_null(interface: 'TreeInterfaceDownstream'):
         """
-        Tree transitions from Unknown to Inactive state AND
+        Tree transitions from Inactive to Unsure state AND
         BestUpstream neighbor is not null
         """
-        interface.logger.debug('tree_transitions_from_unknown_to_inactive_and_best_upstream_is_not_null')
+        interface.logger.debug('tree_transitions_from_inactive_to_unsure_and_best_upstream_is_not_null')
         interface.send_no_interest()
 
     @staticmethod
