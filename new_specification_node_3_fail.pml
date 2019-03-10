@@ -28,7 +28,7 @@
 
 
 mtype = {root, non_root, not_interface}; //interface can be of type Root or Non-Root
-mtype = {active_tree, inactive_tree, unknown_tree}; // Tree can be in one of three states
+mtype = {active_tree, unsure_tree, inactive_tree}; // Tree can be in one of three states
 mtype = {msg_i_am_upstream, msg_i_am_no_longer_upstream, msg_interest, msg_nointerest, msg_ack}; //type of messages
 mtype = {upstream, not_upstream_interest, not_upstream_no_interest, no_info}; //state of neighbors
 mtype = {aw, al}; // assert state of non-root interfaces
@@ -39,7 +39,7 @@ typedef NEIGHBOR_STATE{
 }
 
 typedef NODE_CONFIGURATION {
-	mtype tree_state = unknown_tree;
+	mtype tree_state = inactive_tree;
   mtype node_interface[NUMBER_OF_INTERFACES] = not_interface;
   bool luri = false;
   short luni = 0;
@@ -90,9 +90,9 @@ inline recalculateTreeState(node_id, interface_id) {
     :: !LURI_IS_EMPTY(node_id) ->
       CURRENT_TREE_STATE(node_id) = active_tree;
     :: LURI_IS_EMPTY(node_id) && !LUNI_IS_EMPTY(node_id) ->
-      CURRENT_TREE_STATE(node_id) = inactive_tree;
+      CURRENT_TREE_STATE(node_id) = unsure_tree;
     :: LURI_IS_EMPTY(node_id) && LUNI_IS_EMPTY(node_id) ->
-      CURRENT_TREE_STATE(node_id) = unknown_tree;
+      CURRENT_TREE_STATE(node_id) = inactive_tree;
     fi;
     printf("CURRENT_STATE of node %d is %e\n\n\n", node_id, CURRENT_TREE_STATE(node_id))
   }
@@ -125,7 +125,7 @@ inline sendMsgUnicast(node_id, msg_type, interface_id, rpc, dst) {
 
 proctype InterfaceReceive(byte node_id; byte interface_id) {
   //mtype neighbor_state[NUMBER_OF_INTERFACES] = not_neighbor;
-  mtype tree_state = unknown_tree;
+  mtype tree_state = inactive_tree;
   mtype msg_type;
   byte neighbor_id;
   byte neighbor_rpc;
@@ -162,7 +162,7 @@ end:
 proctype InterfaceSend(byte node_id; byte interface_id) {
   //mtype neighbor_state[NUMBER_OF_INTERFACES] = not_neighbor;
   mtype last_interface_type = INTERFACE_TYPE(node_id, interface_id);
-  mtype last_tree_state = unknown_tree;
+  mtype last_tree_state = inactive_tree;
   mtype last_msg_type = msg_i_am_no_longer_upstream
   mtype last_sn = 0;
   byte last_rpc = MY_RPC(node_id);
@@ -336,4 +336,4 @@ init {
   }
 }
 
-ltl ltl_test {(<>([](CURRENT_TREE_STATE(0)==active_tree && CURRENT_TREE_STATE(1)==active_tree && CURRENT_TREE_STATE(2)==active_tree  && CURRENT_TREE_STATE(4)==unknown_tree)))}
+ltl ltl_test {(<>([](CURRENT_TREE_STATE(0)==active_tree && CURRENT_TREE_STATE(1)==active_tree && CURRENT_TREE_STATE(2)==active_tree  && CURRENT_TREE_STATE(4)==inactive_tree)))}

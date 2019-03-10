@@ -3,7 +3,7 @@
 
 
 mtype = {sync, hello}; //types of messages
-mtype = {unknown, master, slave, updated}; //Neighbor state
+mtype = {unknown, master, slave, synced}; //Neighbor state
 mtype = {reboot, broken_bidirectional_relationship}; //inform neighbor about a reboot
 
 
@@ -47,7 +47,7 @@ inline recv_sync_and_neighbor_is_master(node_id, total_of_sync_msgs, neighbor_id
           ch[neighbor_id] ! sync(node_id, my_boot_time[node_id], neighbor_boot_time[node_id], my_snapshot_sn[node_id], neighbor_snapshot_sn[node_id], current_sync_sn[node_id], MASTER_FLAG(neighbor_state[node_id]), MORE_FLAG(total_of_sync_msgs, current_sync_sn[node_id]));
           if
           :: rcv_sync_sn > 0 && !MORE_FLAG(total_of_sync_msgs, current_sync_sn[node_id]) && !rcv_more_bit ->
-              neighbor_state[node_id] = updated;
+              neighbor_state[node_id] = synced;
           :: else ->
               current_sync_sn[node_id] = current_sync_sn[node_id] + 1;
           fi;
@@ -92,7 +92,7 @@ inline recv_sync_and_neighbor_is_slave(node_id, total_of_sync_msgs, neighbor_id,
       :: process_this_message1 && rcv_sync_sn == current_sync_sn[node_id] && !rcv_master_bit && my_snapshot_sn[node_id] == rcv_my_snapshot_sn ->
           if
           :: current_sync_sn[node_id] > 0 && !MORE_FLAG(total_of_sync_msgs, current_sync_sn[node_id]) && !rcv_more_bit ->
-              neighbor_state[node_id] = updated;
+              neighbor_state[node_id] = synced;
           :: else ->
               current_sync_sn[node_id] = current_sync_sn[node_id] + 1;
               ch[neighbor_id] ! sync(node_id, my_boot_time[node_id], neighbor_boot_time[node_id], my_snapshot_sn[node_id], neighbor_snapshot_sn[node_id], current_sync_sn[node_id], MASTER_FLAG(neighbor_state[node_id]), MORE_FLAG(total_of_sync_msgs, current_sync_sn[node_id]));
@@ -128,7 +128,7 @@ inline new_neighbor(node_id, total_of_sync_msgs, neighbor_id, rcv_neighbor_boot_
       ch[neighbor_id] ! sync(node_id, my_boot_time[node_id], neighbor_boot_time[node_id], my_snapshot_sn[node_id], neighbor_snapshot_sn[node_id], current_sync_sn[node_id], MASTER_FLAG(neighbor_state[node_id]), MORE_FLAG(total_of_sync_msgs, current_sync_sn[node_id]));
 }
 
-inline rcv_sync_and_neighbor_updated(node_id, total_of_sync_msgs, neighbor_id, rcv_neighbor_boot_time, rcv_neighbor_snapshot_sn, rcv_my_snapshot_sn, rcv_sync_sn, rcv_master_bit, rcv_more_bit) {
+inline rcv_sync_and_neighbor_synced(node_id, total_of_sync_msgs, neighbor_id, rcv_neighbor_boot_time, rcv_neighbor_snapshot_sn, rcv_my_snapshot_sn, rcv_sync_sn, rcv_master_bit, rcv_more_bit) {
     bool process_this_message3 = true;
     if
     :: rcv_neighbor_boot_time > neighbor_boot_time[node_id] || (rcv_neighbor_boot_time == neighbor_boot_time[node_id] && rcv_neighbor_snapshot_sn > neighbor_snapshot_sn[node_id]) ->
@@ -157,7 +157,7 @@ inline rcv_sync_and_neighbor_updated(node_id, total_of_sync_msgs, neighbor_id, r
 
     if
     :: process_this_message3 && rcv_sync_sn == current_sync_sn[node_id] && rcv_master_bit ->
-        // if receive retransmission from Master... this means that I am slave and I already transitioned to Updated state while the neighbor node is still in a Non-Updated state because my last message has been lost
+        // if receive retransmission from Master... this means that I am slave and I already transitioned to Synced state while the neighbor node is still in a Non-Synced state because my last message has been lost
         // so I must retransmit my last message to Master
         ch[neighbor_id] ! sync(node_id, my_boot_time[node_id], neighbor_boot_time[node_id], my_snapshot_sn[node_id], neighbor_snapshot_sn[node_id], current_sync_sn[node_id], false, false);
     :: else ->
@@ -203,8 +203,8 @@ proctype Interface(byte node_id; byte my_initial_boot_time; byte my_initial_snap
                 recv_sync_and_neighbor_is_master(node_id, total_of_sync_msgs, neighbor_id, rcv_neighbor_boot_time, rcv_neighbor_snapshot_sn, rcv_my_snapshot_sn, rcv_sync_sn, rcv_master_bit, rcv_more_bit);
             :: rcv_my_boot_time == my_boot_time[node_id] && neighbor_state[node_id] == slave ->
                 recv_sync_and_neighbor_is_slave(node_id, total_of_sync_msgs, neighbor_id, rcv_neighbor_boot_time, rcv_neighbor_snapshot_sn, rcv_my_snapshot_sn, rcv_sync_sn, rcv_master_bit, rcv_more_bit);
-            :: rcv_my_boot_time == my_boot_time[node_id] && neighbor_state[node_id] == updated ->
-                rcv_sync_and_neighbor_updated(node_id, total_of_sync_msgs, neighbor_id, rcv_neighbor_boot_time, rcv_neighbor_snapshot_sn, rcv_my_snapshot_sn, rcv_sync_sn, rcv_master_bit, rcv_more_bit);
+            :: rcv_my_boot_time == my_boot_time[node_id] && neighbor_state[node_id] == synced ->
+                rcv_sync_and_neighbor_synced(node_id, total_of_sync_msgs, neighbor_id, rcv_neighbor_boot_time, rcv_neighbor_snapshot_sn, rcv_my_snapshot_sn, rcv_sync_sn, rcv_master_bit, rcv_more_bit);
             :: else ->
                 printf("ELSE\n");
                 ch[neighbor_id] ! hello(node_id, my_boot_time[node_id], 0, 0, 0, 0, false, false);
@@ -318,4 +318,4 @@ init {
   }
 }
 
-ltl ltl_test {(<>([](neighbor_state[0]==updated && neighbor_state[1]==updated && current_sync_sn[0]==TOTAL_MSGS_SYNC && current_sync_sn[1]==TOTAL_MSGS_SYNC && my_snapshot_sn[0]==neighbor_snapshot_sn[1] && my_snapshot_sn[1]==neighbor_snapshot_sn[0] && my_boot_time[0]==neighbor_boot_time[1] && my_boot_time[1]==neighbor_boot_time[0])))}
+ltl ltl_test {(<>([](neighbor_state[0]==synced && neighbor_state[1]==synced && current_sync_sn[0]==TOTAL_MSGS_SYNC && current_sync_sn[1]==TOTAL_MSGS_SYNC && my_snapshot_sn[0]==neighbor_snapshot_sn[1] && my_snapshot_sn[1]==neighbor_snapshot_sn[0] && my_boot_time[0]==neighbor_boot_time[1] && my_boot_time[1]==neighbor_boot_time[0])))}
