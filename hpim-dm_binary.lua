@@ -1,51 +1,21 @@
 ----------------------------------------
--- script-name: dns_dissector.lua
+-- script-name: hpim-dm_binary.lua
 --
--- author: Hadriel Kaplan <hadrielk at yahoo dot com>
--- Copyright (c) 2014, Hadriel Kaplan
--- This code is in the Public Domain, or the BSD (3 clause) license if Public Domain does not apply
--- in your country.
+-- author: Pedro Oliveira
+-- based on Hadriel Kaplan dns dissector example (https://wiki.wireshark.org/Lua/Examples?action=AttachFile&do=get&target=dissector.lua)
 --
--- Version: 2.1
---
--- Changes since 2.0:
---   * fixed a bug with default settings
---   * added ability for command-line to overide defaults
---
--- Changes since 1.0:
---   * made it use the new ProtoExpert class model for expert info
---   * add a protocol column with the proto name
---   * added heuristic dissector support
---   * added preferences settings
---   * removed byteArray2String(), and uses the new ByteArray:raw() method instead
---
--- BACKGROUND:
--- This is an example Lua script for a protocol dissector. The purpose of this script is two-fold:
---   * To provide a reference tutorial for others writing Wireshark dissectors in Lua
---   * To test various functions being called in various ways, so this script can be used in the test-suites
--- I've tried to meet both of those goals, but it wasn't easy. No doubt some folks will wonder why some
--- functions are called some way, or differently than previous invocations of the same function. I'm trying to
--- to show both that it can be done numerous ways, but also I'm trying to test those numerous ways, and my more
--- immediate need is for test coverage rather than tutorial guide. (the Lua API is sorely lacking in test scripts)
---
--- OVERVIEW:
--- This script creates an elementary dissector for DNS. It's neither comprehensive nor error-free with regards
--- to the DNS protocol. That's OK. The goal isn't to fully dissect DNS properly - Wireshark already has a good
--- DNS dissector built-in. We don't need another one. We also have other example Lua scripts, but I don't think
--- they do a good job of explaining things, and the nice thing about this one is getting capture files to
--- run it against is trivial. (plus I uploaded one)
+-- Version: 1.0
 --
 -- HOW TO RUN THIS SCRIPT:
 -- Wireshark and Tshark support multiple ways of loading Lua scripts: through a dofile() call in init.lua,
 -- through the file being in either the global or personal plugins directories, or via the command line.
--- See the Wireshark USer's Guide chapter on Lua (http://www.wireshark.org/docs/wsug_html_chunked/wsluarm.html).
--- Once the script is loaded, it creates a new protocol named "MyDNS" (or "MYDNS" in some places).  If you have
--- a capture file with DNS packets in it, simply select one in the Packet List pane, right-click on it, and
+-- See the Wireshark User's Guide chapter on Lua (http://www.wireshark.org/docs/wsug_html_chunked/wsluarm.html).
+-- Once the script is loaded, it creates a new protocol named "HPIM-DM".  If you have
+-- a capture file with HPIM-DM packets in it, simply select one in the Packet List pane, right-click on it, and
 -- select "Decode As ...", and then in the dialog box that shows up scroll down the list of protocols to one
--- called "MYDNS", select that and click the "ok" or "apply" button.  Voila`, you're now decoding DNS packets
+-- called "HPIM-DM", select that and click the "ok" or "apply" button.  Voila`, you're now decoding HPIM-DM packets
 -- using the simplistic dissector in this script.  Another way is to download the capture file made for
--- this script, and open that - since the DNS packets in it use UDP port 65333 (instead of the default 53),
--- and since the MyDNS protocol in this script has been set to automatically decode UDP port 65333, it will
+-- this script, and open that - since the HPIM-DM packets in it use IP protocol number 103, it will
 -- automagically do it without doing "Decode As ...".
 --
 ----------------------------------------
@@ -140,25 +110,25 @@ assert(ProtoExpert.new, "Wireshark does not have the ProtoExpert class, so it's 
 
 ----------------------------------------
 -- creates a Proto object, but doesn't register it yet
-local protocol = Proto("sfmr","New Multicast Protocol")
+local protocol = Proto("HPIM-DM","Hard state Protocol Independent Multicast - Dense Mode")
 
 ----------------------------------------
-local pf_boot_time                         = ProtoField.new("Boot Time", "sfmr.boot_time", ftypes.UINT32)
-local pf_tree_source                       = ProtoField.new("Source", "sfmr.options.tree_source", ftypes.IPv4)
-local pf_tree_group                        = ProtoField.new("Group", "sfmr.options.tree_group", ftypes.IPv4)
-local pf_hello_holdtime                    = ProtoField.new("Holdtime", "sfmr.options.hello_holdtime", ftypes.UINT16)
-local pf_assert_metric                     = ProtoField.new("Metric", "sfmr.options.assert_metric", ftypes.UINT32)
-local pf_assert_metric_preference          = ProtoField.new("Metric Preference", "sfmr.options.assert_metric_preference", ftypes.UINT32)
-local pf_neighbor_boot_time                = ProtoField.new("Neighbor Boot Time", "sfmr.options.neighbor_boot_time", ftypes.UINT32)
-local pf_sequence_number                   = ProtoField.new("SequenceNumber", "sfmr.options.sequence_number", ftypes.UINT32)
-local pf_my_snapshot_sequence_number       = ProtoField.new("My Snapshot Sequence Number", "sfmr.options.my_snapshot_sequence_number", ftypes.UINT32)
-local pf_neighbor_snapshot_sequence_number = ProtoField.new("Neighbor Snapshot Sequence Number", "sfmr.options.neighbor_snapshot_sequence_number", ftypes.UINT32)
-local pf_checkpoint_sequence_number        = ProtoField.new("Checkpoint Sequence Number", "sfmr.options.checkpoint_sequence_number", ftypes.UINT32)
+local pf_boot_time                         = ProtoField.new("Boot Time", "hpim.boot_time", ftypes.UINT32)
+local pf_tree_source                       = ProtoField.new("Source", "hpim.options.tree_source", ftypes.IPv4)
+local pf_tree_group                        = ProtoField.new("Group", "hpim.options.tree_group", ftypes.IPv4)
+local pf_hello_holdtime                    = ProtoField.new("Holdtime", "hpim.options.hello_holdtime", ftypes.UINT16)
+local pf_assert_metric                     = ProtoField.new("Metric", "hpim.options.assert_metric", ftypes.UINT32)
+local pf_assert_metric_preference          = ProtoField.new("Metric Preference", "hpim.options.assert_metric_preference", ftypes.UINT32)
+local pf_neighbor_boot_time                = ProtoField.new("Neighbor Boot Time", "hpim.options.neighbor_boot_time", ftypes.UINT32)
+local pf_sequence_number                   = ProtoField.new("SequenceNumber", "hpim.options.sequence_number", ftypes.UINT32)
+local pf_my_snapshot_sequence_number       = ProtoField.new("My Snapshot Sequence Number", "hpim.options.my_snapshot_sequence_number", ftypes.UINT32)
+local pf_neighbor_snapshot_sequence_number = ProtoField.new("Neighbor Snapshot Sequence Number", "hpim.options.neighbor_snapshot_sequence_number", ftypes.UINT32)
+local pf_checkpoint_sequence_number        = ProtoField.new("Checkpoint Sequence Number", "hpim.options.checkpoint_sequence_number", ftypes.UINT32)
 
 packet_type = {
-  [0] = "HELLO", 
+  [0] = "HELLO",
   [1] = "SYNC",
-  [2] = "I_AM_UPSTREAM", 
+  [2] = "I_AM_UPSTREAM",
   [3] = "I_AM_NO_LONGER_UPSTREAM",
   [4] = "INTEREST",
   [5] = "NO_INTEREST",
@@ -169,11 +139,11 @@ packet_type = {
 -- note the "base" argument becomes the size of the bitmask'ed field when ftypes.BOOLEAN is used
 -- the "mask" argument is which bits we want to use for this field (e.g., base=16 and mask=0x8000 means we want the top bit of a 16-bit field)
 -- again the following shows different ways of doing the same thing basically
-local pf_version                    = ProtoField.new("Version", "sfmr.version", ftypes.UINT8, nil, base.DEC, 0xF0)
-local pf_type                       = ProtoField.new("Type", "sfmr.type", ftypes.UINT8, packet_type, base.DEC, 0x0F)
-local pf_master_flag                = ProtoField.new("Master flag", "sfmr.options.master_flag", ftypes.BOOLEAN, nil, 32, 0x080000000)
-local pf_more_flag                  = ProtoField.new("More flag", "sfmr.options.more_flag", ftypes.BOOLEAN, nil, 32, 0x040000000)
-local pf_sync_sequence_number       = ProtoField.new("Sync Sequence Number", "sfmr.options.sync_sequence_number", ftypes.UINT32, nil, base.DEC, 0x3FFFFFFF)
+local pf_version                    = ProtoField.new("Version", "hpim.version", ftypes.UINT8, nil, base.DEC, 0xF0)
+local pf_type                       = ProtoField.new("Type", "hpim.type", ftypes.UINT8, packet_type, base.DEC, 0x0F)
+local pf_master_flag                = ProtoField.new("Master flag", "hpim.options.master_flag", ftypes.BOOLEAN, nil, 32, 0x080000000)
+local pf_more_flag                  = ProtoField.new("More flag", "hpim.options.more_flag", ftypes.BOOLEAN, nil, 32, 0x040000000)
+local pf_sync_sequence_number       = ProtoField.new("Sync Sequence Number", "hpim.options.sync_sequence_number", ftypes.UINT32, nil, base.DEC, 0x3FFFFFFF)
 
 ----------------------------------------
 -- this actually registers the ProtoFields above, into our new Protocol
@@ -205,7 +175,7 @@ protocol.prefs.debug = Pref.enum("Debug", default_settings.debug_level,
                             "The debug printing level", debug_pref_enum)
 
 protocol.prefs.proto_number  = Pref.uint("Protocol number", default_settings.proto_number,
-                            "Protocol number at the IP header for NewProtocol")
+                            "Protocol number at the IP header for HPIM-DM")
 
 --protocol.prefs.heur  = Pref.bool("Heuristic enabled", default_settings.heur_enabled,
 --                           "Whether heuristic dissection is enabled or not")
@@ -223,22 +193,22 @@ function protocol.prefs_changed()
     if default_settings.proto_number ~= protocol.prefs.proto_number then
         -- remove old one, if not 0
         if default_settings.proto_number ~= 0 then
-            dprint2("removing NewProtocol from Protocol Number",default_settings.proto_number)
+            dprint2("removing HPIM-DM from Protocol Number",default_settings.proto_number)
             DissectorTable.get("ip.proto"):remove(default_settings.proto_number, protocol)
-            
+
         end
         -- set our new default
         default_settings.proto_number = protocol.prefs.proto_number
         -- add new one, if not 0
         if default_settings.proto_number ~= 0 then
-            dprint2("adding NewProtocol to Protocol Number",default_settings.proto_number)
+            dprint2("adding HPIM-DM to Protocol Number",default_settings.proto_number)
             DissectorTable.get("ip.proto"):add(default_settings.proto_number, protocol)
         end
     end
 
 end
 
-dprint2("SFMR Prefs registered")
+dprint2("HPIM-DM Prefs registered")
 
 
 ----------------------------------------
@@ -258,10 +228,10 @@ local PROTOCOL_HDR_LEN = 8
 -- Whenever Wireshark dissects a packet that our Proto is hooked into, it will call
 -- this function and pass it these arguments for the packet it's dissecting.
 function protocol.dissector(tvbuf,pktinfo,root)
-    dprint2("protocol.dissector called")
+    dprint2("hpim.dissector called")
 
     -- set the protocol column to show our protocol name
-    pktinfo.cols.protocol:set("SFMR")
+    pktinfo.cols.protocol:set("HPIM-DM")
 
     -- We want to check that the packet size is rational during dissection, so let's get the length of the
     -- packet buffer (Tvb).
@@ -283,8 +253,8 @@ function protocol.dissector(tvbuf,pktinfo,root)
         dprint("packet length",pktlen,"too short")
         return
     end
-    
-    
+
+
 
     -- Now let's process the Protocol common Header.
     -- The BootTime starts at offset 0, for 4 bytes length
@@ -297,19 +267,19 @@ function protocol.dissector(tvbuf,pktinfo,root)
     local msg_type = packet_type[type]
     pktinfo.cols.info:set(msg_type)
 
- 
+
     local pos = 8
-    local queries_tree = tree:add("SFMR Options")
+    local queries_tree = tree:add("HPIM-DM Options")
     if msg_type == "HELLO" then
       local pktlen_remaining = pktlen - pos
-      
+
       while pktlen_remaining > 0 do
           local type = tvbuf:range(pos, 2):uint()
           local length = tvbuf:range(pos + 2, 2):uint()
           pos = pos + 4
           if type == 1 then
               queries_tree:add(pf_hello_holdtime, tvbuf:range(pos, length))
-          elseif type == 2 then          
+          elseif type == 2 then
               queries_tree:add(pf_checkpoint_sequence_number, tvbuf(pos, length))
           end
           pos = pos + length
@@ -322,7 +292,7 @@ function protocol.dissector(tvbuf,pktinfo,root)
       pos = pos + 12
     elseif msg_type == "ACK" then
       queries_tree:add(pf_tree_source, tvbuf:range(pos, 4))
-      queries_tree:add(pf_tree_group, tvbuf:range(pos + 4, 4))   
+      queries_tree:add(pf_tree_group, tvbuf:range(pos + 4, 4))
       queries_tree:add(pf_neighbor_boot_time, tvbuf:range(pos + 8, 4))
       queries_tree:add(pf_neighbor_snapshot_sequence_number, tvbuf:range(pos + 12, 4))
       queries_tree:add(pf_my_snapshot_sequence_number, tvbuf:range(pos + 16, 4))
@@ -330,15 +300,15 @@ function protocol.dissector(tvbuf,pktinfo,root)
       pos = pos + 24
     elseif msg_type == "I_AM_UPSTREAM" then
       queries_tree:add(pf_tree_source, tvbuf:range(pos, 4))
-      queries_tree:add(pf_tree_group, tvbuf:range(pos + 4, 4))   
-      queries_tree:add(pf_sequence_number, tvbuf:range(pos + 8, 4))      
+      queries_tree:add(pf_tree_group, tvbuf:range(pos + 4, 4))
+      queries_tree:add(pf_sequence_number, tvbuf:range(pos + 8, 4))
       queries_tree:add(pf_assert_metric_preference, tvbuf:range(pos + 12, 4))
       queries_tree:add(pf_assert_metric, tvbuf:range(pos + 16, 4))
       pos = pos + 20
    elseif msg_type == "SYNC" then
       queries_tree:add(pf_my_snapshot_sequence_number, tvbuf:range(pos, 4))
       queries_tree:add(pf_neighbor_snapshot_sequence_number, tvbuf:range(pos + 4, 4))
-      queries_tree:add(pf_neighbor_boot_time, tvbuf:range(pos + 8, 4))      
+      queries_tree:add(pf_neighbor_boot_time, tvbuf:range(pos + 8, 4))
       queries_tree:add(pf_sync_sequence_number, tvbuf:range(pos + 12, 4))
       queries_tree:add(pf_master_flag, tvbuf:range(pos + 12, 4))
       queries_tree:add(pf_more_flag, tvbuf:range(pos + 12, 4))
@@ -347,11 +317,11 @@ function protocol.dissector(tvbuf,pktinfo,root)
       local pktlen_remaining = pktlen - pos
       if more_flag == 1 then
           while pktlen_remaining > 0 do
-                local tree_info = queries_tree:add("Tree (".. string.format("%s",tvbuf:range(pos, 4):ipv4()) .. ", " .. string.format("%s",tvbuf:range(pos + 4, 4):ipv4()) .. ")")    
+                local tree_info = queries_tree:add("Tree (".. string.format("%s",tvbuf:range(pos, 4):ipv4()) .. ", " .. string.format("%s",tvbuf:range(pos + 4, 4):ipv4()) .. ")")
                 tree_info:add(pf_tree_source, tvbuf:range(pos, 4))
-                tree_info:add(pf_tree_group, tvbuf:range(pos + 4, 4))   
+                tree_info:add(pf_tree_group, tvbuf:range(pos + 4, 4))
                 tree_info:add(pf_assert_metric_preference, tvbuf:range(pos + 8, 4))
-                tree_info:add(pf_assert_metric, tvbuf:range(pos + 12, 4))          
+                tree_info:add(pf_assert_metric, tvbuf:range(pos + 12, 4))
                 pos = pos + 16
                 pktlen_remaining = pktlen_remaining - 16
            end
@@ -362,14 +332,14 @@ function protocol.dissector(tvbuf,pktinfo,root)
                 pos = pos + 4
                 if type == 1 then
                     queries_tree:add(pf_hello_holdtime, tvbuf:range(pos, length))
-                elseif type == 2 then          
+                elseif type == 2 then
                     queries_tree:add(pf_checkpoint_sequence_number, tvbuf(pos, length))
           end
           pos = pos + length
           pktlen_remaining = pktlen_remaining - (4 + length)
        end
 
-      end        
+      end
    end
     -- tell wireshark how much of tvbuff we dissected
     return pos
