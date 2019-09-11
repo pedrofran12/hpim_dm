@@ -3,6 +3,8 @@ import traceback
 from threading import Timer, RLock
 import socket
 import time
+import hmac
+import hashlib
 import logging
 import netifaces
 
@@ -71,6 +73,12 @@ class InterfaceProtocol(Interface):
         self.sequencer = 0
         self.sequencer_lock = RLock()
 
+        # security
+        self.security_id = 0
+        self.security_len = 0
+        self.hash_funcion = None
+        self.security_key = b''
+
         # SOCKET
         ip_interface = netifaces.ifaddresses(interface_name)[netifaces.AF_INET][0]['addr']
         self.ip_interface = ip_interface
@@ -112,13 +120,68 @@ class InterfaceProtocol(Interface):
         """
         if raw_bytes:
             packet = ReceivedPacket(raw_bytes, self)
+            if self.is_security_enabled():
+                received_security_id = packet.payload.security_id
+                if received_security_id != self.security_id:
+                    return
+
+                received_security_len = packet.payload.security_length
+                if received_security_len != self.security_len:
+                    return
+
+                received_security_value = packet.payload.security_value
+                received_ip_header = packet.ip_header
+
+                packet.payload.security_value = b''
+                calculated_security_value = hmac.new(self.get_security_key(),
+                                                     socket.inet_aton(received_ip_header.ip_src) +
+                                                     socket.inet_aton(received_ip_header.ip_dst) +
+                                                     packet.bytes(), digestmod=self.hash_funcion).digest()
+                if received_security_value != calculated_security_value:
+                    return
+
             self.PKT_FUNCTIONS[packet.payload.get_pim_type()](self, packet)
 
     def send(self, data: Packet, group_ip: str=MCAST_GRP):
         """
         Send a new packet destined to group_ip IP
         """
+        if self.is_security_enabled():
+            key = self.get_security_key()
+            data.payload.security_id = self.security_id
+            data.payload.security_length = self.security_len
+            security_value = hmac.new(key, socket.inet_aton(self.get_ip()) + socket.inet_aton(group_ip) +
+                                      data.bytes(), digestmod=self.hash_funcion).digest()
+            data.payload.security_value = security_value
         super().send(data=data.bytes(), group_ip=group_ip)
+
+    def is_security_enabled(self):
+        return self.get_security_key() != b''
+
+    def get_security_key(self):
+        return self.security_key
+
+    def add_security_key(self, security_identifier, security_function, security_key):
+        """
+        Set Security information for the HMAC of control messages. Set the Security Identifier used to identify
+         the Hash algorithm of received control messages, the corresponding hash algorithm and the SecurityKey used to
+          calculate the HMAC
+        """
+        self.security_id = security_identifier
+        self.security_len = len(hashlib.new(security_function).digest())
+        self.hash_funcion = getattr(hashlib, security_function)
+        self.security_key = str.encode(security_key)
+
+    def remove_security_key(self, security_identifer):
+        """
+        Disable a given <SecurityIdentifier; HashAlgorithm; SecurityKey> of HMAC control messages.
+        """
+        if security_identifer != self.security_id:
+            return
+        self.security_key = b''
+        self.security_id = 0
+        self.security_len = 0
+        self.hash_funcion = None
 
     def get_sequence_number(self):
         """

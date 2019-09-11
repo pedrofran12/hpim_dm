@@ -1,5 +1,6 @@
 import sys
 import time
+import hashlib
 import logging
 import logging.handlers
 from prettytable import PrettyTable
@@ -19,21 +20,21 @@ logger = None
 
 def add_protocol_interface(interface_name):
     """
-    Add a new interface to be controlled by the protocol
+    Add a new interface to be controlled by HPIM-DM
     """
     kernel.create_protocol_interface(interface_name=interface_name)
 
 
 def add_igmp_interface(interface_name):
     """
-    Add a new interface to be controll by IGMP
+    Add a new interface to be controlled by IGMP
     """
     kernel.create_igmp_interface(interface_name=interface_name)
 
 
 def remove_interface(interface_name, pim=False, igmp=False):
     """
-    Remove Protocol/IGMP interface
+    Remove HPIM-DM/IGMP interface
     """
     kernel.remove_interface(interface_name, pim=pim, igmp=igmp)
 
@@ -58,21 +59,23 @@ def list_neighbors():
 
 def list_enabled_interfaces():
     """
-    List all interfaces of the machine (enabled and not enabled for Protocol and IGMP)
+    List all interfaces of the machine (enabled and not enabled for HPIM-DM and IGMP)
     """
-    t = PrettyTable(['Interface', 'IP', 'Protocol/IGMP Enabled', 'IGMP State'])
+    t = PrettyTable(['Interface', 'IP', 'HPIM-DM/IGMP Enabled', 'HPIM-DM protection', 'IGMP State'])
     for interface in netifaces.interfaces():
         try:
             # TODO: fix same interface with multiple ips
             ip = netifaces.ifaddresses(interface)[netifaces.AF_INET][0]['addr']
-            pim_enabled = interface in interfaces
+            hpim_enabled = interface in interfaces
             igmp_enabled = interface in igmp_interfaces
-            enabled = str(pim_enabled) + "/" + str(igmp_enabled)
+            enabled = str(hpim_enabled) + "/" + str(igmp_enabled)
+            hpim_protection = False
+            if hpim_enabled:
+                hpim_protection = interfaces[interface].is_security_enabled()
+            igmp_state = "-"
             if igmp_enabled:
-                state = igmp_interfaces[interface].interface_state.print_state()
-            else:
-                state = "-"
-            t.add_row([interface, ip, enabled, state])
+                igmp_state = igmp_interfaces[interface].interface_state.print_state()
+            t.add_row([interface, ip, enabled, hpim_protection, igmp_state])
         except Exception:
             continue
     print(t)
@@ -81,9 +84,9 @@ def list_enabled_interfaces():
 
 def list_state():
     """
-    List IGMP and Protocol state
+    List IGMP and HPIM-DM state
     For IGMP list the state of each group, regarding each interface
-    For Protocol list all trees and state of each interface
+    For HPIM-DM list all trees and state of each interface
     """
     state_text = "IGMP State:\n" + list_igmp_state() + "\n\n\n\n" + "Multicast Routing State:\n" + list_routing_state()
     return state_text
@@ -156,7 +159,7 @@ def list_neighbors_state():
 
 def list_routing_state():
     """
-    List Protocol state (all state machines of each tree, regarding each interface)
+    List HPIM-DM state (all state machines of each tree, regarding each interface)
     """
     routing_entries = []
     for a in list(kernel.routing.values()):
@@ -191,6 +194,31 @@ def list_routing_state():
 
             t.add_row([ip, group, tree_state, interface_name, prune_state, assert_state, local_membership, is_forwarding])
     return str(t)
+
+
+def list_hash_algorithms():
+    """
+    List compatible algorithms to be used on HMAC protection
+    """
+    t = PrettyTable(['HMAC Hash Algorithms'])
+    for alg in hashlib.algorithms_guaranteed:
+        t.add_row([alg])
+    return str(t)
+
+
+def add_security_key(interface_name, security_identifier, hash_function, key):
+    """
+    Enable HMAC protection in interface_name with security_identifier, HMAC based on hash_function and
+    HMAC protection key
+    """
+    kernel.add_interface_security(interface_name, security_identifier, hash_function, key)
+
+
+def remove_security_key(interface_name, security_identifier):
+    """
+    Disable HMAC protection idenfied by security_identifier on interface interface_name
+    """
+    kernel.remove_interface_security(interface_name, security_identifier)
 
 
 def change_initial_flood_setting():
