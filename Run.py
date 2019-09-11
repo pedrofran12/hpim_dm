@@ -148,7 +148,7 @@ def main():
                        help="List available HMAC Hash algorithms")
     group.add_argument("-aisec", "--add_interface_security", nargs=4, metavar=('INTERFACE_NAME', "SECURITY_IDENTIFIER",
                                                                                "HASH_FUNCTION", "KEY"),
-                       help="Add security information to interface INTERFACE_NAME. Control messages" +
+                       help="Add security information to interface INTERFACE_NAME. Control messages will be secured " +
                             " with SECURITY_IDENTIFIER, HMAC algorithm based on HASH_FUNCTION and key KEY." +
                             " To determine available hash functions, run -lsec command")
     group.add_argument("-risec", "--remove_interface_security", nargs=2, metavar=('INTERFACE_NAME', "SECURITY_IDENTIFIER"),
