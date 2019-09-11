@@ -127,7 +127,7 @@ def main():
     group.add_argument("-ln", "--list_neighbors", action="store_true", default=False,
                        help="List All Neighbors")
     group.add_argument("-ls", "--list_state", action="store_true", default=False,
-                       help="List state of IGMP and Multicast Routing Protocol")
+                       help="List state of IGMP and HPIM-DM")
     group.add_argument("-lns", "--list_neighbors_state", action="store_true", default=False,
                        help="List Upstream and Interest state of all neighbors")
     group.add_argument("-lsn", "--list_sequence_numbers", action="store_true", default=False,
@@ -137,11 +137,11 @@ def main():
     group.add_argument("-fid", "--flood_initial_data", action="store_true", default=False,
                        help="Flood initial data packets")
     group.add_argument("-ai", "--add_interface", nargs=1, metavar='INTERFACE_NAME',
-                       help="Add Protocol interface")
+                       help="Add HPIM-DM interface")
     group.add_argument("-aiigmp", "--add_interface_igmp", nargs=1, metavar='INTERFACE_NAME',
                        help="Add IGMP interface")
     group.add_argument("-ri", "--remove_interface", nargs=1, metavar='INTERFACE_NAME',
-                       help="Remove Protocol interface")
+                       help="Remove HPIM-DM interface")
     group.add_argument("-riigmp", "--remove_interface_igmp", nargs=1, metavar='INTERFACE_NAME',
                        help="Remove IGMP interface")
     group.add_argument("-lsec", "--list_hmac_algorithms", action="store_true", default=False,
