@@ -114,6 +114,9 @@ local protocol = Proto("HPIM-DM","Hard state Protocol Independent Multicast - De
 
 ----------------------------------------
 local pf_boot_time                         = ProtoField.new("Boot Time", "hpim.boot_time", ftypes.UINT32)
+local pf_security_id                       = ProtoField.new("Security ID", "hpim.security_id", ftypes.UINT16)
+local pf_security_length                   = ProtoField.new("Security Length", "hpim.security_length", ftypes.UINT8)
+local pf_security_value                    = ProtoField.new("Security Value", "hpim.security_value", ftypes.BYTES)
 local pf_tree_source                       = ProtoField.new("Source", "hpim.options.tree_source", ftypes.IPv4)
 local pf_tree_group                        = ProtoField.new("Group", "hpim.options.tree_group", ftypes.IPv4)
 local pf_hello_holdtime                    = ProtoField.new("Holdtime", "hpim.options.hello_holdtime", ftypes.UINT16)
@@ -154,7 +157,8 @@ protocol.fields = {pf_version, pf_type, pf_boot_time, pf_tree_source, pf_tree_gr
       pf_assert_metric_preference, pf_hello_holdtime,
       pf_sequence_number, pf_my_snapshot_sequence_number,
       pf_neighbor_snapshot_sequence_number, pf_sync_sequence_number, pf_master_flag,
-      pf_more_flag, pf_neighbor_boot_time, pf_checkpoint_sequence_number}
+      pf_more_flag, pf_neighbor_boot_time, pf_checkpoint_sequence_number,
+      pf_security_id, pf_security_length, pf_security_value}
 
 
 
@@ -267,8 +271,12 @@ function protocol.dissector(tvbuf,pktinfo,root)
     local msg_type = packet_type[type]
     pktinfo.cols.info:set(msg_type)
 
+    tree:add(pf_security_id, tvbuf:range(5,2))
+    tree:add(pf_security_length, tvbuf:range(7,1))
+    local security_length = tvbuf:range(7,1):uint()
+    tree:add(pf_security_value, tvbuf:range(8, security_length))
 
-    local pos = 8
+    local pos = 8 + security_length
     local queries_tree = tree:add("HPIM-DM Options")
     if msg_type == "HELLO" then
       local pktlen_remaining = pktlen - pos
