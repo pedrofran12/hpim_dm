@@ -124,6 +124,14 @@ All control messages carry a Security Identifier, which is a number that identif
 ## Commands for monitoring the protocol process
 We have built some list commands that can be used to check the "internals" of the protocol.
 
+ - #### List interfaces:
+
+	 Show all router interfaces and which ones have HPIM-DM and IGMP enabled. For IGMP enabled interfaces check the IGMP Querier state. For HPIM enabled interfaces check security settings.
+
+   ```
+   sudo hpim-dm -li
+   ```
+
  - #### List neighbors:
 
 	 Verify neighbors that have established a neighborhood relationship.

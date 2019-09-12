@@ -233,7 +233,7 @@ class Kernel:
             self.create_protocol_interface(interface_name)
 
     def add_interface_security(self, interface_name, security_id, security_algorithm, security_key):
-        with self.rwlock.genWlock():
+        with self.rwlock.genRlock():
             if interface_name not in self.protocol_interface:
                 return
 
@@ -241,7 +241,7 @@ class Kernel:
             interface.add_security_key(security_id, security_algorithm, security_key)
 
     def remove_interface_security(self, interface_name, security_id):
-        with self.rwlock.genWlock():
+        with self.rwlock.genRlock():
             if interface_name not in self.protocol_interface:
                 return
 

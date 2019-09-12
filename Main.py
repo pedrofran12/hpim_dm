@@ -61,7 +61,7 @@ def list_enabled_interfaces():
     """
     List all interfaces of the machine (enabled and not enabled for HPIM-DM and IGMP)
     """
-    t = PrettyTable(['Interface', 'IP', 'HPIM-DM/IGMP Enabled', 'HPIM-DM protection', 'IGMP State'])
+    t = PrettyTable(['Interface', 'IP', 'HPIM/IGMP Enabled', 'HPIM security', 'IGMP State'])
     for interface in netifaces.interfaces():
         try:
             # TODO: fix same interface with multiple ips
@@ -69,9 +69,9 @@ def list_enabled_interfaces():
             hpim_enabled = interface in interfaces
             igmp_enabled = interface in igmp_interfaces
             enabled = str(hpim_enabled) + "/" + str(igmp_enabled)
-            hpim_protection = False
-            if hpim_enabled:
-                hpim_protection = interfaces[interface].is_security_enabled()
+            hpim_protection = "-"
+            if hpim_enabled and interfaces[interface].is_security_enabled():
+                hpim_protection = str(interfaces[interface].security_id) + ": " + interfaces[interface].hash_function.__name__
             igmp_state = "-"
             if igmp_enabled:
                 igmp_state = igmp_interfaces[interface].interface_state.print_state()
@@ -216,7 +216,7 @@ def add_security_key(interface_name, security_identifier, hash_function, key):
 
 def remove_security_key(interface_name, security_identifier):
     """
-    Disable HMAC protection idenfied by security_identifier on interface interface_name
+    Disable HMAC protection identified by security_identifier on interface interface_name
     """
     kernel.remove_interface_security(interface_name, security_identifier)
 

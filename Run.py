@@ -150,9 +150,9 @@ def main():
                                                                                "HASH_FUNCTION", "KEY"),
                        help="Add security information to interface INTERFACE_NAME. Control messages will be secured " +
                             " with SECURITY_IDENTIFIER, HMAC algorithm based on HASH_FUNCTION and key KEY." +
-                            " To determine available hash functions, run -lsec command")
+                            " To determine available hash functions run -lsec command")
     group.add_argument("-risec", "--remove_interface_security", nargs=2, metavar=('INTERFACE_NAME', "SECURITY_IDENTIFIER"),
-                       help="Remove security information identified by SECURITY_IDENTIFER from interface INTERFACE_NAME.")
+                       help="Remove security information identified by SECURITY_IDENTIFIER from interface INTERFACE_NAME.")
     group.add_argument("-v", "--verbose", action="store_true", default=False,
                        help="Verbose (print all debug messages)")
     group.add_argument("-t", "--test", nargs=2, metavar=('ROUTER_NAME', 'SERVER_LOG_IP'),

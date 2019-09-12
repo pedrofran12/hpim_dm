@@ -76,7 +76,7 @@ class InterfaceProtocol(Interface):
         # security
         self.security_id = 0
         self.security_len = 0
-        self.hash_funcion = None
+        self.hash_function = None
         self.security_key = b''
 
         # SOCKET
@@ -136,7 +136,7 @@ class InterfaceProtocol(Interface):
                 calculated_security_value = hmac.new(self.get_security_key(),
                                                      socket.inet_aton(received_ip_header.ip_src) +
                                                      socket.inet_aton(received_ip_header.ip_dst) +
-                                                     packet.bytes(), digestmod=self.hash_funcion).digest()
+                                                     packet.bytes(), digestmod=self.hash_function).digest()
                 if received_security_value != calculated_security_value:
                     return
 
@@ -151,7 +151,7 @@ class InterfaceProtocol(Interface):
             data.payload.security_id = self.security_id
             data.payload.security_length = self.security_len
             security_value = hmac.new(key, socket.inet_aton(self.get_ip()) + socket.inet_aton(group_ip) +
-                                      data.bytes(), digestmod=self.hash_funcion).digest()
+                                      data.bytes(), digestmod=self.hash_function).digest()
             data.payload.security_value = security_value
         super().send(data=data.bytes(), group_ip=group_ip)
 
@@ -169,7 +169,7 @@ class InterfaceProtocol(Interface):
         """
         self.security_id = security_identifier
         self.security_len = len(hashlib.new(security_function).digest())
-        self.hash_funcion = getattr(hashlib, security_function)
+        self.hash_function = getattr(hashlib, security_function)
         self.security_key = str.encode(security_key)
 
     def remove_security_key(self, security_identifer):
@@ -181,7 +181,7 @@ class InterfaceProtocol(Interface):
         self.security_key = b''
         self.security_id = 0
         self.security_len = 0
-        self.hash_funcion = None
+        self.hash_function = None
 
     def get_sequence_number(self):
         """
