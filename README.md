@@ -89,9 +89,48 @@ If you want to stop the protocol process, and stop the daemon process, you need 
    ```
 
 
+## Security
+
+HPIM-DM offers integrity, authentication and freshness guarantees on control messages. These guarantees are achieved by appending an HMAC on all control messages and by having monotonically increasing sequence numbers.
+
+All control messages carry a Security Identifier, which is a number that identifies the algorithm and key used on the HMAC calculation (same as Key ID on OSPF). All routers connected to a link must agree on the security identifier, algorithm and key. This security is per interface meaning that different interfaces can have different security identifiers, algorithms and keys (which is highly **recommended**).
+
+ - #### List security algorithms:
+
+   List all available hash algorithms that can be used to create the HMAC.
+
+   ```
+   sudo hpim-dm -lsec
+   ```
+
+ - #### Add security on interface:
+
+   Enable security on HPIM-DM interface named INTERFACE_NAME. The SECURITY_IDENTIFIER is a number and identifies the algorithm and key of the HMAC. To check the available algorithms run -lsec.
+
+   ```
+   sudo hpim-dm -aisec INTERFACE_NAME SECURITY_IDENTIFIER SECURITY_ALGORITHM SECURITY_KEY
+   ```
+
+ - #### Remove security from interface:
+
+   Disable security identified by SECURITY_IDENTIFIER from HPIM-DM interface named INTERFACE_NAME.
+
+   ```
+   sudo hpim-dm -risec INTERFACE_NAME SECURITY_IDENTIFIER
+   ```
+
+
 
 ## Commands for monitoring the protocol process
 We have built some list commands that can be used to check the "internals" of the protocol.
+
+ - #### List interfaces:
+
+	 Show all router interfaces and which ones have HPIM-DM and IGMP enabled. For IGMP enabled interfaces check the IGMP Querier state. For HPIM enabled interfaces check security settings.
+
+   ```
+   sudo hpim-dm -li
+   ```
 
  - #### List neighbors:
 

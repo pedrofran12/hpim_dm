@@ -232,6 +232,22 @@ class Kernel:
         if protocol_was_enabled:
             self.create_protocol_interface(interface_name)
 
+    def add_interface_security(self, interface_name, security_id, security_algorithm, security_key):
+        with self.rwlock.genRlock():
+            if interface_name not in self.protocol_interface:
+                return
+
+            interface = self.protocol_interface.get(interface_name) #type: InterfaceProtocol
+            interface.add_security_key(security_id, security_algorithm, security_key)
+
+    def remove_interface_security(self, interface_name, security_id):
+        with self.rwlock.genRlock():
+            if interface_name not in self.protocol_interface:
+                return
+
+            interface = self.protocol_interface.get(interface_name) #type: InterfaceProtocol
+            interface.remove_security_key(security_id)
+
     '''
     /* Cache manipulation structures for mrouted and PIMd */
     struct mfcctl {

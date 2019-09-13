@@ -1,6 +1,5 @@
 import json
 import struct
-from utils import checksum
 from Packet.PacketProtocolHello import PacketProtocolHello, PacketNewProtocolHello
 from Packet.PacketProtocolSetTree import PacketProtocolUpstream, PacketNewProtocolUpstream
 from Packet.PacketProtocolRemoveTree import PacketProtocolNoLongerUpstream, PacketNewProtocolNoLongerUpstream
@@ -75,14 +74,16 @@ HEADER IN BYTE FORMAT
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                            BootTime                           |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|Version| Type  |  (MAYBE SECURITY)                             |
+|Version| Type  |      Security Identifier      |Security Length|
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                         Security Value                        |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 '''
 
 class PacketNewProtocolHeader(PacketPayload):
     PIM_VERSION = 0
 
-    PIM_HDR = "! L BB H"
+    PIM_HDR = "! L B H B"
     PIM_HDR_LEN = struct.calcsize(PIM_HDR)
 
     PIM_MSG_TYPES = {PacketNewProtocolHello.PIM_TYPE: PacketNewProtocolHello,
@@ -94,10 +95,24 @@ class PacketNewProtocolHeader(PacketPayload):
                      PacketNewProtocolAck.PIM_TYPE: PacketNewProtocolAck,
                     }
 
-    def __init__(self, payload, boot_time=0):
+    def __init__(self, payload, boot_time=0, security_id=0, security_length=0, security_value=b''):
         self.payload = payload
         self.boot_time = boot_time
+        self.security_id = security_id
+        self.security_length = security_length
+        self.security_value = security_value
 
+    @property
+    def security_value(self):
+        if self.security_length == 0:
+            return b''
+        else:
+            len_diff = abs(len(self._security_value) - self.security_length)
+            return self._security_value + b'\x00' * len_diff
+
+    @security_value.setter
+    def security_value(self, security_value):
+        self._security_value = security_value
 
     def get_pim_type(self):
         return self.payload.PIM_TYPE
@@ -107,12 +122,10 @@ class PacketNewProtocolHeader(PacketPayload):
         Obtain Protocol Packet in a format to be transmitted (binary)
         This method will return the Header and Payload in binary format
         """
-        # obter mensagem e criar checksum
         pim_vrs_type = (PacketNewProtocolHeader.PIM_VERSION << 4) + self.get_pim_type()
-        msg = struct.pack(PacketNewProtocolHeader.PIM_HDR, self.boot_time, pim_vrs_type, 0, 0)
-        msg += self.payload.bytes()
-        #pim_checksum = checksum(msg_without_chcksum)
-        #msg = msg_without_chcksum[0:2] + msg_without_chcksum[4:]
+        msg = struct.pack(PacketNewProtocolHeader.PIM_HDR, self.boot_time, pim_vrs_type, self.security_id,
+                          self.security_length)
+        msg += self.security_value + self.payload.bytes()
         return msg
 
     def __len__(self):
@@ -126,7 +139,7 @@ class PacketNewProtocolHeader(PacketPayload):
         print("parsePimHdr: ", data)
 
         pim_hdr = data[0:PacketNewProtocolHeader.PIM_HDR_LEN]
-        (boot_time, pim_ver_type, _, _) = struct.unpack(PacketNewProtocolHeader.PIM_HDR, pim_hdr)
+        (boot_time, pim_ver_type, security_id, security_len) = struct.unpack(PacketNewProtocolHeader.PIM_HDR, pim_hdr)
 
         print(pim_ver_type)
         pim_version = (pim_ver_type & 0xF0) >> 4
@@ -136,13 +149,9 @@ class PacketNewProtocolHeader(PacketPayload):
             print("Version of PROTOCOL packet received not known (!=0)")
             raise Exception
 
-        #msg_to_checksum = data[0:2] + b'\x00\x00' + data[4:]
-        #if checksum(msg_to_checksum) != rcv_checksum:
-        #    print("wrong checksum")
-        #    print("checksum calculated: " + str(checksum(msg_to_checksum)))
-        #    print("checksum recv: " + str(rcv_checksum))
-        #    raise Exception
-
-        pim_payload = data[PacketNewProtocolHeader.PIM_HDR_LEN:]
+        security_and_pim_payload = data[PacketNewProtocolHeader.PIM_HDR_LEN:]
+        security_value = security_and_pim_payload[:security_len]
+        print("Received hmac value: ", security_value)
+        pim_payload = security_and_pim_payload[security_len:]
         pim_payload = PacketNewProtocolHeader.PIM_MSG_TYPES[pim_type].parse_bytes(pim_payload)
-        return PacketNewProtocolHeader(pim_payload, boot_time)
+        return PacketNewProtocolHeader(pim_payload, boot_time, security_id, security_len, security_value)

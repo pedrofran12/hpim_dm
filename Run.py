@@ -87,6 +87,15 @@ class MyDaemon(Daemon):
                 elif 'remove_interface_igmp' in args and args.remove_interface_igmp:
                     Main.remove_interface(args.remove_interface_igmp[0], igmp=True)
                     connection.shutdown(socket.SHUT_RDWR)
+                elif 'list_hmac_algorithms' in args and args.list_hmac_algorithms:
+                    connection.sendall(pickle.dumps(Main.list_hash_algorithms()))
+                elif 'add_interface_security' in args and args.add_interface_security:
+                    Main.add_security_key(args.add_interface_security[0], int(args.add_interface_security[1]),
+                                          args.add_interface_security[2], args.add_interface_security[3])
+                    connection.shutdown(socket.SHUT_RDWR)
+                elif 'remove_interface_security' in args and args.remove_interface_security:
+                    Main.remove_security_key(args.remove_interface_security[0], int(args.remove_interface_security[1]))
+                    connection.shutdown(socket.SHUT_RDWR)
                 elif 'stop' in args and args.stop:
                     Main.stop()
                     connection.shutdown(socket.SHUT_RDWR)
@@ -118,7 +127,7 @@ def main():
     group.add_argument("-ln", "--list_neighbors", action="store_true", default=False,
                        help="List All Neighbors")
     group.add_argument("-ls", "--list_state", action="store_true", default=False,
-                       help="List state of IGMP and Multicast Routing Protocol")
+                       help="List state of IGMP and HPIM-DM")
     group.add_argument("-lns", "--list_neighbors_state", action="store_true", default=False,
                        help="List Upstream and Interest state of all neighbors")
     group.add_argument("-lsn", "--list_sequence_numbers", action="store_true", default=False,
@@ -128,13 +137,22 @@ def main():
     group.add_argument("-fid", "--flood_initial_data", action="store_true", default=False,
                        help="Flood initial data packets")
     group.add_argument("-ai", "--add_interface", nargs=1, metavar='INTERFACE_NAME',
-                       help="Add Protocol interface")
+                       help="Add HPIM-DM interface")
     group.add_argument("-aiigmp", "--add_interface_igmp", nargs=1, metavar='INTERFACE_NAME',
                        help="Add IGMP interface")
     group.add_argument("-ri", "--remove_interface", nargs=1, metavar='INTERFACE_NAME',
-                       help="Remove Protocol interface")
+                       help="Remove HPIM-DM interface")
     group.add_argument("-riigmp", "--remove_interface_igmp", nargs=1, metavar='INTERFACE_NAME',
                        help="Remove IGMP interface")
+    group.add_argument("-lsec", "--list_hmac_algorithms", action="store_true", default=False,
+                       help="List available HMAC Hash algorithms")
+    group.add_argument("-aisec", "--add_interface_security", nargs=4, metavar=('INTERFACE_NAME', "SECURITY_IDENTIFIER",
+                                                                               "HASH_FUNCTION", "KEY"),
+                       help="Add security information to interface INTERFACE_NAME. Control messages will be secured " +
+                            " with SECURITY_IDENTIFIER, HMAC algorithm based on HASH_FUNCTION and key KEY." +
+                            " To determine available hash functions run -lsec command")
+    group.add_argument("-risec", "--remove_interface_security", nargs=2, metavar=('INTERFACE_NAME', "SECURITY_IDENTIFIER"),
+                       help="Remove security information identified by SECURITY_IDENTIFIER from interface INTERFACE_NAME.")
     group.add_argument("-v", "--verbose", action="store_true", default=False,
                        help="Verbose (print all debug messages)")
     group.add_argument("-t", "--test", nargs=2, metavar=('ROUTER_NAME', 'SERVER_LOG_IP'),
@@ -162,7 +180,7 @@ def main():
         os.system("ip mroute show")
         sys.exit(0)
     elif not daemon.is_running():
-        print("Protocol is not running")
+        print("HPIM-DM is not running")
         parser.print_usage()
         sys.exit(0)
 
