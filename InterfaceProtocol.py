@@ -336,6 +336,21 @@ class InterfaceProtocol(Interface):
         with self.neighbors_lock:
             return self.neighbors.values()
 
+    def get_neighbors_ip(self):
+        """
+        Get IP of all neighbors
+        """
+        return set(self.neighbors.keys())
+
+    def force_neighbor_failure(self, neighbor_ip):
+        """
+        Force an adjacent neighbor to be declared as failed.
+        This is used to break an adjacency if a neighbor fails to ack successive control messages
+        """
+        with self.neighbors_lock:
+            neighbor = self.neighbors.get(neighbor_ip, None)
+            if neighbor is not None:
+                neighbor.remove()
 
     def did_all_neighbors_acked(self, neighbors_that_acked: set):
         """

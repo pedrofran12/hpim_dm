@@ -167,7 +167,7 @@ def list_routing_state():
             routing_entries.append(b)
     vif_indexes = kernel.vif_index_to_name_dic.keys()
 
-    t = PrettyTable(['SourceIP', 'GroupIP', 'TreeState', 'Interface', 'PruneState', 'AssertState', 'LocalMembership', "Is Forwarding?"])
+    t = PrettyTable(['SourceIP', 'GroupIP', 'TreeState', 'Interface', 'InterestState', 'AssertState', 'LocalMembership', "Is Forwarding?"])
     for entry in routing_entries:
         ip = entry.source_ip
         group = entry.group_ip
@@ -186,7 +186,7 @@ def list_routing_state():
                 else:
                     assert_state = "--"
                     prune_state = "--"
-                    is_forwarding = "upstream"
+                    is_forwarding = "root"
             except:
                 prune_state = "-"
                 assert_state = "-"
