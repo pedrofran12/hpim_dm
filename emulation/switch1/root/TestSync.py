@@ -37,8 +37,8 @@ class Test(object):
 
 class Test1(Test):
     def __init__(self):
-        expectedState = {"R1": {"eth0": "Neighbor state transitions to Updated"},
-                         "R2": {"eth0": "Neighbor state transitions to Updated"},
+        expectedState = {"R1": {"eth0": "Neighbor state of 10.0.0.2 transitions to Synced"},
+                         "R2": {"eth0": "Neighbor state of 10.0.0.1 transitions to Synced"},
                          }
 
         success = {"R1": {"eth0": False},
@@ -49,13 +49,13 @@ class Test1(Test):
 
     def print_test(self):
         print("Test1: Neighborhood relationships")
-        print("Start R1 and R2.... they should transition to Updated state")
+        print("Start R1 and R2.... they should transition to Synced state")
 
 
 class Test2(Test):
     def __init__(self):
-        expectedState = {"R1": {"eth0": "Neighbor state transitions to Updated"},
-                         "R2": {"eth0": "Neighbor state transitions to Updated"},
+        expectedState = {"R1": {"eth0": "Neighbor state of 10.0.0.2 transitions to Synced"},
+                         "R2": {"eth0": "Neighbor state of 10.0.0.1 transitions to Synced"},
                          }
 
         success = {"R1": {"eth0": False},
@@ -65,7 +65,7 @@ class Test2(Test):
 
     def print_test(self):
         print("Test2: Restart R2")
-        print("Synchronization should be restarted and both at the end must be in Updated state")
+        print("Synchronization should be restarted and both at the end must be in Synced state")
 
 
 class Test3(Test):

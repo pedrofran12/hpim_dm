@@ -1,6 +1,4 @@
-rm -rf MulticastRouting/
-cp -rf /hosthome/Desktop/new_protocol2/ MulticastRouting/
-cd MulticastRouting
+cd hpim_dm
 
 python3 Run.py -stop
 python3 Run.py -start
