@@ -35,10 +35,10 @@ class Test(object):
 
 class Test1(Test):
     def __init__(self):
-        expectedState = {"R2": {"eth1": "Neighbor state of 10.5.5.4 transitions to Updated"},
-                         "R3": {"eth1": "Neighbor state of 10.5.5.4 transitions to Updated"},
-                         "R5": {"eth0": "Neighbor state of 10.5.5.4 transitions to Updated"},
-                         "R6": {"eth0": "Neighbor state of 10.5.5.4 transitions to Updated"},
+        expectedState = {"R2": {"eth1": "Neighbor state of 10.5.5.4 transitions to Synced"},
+                         "R3": {"eth1": "Neighbor state of 10.5.5.4 transitions to Synced"},
+                         "R5": {"eth0": "Neighbor state of 10.5.5.4 transitions to Synced"},
+                         "R6": {"eth0": "Neighbor state of 10.5.5.4 transitions to Synced"},
                          }
 
         success = {"R2": {"eth1": False},
@@ -56,10 +56,10 @@ class Test1(Test):
 
 class Test2(Test):
     def __init__(self):
-        expectedState = {"R2": {"eth1": "Neighbor state of 10.5.5.4 transitions to Updated"},
-                         "R3": {"eth1": "Neighbor state of 10.5.5.4 transitions to Updated"},
-                         "R5": {"eth0": "Neighbor state of 10.5.5.4 transitions to Updated"},
-                         "R6": {"eth0": "Neighbor state of 10.5.5.4 transitions to Updated"},
+        expectedState = {"R2": {"eth1": "Neighbor state of 10.5.5.4 transitions to Synced"},
+                         "R3": {"eth1": "Neighbor state of 10.5.5.4 transitions to Synced"},
+                         "R5": {"eth0": "Neighbor state of 10.5.5.4 transitions to Synced"},
+                         "R6": {"eth0": "Neighbor state of 10.5.5.4 transitions to Synced"},
                          }
 
         success = {"R2": {"eth1": False},
@@ -77,10 +77,10 @@ class Test2(Test):
 
 class Test3(Test):
     def __init__(self):
-        expectedState = {"R2": {"eth1": "Neighbor state of 10.5.5.5 transitions to Updated"},
-                         "R3": {"eth1": "Neighbor state of 10.5.5.5 transitions to Updated"},
-                         "R4": {"eth1": "Neighbor state of 10.5.5.5 transitions to Updated"},
-                         "R6": {"eth0": "Neighbor state of 10.5.5.5 transitions to Updated"},
+        expectedState = {"R2": {"eth1": "Neighbor state of 10.5.5.5 transitions to Synced"},
+                         "R3": {"eth1": "Neighbor state of 10.5.5.5 transitions to Synced"},
+                         "R4": {"eth1": "Neighbor state of 10.5.5.5 transitions to Synced"},
+                         "R6": {"eth0": "Neighbor state of 10.5.5.5 transitions to Synced"},
                          }
 
         success = {"R2": {"eth1": False},
