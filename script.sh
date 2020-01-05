@@ -10,6 +10,11 @@ if [ ! -d "netkit-ng" ]; then
   tar -xjSf netkit-ng-kernel-i386-K3.2-0.1.3.tar.bz2
 fi
 
+if [ ! -d "emulation/shared/root/hpim_dm" ]; then
+  # if project does not exist, clone it
+  git clone https://github.com/pedrofran12/hpim_dm.git emulation/shared/root/hpim_dm
+fi
+
 export NETKIT_HOME=$(pwd)/netkit-ng
 export MANPATH=:$NETKIT_HOME/man
 export PATH=$NETKIT_HOME/bin:$PATH
@@ -26,6 +31,4 @@ fi
 
 cd ../emulation/
 lstart -p
-
-
 
