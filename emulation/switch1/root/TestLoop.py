@@ -57,11 +57,11 @@ class Test1(Test):
 
 class Test2(Test):
     def __init__(self):
-        expectedState = {"R1": "Tree transitions to Unknown",
-                         "R2": "Tree transitions to Unknown",
-                         "R3": "Tree transitions to Unknown",
-                         "R4": "Tree transitions to Unknown",
-                         "R5": "Tree transitions to Unknown",
+        expectedState = {"R1": "Tree transitions to Inactive",
+                         "R2": "Tree transitions to Inactive",
+                         "R3": "Tree transitions to Inactive",
+                         "R4": "Tree transitions to Inactive",
+                         "R5": "Tree transitions to Inactive",
                          }
 
         success = {"R1": False,
@@ -74,4 +74,4 @@ class Test2(Test):
 
     def print_test(self):
         print("Test2: Stop transmitting data packets from Source")
-        print("Expected: Eventually all routers must transition the tree to state Unknown")
+        print("Expected: Eventually all routers must transition the tree to state Inactive")
