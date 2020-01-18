@@ -1,6 +1,4 @@
-rm -rf MulticastRouting/
-cp -rf /hosthome/Desktop/new_protocol2/ MulticastRouting/
-cd MulticastRouting
+cd hpim_dm
 #pip-3.2 install --index-url=https://pypi.python.org/simple/ -r requirements.txt
 
 tcpdump -i eth0 -w /hosthome/Desktop/test_newproto/test_assert/TestResults/Router1_Source.pcap &
