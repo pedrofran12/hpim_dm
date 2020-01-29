@@ -1,6 +1,4 @@
-rm -rf MulticastRouting/
-cp -rf /hosthome/Desktop/new_protocol2/ MulticastRouting/
-cd MulticastRouting
+cd hpim_dm
 #pip-3.2 install --index-url=https://pypi.python.org/simple/ -r requirements.txt
 
 python3 Run.py -stop
@@ -11,4 +9,3 @@ python3 Run.py -aiigmp eth1
 python3 Run.py -ai eth0
 python3 Run.py -ai eth1
 python3 Run.py -v
-
