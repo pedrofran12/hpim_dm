@@ -11,6 +11,7 @@ setup(
     name="hpim-dm",
     description="HPIM-DM protocol",
     long_description=open("README.md", "r").read(),
+    long_description_content_type="text/markdown",
     version="1.0.1",
     url="http://github.com/pedrofran12/hpim_dm",
     author='Pedro Oliveira',
@@ -44,4 +45,5 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
     ],
+    python_requires='>=3.2',
 )
