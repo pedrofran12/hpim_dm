@@ -22,7 +22,7 @@ else:
 if TYPE_CHECKING:
     from hpimdm.InterfaceProtocol import InterfaceProtocol
 
-DEFAULT_HELLO_HOLD_TIME_DURING_SYNC = 25
+DEFAULT_HELLO_HOLD_TIME_DURING_SYNC = 4 * protocol_globals.SYNC_RETRANSMISSION_TIME
 DEFAULT_HELLO_HOLD_TIME_AFTER_SYNC = 120
 
 class NeighborState():
@@ -303,7 +303,7 @@ class Neighbor:
         Set Sync timer... useful when the Sync process is making progress and a Sync message from the neighbor node must be received
         """
         self.clear_sync_timer()
-        self.sync_timer = Timer(10, self.sync_timeout)
+        self.sync_timer = Timer(protocol_globals.SYNC_RETRANSMISSION_TIME, self.sync_timeout)
         self.sync_timer.start()
 
     def clear_sync_timer(self):

@@ -1,12 +1,13 @@
 import logging
+from threading import Timer
 
 from hpimdm import Main
+from . import protocol_globals
+from .metric import AssertMetric, Metric
 from .tree_interface import TreeInterface
 from .non_root_state_machine import SFMRNonRootState
 from .assert_state import AssertState, SFMRAssertABC
 from .downstream_state import SFMRPruneState, SFMRDownstreamStateABC
-from .metric import AssertMetric, Metric
-
 
 class TreeInterfaceDownstream(TreeInterface):
     LOGGER = logging.getLogger('protocol.KernelEntry.NonRootInterface')
@@ -28,6 +29,8 @@ class TreeInterfaceDownstream(TreeInterface):
         self.downstream_logger.debug('Downstream interest state transitions to ' + str(self._downstream_node_interest_state))
 
         # Assert Winner State
+        self._hold_forwarding_state_timer = Timer(protocol_globals.AL_HOLD_FORWARDING_STATE_TIME,
+                                                  self.hold_forwarding_state_timeout)
         self._assert_state = AssertState.Winner
         self.assert_logger.debug('Assert state transitions to ' + str(self._assert_state))
         self._my_assert_rpc = AssertMetric(rpc.metric_preference, rpc.route_metric, self.get_ip())
@@ -118,6 +121,10 @@ class TreeInterfaceDownstream(TreeInterface):
         with self.get_state_lock():
             if new_state != self._assert_state:
                 self._assert_state = new_state
+                if self._assert_state.is_assert_winner():
+                    self.clear_hold_forwarding_state_timer()
+                else:
+                    self.set_hold_forwarding_state_timer()
                 self.assert_logger.debug('Assert state transitions to ' + str(new_state))
                 if not creating_interface:
                     self.change_tree()
@@ -179,6 +186,37 @@ class TreeInterfaceDownstream(TreeInterface):
             super().tree_transition_to_inactive()
             self.calculate_assert_winner()
 
+    ##########################################
+    # AW Timer
+    ##########################################
+    def set_hold_forwarding_state_timer(self):
+        """
+        Set Hold Forwarding State Timer to prevent loss of data packets during a AW replacement
+        """
+        self.clear_hold_forwarding_state_timer()
+
+        if not protocol_globals.AL_HOLD_FORWARDING_STATE_ENABLED:
+            return
+        else:
+            self._hold_forwarding_state_timer = Timer(protocol_globals.AL_HOLD_FORWARDING_STATE_TIME,
+                                                      self.hold_forwarding_state_timeout)
+            self._hold_forwarding_state_timer.start()
+
+    def hold_forwarding_state_timeout(self):
+        """
+        Amount of time that AL must preserve its forwarding state has expired
+        Reset entry in multicast routing table
+        """
+        self.change_tree()
+        self.evaluate_in_tree()
+
+    def clear_hold_forwarding_state_timer(self):
+        """
+        Cancel HoldForwardingState timer
+        """
+        if self._hold_forwarding_state_timer is not None:
+            self._hold_forwarding_state_timer.cancel()
+
     ###########################################
     # Recv packets
     ###########################################
@@ -239,7 +277,7 @@ class TreeInterfaceDownstream(TreeInterface):
         """
         Determine if this interface must be included in the OIL at the multicast routing table
         """
-        return self.is_in_tree() and self.is_assert_winner()
+        return self.is_in_tree() and (self.is_assert_winner() or self.is_forwarding_state_on_hold())
 
     def is_in_tree(self):
         """
@@ -253,6 +291,12 @@ class TreeInterfaceDownstream(TreeInterface):
         Determine if there is interest from non-Upstream neighbors based on their interest state
         """
         return self._downstream_node_interest_state.are_downstream_nodes_interested()
+
+    def is_forwarding_state_on_hold(self):
+        """
+        Check if the forwarding state in on hold. This is used to prevent loss of data packets after an AW loses assert.
+        """
+        return self._hold_forwarding_state_timer.is_alive()
 
     def delete(self):
         """

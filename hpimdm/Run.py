@@ -78,6 +78,8 @@ class MyDaemon(Daemon):
                     connection.shutdown(socket.SHUT_RDWR)
                 elif 'flood_initial_data' in args and args.flood_initial_data:
                     connection.sendall(pickle.dumps(Main.change_initial_flood_setting()))
+                elif 'hold_forwarding_state' in args and args.hold_forwarding_state:
+                    connection.sendall(pickle.dumps(Main.hold_forwarding_state()))
                 elif 'add_interface_igmp' in args and args.add_interface_igmp:
                     Main.add_igmp_interface(args.add_interface_igmp[0])
                     connection.shutdown(socket.SHUT_RDWR)
@@ -136,6 +138,9 @@ def main():
                        help="List Multicast Routing table")
     group.add_argument("-fid", "--flood_initial_data", action="store_true", default=False,
                        help="Flood initial data packets")
+    group.add_argument("-hfs", "--hold_forwarding_state", action="store_true", default=False,
+                       help="Hold forwarding state during a small amount of time after AW interface becomes AL " +\
+                            "(prevent loss of data packets after AW replacement)")
     group.add_argument("-ai", "--add_interface", nargs=1, metavar='INTERFACE_NAME',
                        help="Add HPIM-DM interface")
     group.add_argument("-aiigmp", "--add_interface_igmp", nargs=1, metavar='INTERFACE_NAME',

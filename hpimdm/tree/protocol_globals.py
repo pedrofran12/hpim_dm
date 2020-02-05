@@ -24,3 +24,18 @@ SYNC_FRAGMENTATION_MSG = 0
 # Number of ACKs that must be missed in order to declare a neighbor to have failed
 # Use a number HIGHER than 1!!
 ACK_FAILURE_THRESHOLD = 3
+
+
+# Time to wait for a Sync message
+# If Synchronization does not make progress, retransmit previous Sync message
+SYNC_RETRANSMISSION_TIME = 3
+
+
+# When an AW loses an assert and becomes AL, it can hold its forwarding state for a given ammount of time to prevent
+# the loss of data packes (the new AW may not be receiving multicast tree from its parent yet causing the interest
+# signaling to be propageted upwards the tree).
+# If enabled this prevents loss of data packets after the AW is replaced, but duplications may occur for a small
+#   amount of time (the AW and the AL may both forwarding packets at the same time during AL_HOLD_FORWARDING_STATE_TIME)
+# If disabled the duplication of data packets does not occur but loss of packets may occur
+AL_HOLD_FORWARDING_STATE_ENABLED = True
+AL_HOLD_FORWARDING_STATE_TIME = 2
