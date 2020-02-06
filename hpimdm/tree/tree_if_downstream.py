@@ -1,4 +1,5 @@
 import logging
+import _thread
 from threading import Timer
 
 from hpimdm import Main
@@ -195,9 +196,7 @@ class TreeInterfaceDownstream(TreeInterface):
         """
         self.clear_hold_forwarding_state_timer()
 
-        if not protocol_globals.AL_HOLD_FORWARDING_STATE_ENABLED:
-            return
-        else:
+        if protocol_globals.AL_HOLD_FORWARDING_STATE_ENABLED:
             self._hold_forwarding_state_timer = Timer(protocol_globals.AL_HOLD_FORWARDING_STATE_TIME,
                                                       self.hold_forwarding_state_timeout)
             self._hold_forwarding_state_timer.start()
@@ -295,8 +294,11 @@ class TreeInterfaceDownstream(TreeInterface):
     def is_forwarding_state_on_hold(self):
         """
         Check if the forwarding state in on hold. This is used to prevent loss of data packets after an AW loses assert.
+        The forwarding state is on hold if the timer is active and the thread that is checking this is not the thread of
+        the timer (if the thread of the timer invokes this method it means that the timer expired) - accomplished by
+        comparing the thread id of the timer and of the thread that is invoking this method
         """
-        return self._hold_forwarding_state_timer.is_alive()
+        return self._hold_forwarding_state_timer.is_alive() and _thread.get_ident() != self._hold_forwarding_state_timer.ident
 
     def delete(self):
         """
@@ -304,6 +306,7 @@ class TreeInterfaceDownstream(TreeInterface):
         due to the removal of the tree by this router
         Clear all state from this interface regarding this tree
         """
+        self.clear_hold_forwarding_state_timer()
         super().delete()
         self._my_assert_rpc = None
 

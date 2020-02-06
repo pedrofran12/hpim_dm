@@ -12,7 +12,7 @@ setup(
     description="HPIM-DM protocol",
     long_description=open("README.md", "r").read(),
     long_description_content_type="text/markdown",
-    version="1.0.1",
+    version="1.0.2",
     url="http://github.com/pedrofran12/hpim_dm",
     author='Pedro Oliveira',
     author_email='pedro.francisco.oliveira@tecnico.ulisboa.pt',
