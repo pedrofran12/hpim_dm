@@ -230,6 +230,15 @@ def change_initial_flood_setting():
     return "Flood is enabled?: " + str(protocol_globals.INITIAL_FLOOD_ENABLED)
 
 
+def hold_forwarding_state():
+    """
+    Change Hold Forwarding State Setting, used to hold the forwarding state of an interface that was AW and that became
+    AL
+    """
+    protocol_globals.AL_HOLD_FORWARDING_STATE_ENABLED ^= True
+    return "Hold Forwarding State is enabled?: " + str(protocol_globals.AL_HOLD_FORWARDING_STATE_ENABLED)
+
+
 def stop():
     """
     Stop process

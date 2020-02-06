@@ -183,6 +183,13 @@ We have built some list commands that can be used to check the "internals" of th
    sudo hpim-dm -fid
    ```
 
+ - #### Hold Forwarding State:
+
+   This setting allows during an AW replacement (for example due to RPC changes) for the previous AW to hold its forwarding state for a small amount of time. This way it is possible to prevent loss of data packets during this event, however it may introduce traffic duplication (while the new and the previous AW both forward traffic). By default this setting is enabled with a time period of 2 seconds.
+
+   ```
+   sudo hpim-dm -hfs
+   ```
 
 Files tree/protocol_globals.py and igmp/igmp_globals.py store all timer values and some configurations regarding IGMPv2 and HPIM-DM. If you want to tune the protocol, you can change the values of these files. These configurations are used by all interfaces, meaning that there is no tuning per interface.
 
