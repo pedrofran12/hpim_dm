@@ -6,6 +6,7 @@ import time
 import atexit
 import signal
 
+
 class Daemon:
     """A generic Daemon class.
 
@@ -26,9 +27,10 @@ class Daemon:
             sys.exit(1)
 
         # decouple from parent environment
-        #os.chdir('/')
-        #os.setsid()
-        #os.umask(0)
+        os.makedirs('/var/log/hpimdm/')
+        os.chdir('/var/log/hpimdm/')
+        os.setsid()
+        os.umask(0)
 
         # do second fork
         try:

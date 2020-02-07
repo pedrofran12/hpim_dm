@@ -165,6 +165,9 @@ def main():
     args = parser.parse_args()
 
     #print(parser.parse_args())
+    # This script must be run as root!
+    if os.geteuid() != 0:
+        sys.exit('HPIM-DM must be run as root!')
 
     daemon = MyDaemon('/tmp/Daemon-hpim.pid')
     if args.start:
@@ -179,7 +182,7 @@ def main():
         daemon.restart()
         sys.exit(0)
     elif args.verbose:
-        os.system("tail -f stdout")
+        os.system("tail -f /var/log/hpimdm/stdout")
         sys.exit(0)
     elif args.multicast_routes:
         os.system("ip mroute show")
