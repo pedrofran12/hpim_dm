@@ -9,6 +9,7 @@ import _pickle as pickle
 from hpimdm.Daemon.Daemon import Daemon
 from hpimdm import Main
 
+VERSION = "1.2.0.3"
 
 def client_socket(data_to_send):
     """
@@ -116,7 +117,7 @@ def main():
     """
     Entry point for HPIM-DM
     """
-    parser = argparse.ArgumentParser(description='HPIM-DM protocol')
+    parser = argparse.ArgumentParser(description='HPIM-DM protocol', prog='hpim-dm')
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("-start", "--start", action="store_true", default=False,
                        help="Start Protocol")
@@ -162,6 +163,7 @@ def main():
                        help="Verbose (print all debug messages)")
     group.add_argument("-t", "--test", nargs=2, metavar=('ROUTER_NAME', 'SERVER_LOG_IP'),
                        help="Tester... send log information to SERVER_LOG_IP. Set the router name to ROUTER_NAME")
+    group.add_argument("--version", action='version', version='%(prog)s ' + VERSION)
     args = parser.parse_args()
 
     #print(parser.parse_args())
