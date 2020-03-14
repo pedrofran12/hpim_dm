@@ -220,6 +220,6 @@ We have performed tests to our specification and implementation. You can check o
 - [Test_NewProtocol_Sync_With_Trees](https://github.com/pedrofran12/hpim_dm/tree/Test_NewProtocol_Sync_With_Trees) - Topology used to test the implementation of HPIM-DM neighbor discovery and synchronization mechanism with trees already established on the network.
 - [Test_NewProtocol_Assert](https://github.com/pedrofran12/hpim_dm/tree/Test_NewProtocol_Assert) - Topology used to test the implementation of the HPIM-DM AssertWinner election.
 - [Test_NewProtocol_Interest](https://github.com/pedrofran12/hpim_dm/tree/Test_NewProtocol_Interest) - Topology used to test HPIM-DM implementation regarding the forwarding decision of routers by having multicast interest changes.
-- [Test_NewProtocol_Loop](https://github.com/pedrofran12/hpim_dm/tree/Test_NewProtocol_Loop) - Topology used to test the loop prevention of HPIM-DM implementation.
-- [Test_NewProtocol_Source_Loop](https://github.com/pedrofran12/hpim_dm/tree/Test_NewProtocol_Source_Loop) - Topology used to test the loop prevention of HPIM-DM when a originator router has multiple interfaces directly connected to the source.
+- [Test_NewProtocol_Loop](https://github.com/pedrofran12/hpim_dm/tree/Test_NewProtocol_Loop) - Topology used to test the avoidance of trees being maintained indefinitely in the presence of loops on HPIM-DM.
+- [Test_NewProtocol_Source_Loop](https://github.com/pedrofran12/hpim_dm/tree/Test_NewProtocol_Source_Loop) - Topology used to test the prevention of data packets being looped when a originator router has multiple interfaces directly connected to the source.
 - [Test_IGMP](https://github.com/pedrofran12/hpim_dm/tree/Test_IGMP) - Topology used to test our IGMPv2 implementation.
