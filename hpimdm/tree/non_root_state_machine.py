@@ -9,6 +9,7 @@ class SFMRNonRootState:
     def interfaces_roles_dont_change_and_tree_transitions_to_active_state(interface: 'TreeInterfaceDownstream') -> None:
         """
         Tree transitions to Active state AND
+        interface not directly connected to the source AND
         interface roles dont change
         """
         interface.logger.debug('interfaces_roles_dont_change_and_tree_transitions_to_active_state')
@@ -18,6 +19,7 @@ class SFMRNonRootState:
     def interfaces_roles_change_and_tree_remains_or_transitions_to_active_state(interface: 'TreeInterfaceDownstream') -> None:
         """
         Tree remains or changes to Active state AND
+        interface not directly connected to the source AND
         interface roles change (Root->Non-Root)
         """
         interface.logger.debug('interfaces_roles_change_and_tree_remains_or_transitions_to_active_state')
@@ -86,6 +88,7 @@ class SFMRNonRootState:
     def tree_remains_active_and_my_rpc_changes(interface: 'TreeInterfaceDownstream') -> None:
         """
         Tree is Active AND
+        interface not directly connected to the source AND
         MyRPC changes
         """
         interface.logger.debug('tree_remains_active_and_my_rpc_changes')

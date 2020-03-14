@@ -9,7 +9,7 @@ import _pickle as pickle
 from hpimdm.Daemon.Daemon import Daemon
 from hpimdm import Main
 
-VERSION = "1.2.0.3"
+VERSION = "1.2.1"
 
 def client_socket(data_to_send):
     """
