@@ -6,10 +6,10 @@ This repository stores the implementation of this protocol. The implementation i
 
 # Documents detailing this work
 
- - [HPIM-DM state machines](./docs/HPIMStateMachines.pdf)
- - [Python implementation of IGMPv2, PIM-DM and HPIM-DM](./docs/PythonImplementations.pdf)
- - [Test to Python implementation of IGMPv2, PIM-DM, and HPIM-DM](./docs/PythonTests.pdf)
- - [SPIN/Promela correctness tests of HPIM-DM](./docs/CorrectnessTests.pdf)
+ - [HPIM-DM state machines](https://github.com/pedrofran12/hpim_dm/tree/master/docs/HPIMStateMachines.pdf)
+ - [Python implementation of IGMPv2, PIM-DM and HPIM-DM](https://github.com/pedrofran12/hpim_dm/tree/master/docs/PythonImplementations.pdf)
+ - [Test to Python implementation of IGMPv2, PIM-DM, and HPIM-DM](https://github.com/pedrofran12/hpim_dm/tree/master/docs/PythonTests.pdf)
+ - [SPIN/Promela correctness tests of HPIM-DM](https://github.com/pedrofran12/hpim_dm/tree/master/docs/CorrectnessTests.pdf)
 
 
 # Requirements
@@ -17,18 +17,13 @@ This repository stores the implementation of this protocol. The implementation i
  - Linux machine
  - Python3 (we have written all code to be compatible with at least Python v3.2)
  - pip (to install all dependencies)
+ - tcpdump
 
 
 # Installation
 You may need sudo permissions, in order to run this protocol. This is required because we use raw sockets to exchange control messages. For this reason, some sockets to work properly need to have super user permissions.
 
-First clone this repository:
-  `git clone https://github.com/pedrofran12/hpim_dm.git`
-
-Then enter in the cloned repository and install the protocol:
-   `sudo python3 setup.py install`
-
-And that's it :D
+  `pip3 install hpim-dm`
 
 
 # Run HPIM-DM
@@ -183,6 +178,13 @@ We have built some list commands that can be used to check the "internals" of th
    sudo hpim-dm -fid
    ```
 
+ - #### Hold Forwarding State:
+
+   This setting allows during an AW replacement (for example due to RPC changes) for the previous AW to hold its forwarding state for a small amount of time. This way it is possible to prevent loss of data packets during this event, however it may introduce traffic duplication (while the new and the previous AW both forward traffic). By default this setting is enabled with a time period of 2 seconds.
+
+   ```
+   sudo hpim-dm -hfs
+   ```
 
 Files tree/protocol_globals.py and igmp/igmp_globals.py store all timer values and some configurations regarding IGMPv2 and HPIM-DM. If you want to tune the protocol, you can change the values of these files. These configurations are used by all interfaces, meaning that there is no tuning per interface.
 
