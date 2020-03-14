@@ -21,12 +21,14 @@ This repository stores the implementation of this protocol. The implementation i
 
 
 # Installation
-You may need sudo permissions, in order to run this protocol. This is required because we use raw sockets to exchange control messages. For this reason, some sockets to work properly need to have super user permissions.
 
-  `pip3 install hpim-dm`
-
+  ```
+  pip3 install hpim-dm
+  ```
 
 # Run HPIM-DM
+
+You may need sudo permissions, in order to run this protocol. This is required because we use raw sockets to exchange control messages. For this reason, some sockets to work properly need to have super user permissions.
 
 To interact with the protocol you need to execute the `hpim-dm` command. You may need to specify a command and corresponding arguments:
 

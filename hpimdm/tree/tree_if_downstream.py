@@ -39,10 +39,11 @@ class TreeInterfaceDownstream(TreeInterface):
 
         # Deal with messages according to tree state and interface role change
         # Event 1
-        if not was_root and not previous_tree_state.is_active() and current_tree_state.is_active():
+        if not was_root and not previous_tree_state.is_active() and current_tree_state.is_active() and \
+                not self.is_interface_connected_to_source():
             SFMRNonRootState.interfaces_roles_dont_change_and_tree_transitions_to_active_state(self)
         # Event 2
-        elif was_root and current_tree_state.is_active():
+        elif was_root and current_tree_state.is_active() and not self.is_interface_connected_to_source():
             SFMRNonRootState.interfaces_roles_change_and_tree_remains_or_transitions_to_active_state(self)
         # Event 3
         elif previous_tree_state.is_active() and current_tree_state.is_unsure() and best_upstream_router is None:
@@ -154,7 +155,7 @@ class TreeInterfaceDownstream(TreeInterface):
         The tree of this interface detected that the tree transitioned to Active state
         The interface must react to this change in order to send some control messages
         """
-        if not self.is_tree_active():
+        if not self.is_tree_active() and not self.is_interface_connected_to_source():
             super().tree_transition_to_active()
             self.calculate_assert_winner()
             SFMRNonRootState.interfaces_roles_dont_change_and_tree_transitions_to_active_state(self)
@@ -263,10 +264,11 @@ class TreeInterfaceDownstream(TreeInterface):
     def get_sync_state(self):
         """
         Determine if this tree must be included in a new snapshot
-        If tree is Active then this must be included in the snapshot, otherwise this tree is not included
-        in the snapshot (in this point in time the router is not considered to be Upstream)
+        If tree is Active (and interface not connected to the source)then this must be included in the snapshot,
+         otherwise this tree is not included in the snapshot (at this point in time the router is not considered
+         to be Upstream)
         """
-        if self.current_tree_state.is_active():
+        if self.current_tree_state.is_active() and not self.is_interface_connected_to_source():
             return self._my_assert_rpc
         else:
             return None
@@ -276,7 +278,8 @@ class TreeInterfaceDownstream(TreeInterface):
         """
         Determine if this interface must be included in the OIL at the multicast routing table
         """
-        return self.is_in_tree() and (self.is_assert_winner() or self.is_forwarding_state_on_hold())
+        return self.is_in_tree() and (self.is_assert_winner() or self.is_forwarding_state_on_hold()) and \
+               not self.is_interface_connected_to_source()
 
     def is_in_tree(self):
         """
@@ -324,6 +327,6 @@ class TreeInterfaceDownstream(TreeInterface):
             return
 
         self._my_assert_rpc = AssertMetric(new_rpc.metric_preference, new_rpc.route_metric, self.get_ip())
-        if self.current_tree_state.is_active():
+        if self.current_tree_state.is_active() and not self.is_interface_connected_to_source():
             SFMRNonRootState.tree_remains_active_and_my_rpc_changes(self)
         self.calculate_assert_winner()

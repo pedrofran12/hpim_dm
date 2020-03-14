@@ -1,4 +1,5 @@
 import logging
+import ipaddress
 import netifaces
 from threading import RLock
 from abc import ABCMeta, abstractmethod
@@ -250,6 +251,21 @@ class TreeInterface(metaclass=ABCMeta):
         if_name = self.get_interface_name()
         ip = netifaces.ifaddresses(if_name)[netifaces.AF_INET][0]['addr']
         return ip
+
+    def get_interface_netmask(self):
+        """
+        Get Netmask of this interface
+        """
+        if_name = self.get_interface_name()
+        return netifaces.ifaddresses(if_name)[netifaces.AF_INET][0]["netmask"]
+
+    def is_interface_connected_to_source(self):
+        """
+        Determine if this interface is connected to the source of multicast traffic
+        """
+        source_ip = self.get_tree_id()[0]
+        if_address = self.get_ip() + "/" + self.get_interface_netmask()
+        return ipaddress.ip_address(source_ip) in ipaddress.ip_interface(if_address).network
 
     def get_tree_id(self):
         """
