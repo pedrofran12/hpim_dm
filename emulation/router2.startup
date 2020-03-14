@@ -1,23 +1,9 @@
-ip addr add dev eth0 10.2.2.2/24
+ip addr add dev eth0 10.1.1.3/24
 ip link set dev eth0 up
-ip addr add dev eth1 10.3.3.2/24
+ip addr add dev eth1 10.2.2.3/24
 ip link set dev eth1 up
-
-#default route para obter conectividade internet
-#ip route add 0.0.0.0/0 via 10.2.2.1
-
 
 # Zebra and OSPF
 /etc/init.d/quagga restart
-
-# wait for default route information from OSPF
-while ! $(ip route | grep -q "default")
-do
-	sleep 2
-done
-
-
-# install python
-#apt-get update && apt-get --assume-yes install python3 python3-pip
 
 echo VTYSH_PAGER=more > /etc/environment
