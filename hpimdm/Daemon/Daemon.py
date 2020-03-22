@@ -27,7 +27,7 @@ class Daemon:
             sys.exit(1)
 
         # decouple from parent environment
-        os.makedirs('/var/log/hpimdm/')
+        os.makedirs('/var/log/hpimdm/', exist_ok=True)
         os.chdir('/var/log/hpimdm/')
         os.setsid()
         os.umask(0)
