@@ -1,8 +1,8 @@
 # HPIM-DM
 
-![PyPI - Python Version](https://img.shields.io/pypi/pyversions/hpim-dm)
-![PyPI](https://img.shields.io/pypi/v/hpim-dm)
-![PyPI - License](https://img.shields.io/pypi/l/hpim-dm)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/hpim-dm)](https://pypi.org/project/hpim-dm/)
+[![PyPI](https://img.shields.io/pypi/v/hpim-dm)](https://pypi.org/project/hpim-dm/)
+[![PyPI - License](https://img.shields.io/pypi/l/hpim-dm)](https://github.com/pedrofran12/hpim_dm/blob/master/LICENSE)
 
 We have specified and implemented a multicast routing protocol named HPIM-DM (Hard-state Protocol Independent Multicast - Dense Mode).
 This repository stores the implementation of this protocol. The implementation is written in Python language and is destined to Linux systems.
