@@ -2,7 +2,6 @@ import logging
 import _thread
 from threading import Timer
 
-from hpimdm import Main
 from . import protocol_globals
 from .metric import AssertMetric, Metric
 from .tree_interface import TreeInterface
@@ -16,7 +15,7 @@ class TreeInterfaceDownstream(TreeInterface):
     def __init__(self, kernel_entry, interface_id, rpc: Metric, best_upstream_router, interest_state, was_root, previous_tree_state, current_tree_state):
         extra_dict_logger = kernel_entry.kernel_entry_logger.extra.copy()
         extra_dict_logger['vif'] = interface_id
-        extra_dict_logger['interfacename'] = Main.kernel.vif_index_to_name_dic[interface_id]
+        extra_dict_logger['interfacename'] = kernel_entry.get_interface_name(interface_id)
         logger = logging.LoggerAdapter(TreeInterfaceDownstream.LOGGER, extra_dict_logger)
         TreeInterface.__init__(self, kernel_entry, interface_id, best_upstream_router, current_tree_state, logger)
         self.assert_logger = logging.LoggerAdapter(logger.logger.getChild('Assert'), logger.extra)
@@ -286,7 +285,7 @@ class TreeInterfaceDownstream(TreeInterface):
         Verify if this interface is connected to interested hosts/nodes
         (based on Interest state of all neighbors and IGMP)
         """
-        return self.igmp_has_members() or self.are_downstream_nodes_interested()
+        return self.local_membership_has_members() or self.are_downstream_nodes_interested()
 
     def are_downstream_nodes_interested(self):
         """

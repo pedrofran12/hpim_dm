@@ -1,12 +1,13 @@
 import json
 import struct
-from .PacketProtocolHello import PacketProtocolHello, PacketNewProtocolHello
-from .PacketProtocolSetTree import PacketProtocolUpstream, PacketNewProtocolUpstream
-from .PacketProtocolRemoveTree import PacketProtocolNoLongerUpstream, PacketNewProtocolNoLongerUpstream
-from .PacketProtocolInterest import PacketProtocolInterest, PacketProtocolNoInterest, PacketNewProtocolInterest,\
-    PacketNewProtocolNoInterest
-from .PacketProtocolAck import PacketProtocolAck, PacketNewProtocolAck
-from .PacketProtocolSync import PacketProtocolHelloSync, PacketNewProtocolSync
+from .PacketHPIMHello import PacketHPIMHelloJson, PacketHPIMHello
+from .PacketHPIMIamUpstream import PacketHPIMUpstreamJson, PacketHPIMUpstream, PacketHPIMUpstream_v6
+from .PacketHPIMNotUpstream import PacketHPIMNoLongerUpstreamJson, PacketHPIMNoLongerUpstream,\
+    PacketHPIMNoLongerUpstream_v6
+from .PacketHPIMInterest import PacketHPIMInterestJson, PacketHPIMNoInterestJson, PacketHPIMInterest,\
+    PacketHPIMNoInterest, PacketHPIMInterest_v6, PacketHPIMNoInterest_v6
+from .PacketHPIMAck import PacketHPIMAckJson, PacketHPIMAck, PacketHPIMAck_v6
+from .PacketHPIMSync import PacketHPIMSyncJson, PacketHPIMSync, PacketHPIMSync_v6
 
 from .PacketPayload import PacketPayload
 '''
@@ -14,16 +15,15 @@ from .PacketPayload import PacketPayload
 |  Type  |   msg........                                        |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 '''
-class PacketProtocolHeader(PacketPayload):
+class PacketHPIMHeaderJson(PacketPayload):
 
-    PIM_MSG_TYPES = {"HELLO": PacketProtocolHello,
-                     "INTEREST": PacketProtocolInterest,
-                     "NO_INTEREST": PacketProtocolNoInterest,
-                     "I_AM_UPSTREAM": PacketProtocolUpstream,
-                     "I_AM_NO_LONGER_UPSTREAM": PacketProtocolNoLongerUpstream,
-                     "ACK": PacketProtocolAck,
-
-                     "SYNC": PacketProtocolHelloSync,
+    PIM_MSG_TYPES = {"HELLO": PacketHPIMHelloJson,
+                     "INTEREST": PacketHPIMInterestJson,
+                     "NO_INTEREST": PacketHPIMNoInterestJson,
+                     "I_AM_UPSTREAM": PacketHPIMUpstreamJson,
+                     "I_AM_NO_LONGER_UPSTREAM": PacketHPIMNoLongerUpstreamJson,
+                     "ACK": PacketHPIMAckJson,
+                     "SYNC": PacketHPIMSyncJson,
                     }
 
     def __init__(self, payload, boot_time=0):
@@ -62,8 +62,8 @@ class PacketProtocolHeader(PacketPayload):
 
         pim_payload = msg["DATA"]
         print("DATA", pim_payload)
-        pim_payload = PacketProtocolHeader.PIM_MSG_TYPES[pkt_type].parse_bytes(pim_payload)
-        return PacketProtocolHeader(pim_payload, id_reliable)
+        pim_payload = PacketHPIMHeaderJson.PIM_MSG_TYPES[pkt_type].parse_bytes(pim_payload)
+        return PacketHPIMHeaderJson(pim_payload, id_reliable)
 
 
 
@@ -80,20 +80,20 @@ HEADER IN BYTE FORMAT
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 '''
 
-class PacketNewProtocolHeader(PacketPayload):
+class PacketHPIMHeader(PacketPayload):
     PIM_VERSION = 0
 
     PIM_HDR = "! L B H B"
     PIM_HDR_LEN = struct.calcsize(PIM_HDR)
 
-    PIM_MSG_TYPES = {PacketNewProtocolHello.PIM_TYPE: PacketNewProtocolHello,
-                     PacketNewProtocolSync.PIM_TYPE: PacketNewProtocolSync,
-                     PacketNewProtocolUpstream.PIM_TYPE: PacketNewProtocolUpstream,
-                     PacketNewProtocolNoLongerUpstream.PIM_TYPE: PacketNewProtocolNoLongerUpstream,
-                     PacketNewProtocolInterest.PIM_TYPE: PacketNewProtocolInterest,
-                     PacketNewProtocolNoInterest.PIM_TYPE: PacketNewProtocolNoInterest,
-                     PacketNewProtocolAck.PIM_TYPE: PacketNewProtocolAck,
-                    }
+    PIM_MSG_TYPES = {PacketHPIMHello.PIM_TYPE: PacketHPIMHello,
+                     PacketHPIMSync.PIM_TYPE: PacketHPIMSync,
+                     PacketHPIMUpstream.PIM_TYPE: PacketHPIMUpstream,
+                     PacketHPIMNoLongerUpstream.PIM_TYPE: PacketHPIMNoLongerUpstream,
+                     PacketHPIMInterest.PIM_TYPE: PacketHPIMInterest,
+                     PacketHPIMNoInterest.PIM_TYPE: PacketHPIMNoInterest,
+                     PacketHPIMAck.PIM_TYPE: PacketHPIMAck,
+                     }
 
     def __init__(self, payload, boot_time=0, security_id=0, security_length=0, security_value=b''):
         self.payload = payload
@@ -122,8 +122,8 @@ class PacketNewProtocolHeader(PacketPayload):
         Obtain Protocol Packet in a format to be transmitted (binary)
         This method will return the Header and Payload in binary format
         """
-        pim_vrs_type = (PacketNewProtocolHeader.PIM_VERSION << 4) + self.get_pim_type()
-        msg = struct.pack(PacketNewProtocolHeader.PIM_HDR, self.boot_time, pim_vrs_type, self.security_id,
+        pim_vrs_type = (PacketHPIMHeader.PIM_VERSION << 4) + self.get_pim_type()
+        msg = struct.pack(PacketHPIMHeader.PIM_HDR, self.boot_time, pim_vrs_type, self.security_id,
                           self.security_length)
         msg += self.security_value + self.payload.bytes()
         return msg
@@ -131,27 +131,41 @@ class PacketNewProtocolHeader(PacketPayload):
     def __len__(self):
         return len(self.bytes())
 
-    @staticmethod
-    def parse_bytes(data: bytes):
+    @classmethod
+    def parse_bytes(cls, data: bytes):
         """
         Parse received Packet from bits/bytes and convert them into Header object... also parse Header's payload
         """
         print("parsePimHdr: ", data)
 
-        pim_hdr = data[0:PacketNewProtocolHeader.PIM_HDR_LEN]
-        (boot_time, pim_ver_type, security_id, security_len) = struct.unpack(PacketNewProtocolHeader.PIM_HDR, pim_hdr)
+        pim_hdr = data[0:cls.PIM_HDR_LEN]
+        (boot_time, pim_ver_type, security_id, security_len) = struct.unpack(cls.PIM_HDR, pim_hdr)
 
         print(pim_ver_type)
         pim_version = (pim_ver_type & 0xF0) >> 4
         pim_type = pim_ver_type & 0x0F
 
-        if pim_version != PacketNewProtocolHeader.PIM_VERSION:
+        if pim_version != cls.PIM_VERSION:
             print("Version of PROTOCOL packet received not known (!=0)")
             raise Exception
 
-        security_and_pim_payload = data[PacketNewProtocolHeader.PIM_HDR_LEN:]
+        security_and_pim_payload = data[cls.PIM_HDR_LEN:]
         security_value = security_and_pim_payload[:security_len]
         print("Received hmac value: ", security_value)
         pim_payload = security_and_pim_payload[security_len:]
-        pim_payload = PacketNewProtocolHeader.PIM_MSG_TYPES[pim_type].parse_bytes(pim_payload)
-        return PacketNewProtocolHeader(pim_payload, boot_time, security_id, security_len, security_value)
+        pim_payload = cls.PIM_MSG_TYPES[pim_type].parse_bytes(pim_payload)
+        return PacketHPIMHeader(pim_payload, boot_time, security_id, security_len, security_value)
+
+
+class PacketHPIMHeader_v6(PacketHPIMHeader):
+    PIM_MSG_TYPES = {PacketHPIMHello.PIM_TYPE: PacketHPIMHello,
+                     PacketHPIMSync.PIM_TYPE: PacketHPIMSync_v6,
+                     PacketHPIMUpstream.PIM_TYPE: PacketHPIMUpstream_v6,
+                     PacketHPIMNoLongerUpstream.PIM_TYPE: PacketHPIMNoLongerUpstream_v6,
+                     PacketHPIMInterest.PIM_TYPE: PacketHPIMInterest_v6,
+                     PacketHPIMNoInterest.PIM_TYPE: PacketHPIMNoInterest_v6,
+                     PacketHPIMAck.PIM_TYPE: PacketHPIMAck_v6,
+                     }
+
+    def __init__(self, payload, boot_time=0, security_id=0, security_length=0, security_value=b''):
+        super().__init__(payload, boot_time, security_id, security_length, security_value)

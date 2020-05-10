@@ -1,9 +1,11 @@
 import socket
-from abc import ABCMeta, abstractmethod
+import struct
 import threading
+import netifaces
+import ipaddress
 import traceback
 from fcntl import ioctl
-import struct
+from abc import ABCMeta, abstractmethod
 
 SIOCGIFMTU = 0x8921
 
@@ -22,7 +24,6 @@ class Interface(metaclass=ABCMeta):
         self._recv_socket = recv_socket
         self.interface_enabled = False
 
-
     def enable(self):
         """
         Enable this interface
@@ -40,15 +41,15 @@ class Interface(metaclass=ABCMeta):
         """
         while self.interface_enabled:
             try:
-                (raw_bytes, _) = self._recv_socket.recvfrom(256 * 1024)
+                (raw_bytes, ancdata, _, src_addr) = self._recv_socket.recvmsg(256 * 1024, 500)
                 if raw_bytes:
-                    self._receive(raw_bytes)
+                    self._receive(raw_bytes, ancdata, src_addr)
             except Exception:
                 traceback.print_exc()
                 continue
 
     @abstractmethod
-    def _receive(self, raw_bytes):
+    def _receive(self, raw_bytes, ancdata, src_addr):
         """
         Subclass method to be implemented
         This method will be invoked whenever a new control packet is received
@@ -90,6 +91,26 @@ class Interface(metaclass=ABCMeta):
         """
         Get IP of this interface
         """
+        raise NotImplementedError
+
+    def get_all_interface_networks(self):
+        """
+        Get all subnets associated with this interface.
+        Used to verify if interface is directly connected to a multicast source
+        This is extremely relevant on IPv6, where an interface can be connected to multiple subnets (global, link-local,
+        unique-local)
+        """
+        all_networks = set()
+        for if_addr in netifaces.ifaddresses(self.interface_name)[self._get_address_family()]:
+            ip_addr = if_addr["addr"].split("%")[0]
+            netmask = if_addr["netmask"].split("/")[0]
+            prefix_length = str(bin(int(ipaddress.ip_address(netmask).packed.hex(), 16)).count('1'))
+            network = ip_addr + "/" + prefix_length
+            all_networks.add(str(ipaddress.ip_interface(network).network))
+        return all_networks
+
+    @abstractmethod
+    def _get_address_family(self):
         raise NotImplementedError
 
     def get_mtu(self):

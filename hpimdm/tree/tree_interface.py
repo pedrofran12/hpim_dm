@@ -1,10 +1,8 @@
 import logging
 import ipaddress
-import netifaces
 from threading import RLock
 from abc import ABCMeta, abstractmethod
 
-from hpimdm import Main
 from .tree_state import TreeState
 from .local_membership import LocalMembership
 
@@ -22,14 +20,12 @@ class TreeInterface(metaclass=ABCMeta):
         # Local Membership State
         self._igmp_lock = RLock()
         try:
-            interface_name = Main.kernel.vif_index_to_name_dic[interface_id]
-            igmp_interface = Main.igmp_interfaces[interface_name]  # type: InterfaceIGMP
-            group_state = igmp_interface.interface_state.get_group_state(kernel_entry.group_ip)
-            igmp_has_members = group_state.add_multicast_routing_entry(self)
-            self._local_membership_state = LocalMembership.Include if igmp_has_members else LocalMembership.NoInfo
+            membership_interface = self.get_membership_interface()  # type: InterfaceIGMP
+            group_state = membership_interface.interface_state.get_group_state(kernel_entry.group_ip)
+            has_members = group_state.add_multicast_routing_entry(self)
+            self._local_membership_state = LocalMembership.Include if has_members else LocalMembership.NoInfo
         except:
             self._local_membership_state = LocalMembership.NoInfo
-
 
     ###########################################
     # Recv packets
@@ -113,9 +109,8 @@ class TreeInterface(metaclass=ABCMeta):
         (s, g) = self.get_tree_id()
         # unsubscribe igmp information
         try:
-            interface_name = Main.kernel.vif_index_to_name_dic[self._interface_id]
-            igmp_interface = Main.igmp_interfaces[interface_name]  # type: InterfaceIGMP
-            group_state = igmp_interface.interface_state.get_group_state(g)
+            membership_interface = self.get_membership_interface()  # type: InterfaceIGMP
+            group_state = membership_interface.interface_state.get_group_state(g)
             group_state.remove_multicast_routing_entry(self)
         except:
             pass
@@ -134,7 +129,6 @@ class TreeInterface(metaclass=ABCMeta):
         This method is invoked whenever a new interface is included in the OIL or if an interface is removed from it
         """
         self._kernel_entry.evaluate_in_tree_change()
-
 
     ############################################################
     # Assert Winner state
@@ -163,7 +157,6 @@ class TreeInterface(metaclass=ABCMeta):
         """
         return
 
-
     ##########################################################
     # Tree transitions
     ##########################################################
@@ -190,30 +183,27 @@ class TreeInterface(metaclass=ABCMeta):
 
 
     #############################################################
-    # Local Membership (IGMP)
+    # Local Membership (IGMP/MLD)
     ############################################################
-    def check_igmp_state(self):
+    def check_membership_state(self):
         """
-        Reverify IGMP state of this group whenever this interface enabled or disabled IGMP
+        Reverify IGMP/mld state of this group whenever this interface enabled or disabled IGMP/MLD
         """
         (_, group_ip) = self.get_tree_id()
         with self._igmp_lock:
             try:
-                interface_name = Main.kernel.vif_index_to_name_dic[self._interface_id]
-                igmp_interface = Main.igmp_interfaces[interface_name]  # type: InterfaceIGMP
-                group_state = igmp_interface.interface_state.get_group_state(group_ip)
-                #self._igmp_has_members = group_state.add_multicast_routing_entry(self)
-                igmp_has_members = group_state.add_multicast_routing_entry(self)
-                self._local_membership_state = LocalMembership.Include if igmp_has_members else LocalMembership.NoInfo
+                membership_interface = self.get_membership_interface()  # type: InterfaceIGMP
+                group_state = membership_interface.interface_state.get_group_state(group_ip)
+                has_members = group_state.add_multicast_routing_entry(self)
+                self._local_membership_state = LocalMembership.Include if has_members else LocalMembership.NoInfo
             except:
                 self._local_membership_state = LocalMembership.NoInfo
             self.change_tree()
             self.evaluate_in_tree()
 
-
-    def notify_igmp(self, has_members: bool):
+    def notify_membership(self, has_members: bool):
         """
-        IGMP detected a change of membership regarding the group of this tree
+        IGMP/MLD detected a change of membership regarding the group of this tree
         """
         with self.get_state_lock():
             with self._igmp_lock:
@@ -222,8 +212,7 @@ class TreeInterface(metaclass=ABCMeta):
                     self.change_tree()
                     self.evaluate_in_tree()
 
-
-    def igmp_has_members(self):
+    def local_membership_has_members(self):
         """
         Determine if there are hosts interested in receiving data packets regarding this tree
         """
@@ -232,40 +221,50 @@ class TreeInterface(metaclass=ABCMeta):
 
     def get_interface(self):
         """
-        Get the InterfaceProtocol object regarding this physical interface
+        Get the InterfaceHPIM object regarding this physical interface
         """
-        interface = Main.interfaces.get(self.get_interface_name(), None)
-        return interface
+        return self._kernel_entry.get_interface(self._interface_id)
+
+    def get_membership_interface(self):
+        """
+        Get InterfaceIGMP or InterfaceMLD object regarding this physical interface
+        """
+        return self._kernel_entry.get_membership_interface(self._interface_id)
 
     def get_interface_name(self):
         """
         Get interface name of this interface
         """
-        kernel = Main.kernel
-        return kernel.vif_index_to_name_dic.get(self._interface_id, None)
+        return self._kernel_entry.get_interface_name(self._interface_id)
 
     def get_ip(self):
         """
         Get IP of this interface
         """
-        if_name = self.get_interface_name()
-        ip = netifaces.ifaddresses(if_name)[netifaces.AF_INET][0]['addr']
-        return ip
+        interface = self.get_interface()
+        if interface is not None:
+            return interface.get_ip()
+        return "0.0.0.0"
 
-    def get_interface_netmask(self):
+    def get_all_interface_networks(self):
         """
-        Get Netmask of this interface
+        Get all networks associated with interface
+        More than one can be associated for example in the case of IPv6 (link local + global + unique local)
         """
-        if_name = self.get_interface_name()
-        return netifaces.ifaddresses(if_name)[netifaces.AF_INET][0]["netmask"]
+        interface = self.get_interface()
+        if interface is not None:
+            return interface.get_all_interface_networks()
+        return {"0.0.0.0/32"}
 
     def is_interface_connected_to_source(self):
         """
         Determine if this interface is connected to the source of multicast traffic
         """
         source_ip = self.get_tree_id()[0]
-        if_address = self.get_ip() + "/" + self.get_interface_netmask()
-        return ipaddress.ip_address(source_ip) in ipaddress.ip_interface(if_address).network
+        for network in self.get_all_interface_networks():
+            if ipaddress.ip_address(source_ip) in ipaddress.ip_network(network):
+                return True
+        return False
 
     def get_tree_id(self):
         """

@@ -4,7 +4,7 @@ import socket
 ###########################################################################################################
 # JSON FORMAT
 ###########################################################################################################
-class PacketProtocolAck:
+class PacketHPIMAckJson:
     PIM_TYPE = "ACK"
 
     def __init__(self, source, group, sequence_number, neighbor_boot_time=0, neighbor_snapshot_sn=0, my_snapshot_sn=0):
@@ -66,19 +66,20 @@ class PacketProtocolAck:
 |                     Neighbor Sequence Number                  |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 '''
-class PacketNewProtocolAck:
+class PacketHPIMAck:
     PIM_TYPE = 6
 
     PIM_HDR_ACK = "! 4s 4s L L L L"
     PIM_HDR_ACK_LEN = struct.calcsize(PIM_HDR_ACK)
+    FAMILY = socket.AF_INET
 
     def __init__(self, source_ip, group_ip, sequence_number, neighbor_boot_time=0, neighbor_snapshot_sn=0, my_snapshot_sn=0):
         if type(source_ip) not in (str, bytes) or type(group_ip) not in (str, bytes):
             raise Exception
         if type(source_ip) is bytes:
-            source_ip = socket.inet_ntoa(source_ip)
+            source_ip = socket.inet_ntop(self.FAMILY, source_ip)
         if type(group_ip) is bytes:
-            group_ip = socket.inet_ntoa(group_ip)
+            group_ip = socket.inet_ntop(self.FAMILY, group_ip)
 
         self.source = source_ip
         self.group = group_ip
@@ -91,8 +92,8 @@ class PacketNewProtocolAck:
         """
         Obtain Packet Ack in a format to be transmitted (binary)
         """
-        msg = struct.pack(PacketNewProtocolAck.PIM_HDR_ACK, socket.inet_aton(self.source),
-                          socket.inet_aton(self.group), self.neighbor_boot_time, self.neighbor_snapshot_sn,
+        msg = struct.pack(self.PIM_HDR_ACK, socket.inet_pton(self.FAMILY, self.source),
+                          socket.inet_pton(self.FAMILY, self.group), self.neighbor_boot_time, self.neighbor_snapshot_sn,
                           self.my_snapshot_sn, self.sequence_number)
 
         return msg
@@ -106,5 +107,14 @@ class PacketNewProtocolAck:
         Parse received Packet from bits/bytes and convert them into ProtocolAck object
         """
         (tree_source, tree_group, neighbor_boot_time, neighbor_snapshot_sn, my_snapshot_sn, sn) =\
-            struct.unpack(PacketNewProtocolAck.PIM_HDR_ACK, data[:PacketNewProtocolAck.PIM_HDR_ACK_LEN])
+            struct.unpack(cls.PIM_HDR_ACK, data[:cls.PIM_HDR_ACK_LEN])
         return cls(tree_source, tree_group, sn, neighbor_boot_time, neighbor_snapshot_sn, my_snapshot_sn)
+
+
+class PacketHPIMAck_v6(PacketHPIMAck):
+    PIM_HDR_ACK = "! 16s 16s L L L L"
+    PIM_HDR_ACK_LEN = struct.calcsize(PIM_HDR_ACK)
+    FAMILY = socket.AF_INET6
+
+    def __init__(self, source_ip, group_ip, sequence_number, neighbor_boot_time=0, neighbor_snapshot_sn=0, my_snapshot_sn=0):
+        super().__init__(source_ip, group_ip, sequence_number, neighbor_boot_time, neighbor_snapshot_sn, my_snapshot_sn)

@@ -2,8 +2,8 @@ from ipaddress import IPv4Address
 
 from hpimdm.igmp.igmp_globals import Membership_Query, QueryResponseInterval, LastMemberQueryCount
 from hpimdm.utils import TYPE_CHECKING
-from hpimdm.Packet.ReceivedPacket import ReceivedPacket
-from hpimdm.Packet.PacketIGMPHeader import PacketIGMPHeader
+from hpimdm.packet.ReceivedPacket import ReceivedPacket
+from hpimdm.packet.PacketIGMPHeader import PacketIGMPHeader
 from . import NoMembersPresent, MembersPresent, CheckingMembership
 
 if TYPE_CHECKING:

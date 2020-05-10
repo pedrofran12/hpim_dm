@@ -1,16 +1,16 @@
 import struct
-from .PacketProtocolHelloOptions import PacketProtocolHelloOptions, PacketNewProtocolHelloOptions
+from .PacketHPIMHelloOptions import PacketHPIMHelloOptionsJson, PacketHPIMHelloOptions
 
 ###########################################################################################################
 # JSON FORMAT
 ###########################################################################################################
-class PacketProtocolHello:
+class PacketHPIMHelloJson:
     PIM_TYPE = "HELLO"
 
     def __init__(self):
         self.options = {}
 
-    def add_option(self, option: 'PacketProtocolHelloOptions'):
+    def add_option(self, option: 'PacketHPIMHelloOptionsJson'):
         self.options[option.type] = option
 
     def get_options(self):
@@ -34,9 +34,9 @@ class PacketProtocolHello:
         """
         Parse received Hello Packet from JSON format and convert it into Hello object
         """
-        pim_payload = PacketProtocolHello()
+        pim_payload = PacketHPIMHelloJson()
         for (key, value) in data.items():
-            option = PacketProtocolHelloOptions.parse_bytes((key, value))
+            option = PacketHPIMHelloOptionsJson.parse_bytes((key, value))
             pim_payload.add_option(option)
         return pim_payload
 
@@ -79,7 +79,7 @@ NOT USED:
 '''
 
 
-class PacketNewProtocolHello:
+class PacketHPIMHello:
     PIM_TYPE = 0
     PIM_HDR_OPTS = "! HH"
     PIM_HDR_OPTS_LEN = struct.calcsize(PIM_HDR_OPTS)
@@ -88,7 +88,7 @@ class PacketNewProtocolHello:
     def __init__(self):
         self.options = {}
 
-    def add_option(self, option: 'PacketNewProtocolHelloOptions'):
+    def add_option(self, option: 'PacketHPIMHelloOptions'):
         self.options[option.TYPE] = option
 
     def get_options(self):
@@ -112,10 +112,10 @@ class PacketNewProtocolHello:
         """
         Parse received Hello Packet from binary format and convert it into Hello object
         """
-        protocol_payload = PacketNewProtocolHello()
+        protocol_payload = PacketHPIMHello()
         while data != b'':
             print("DATA", data)
-            option = PacketNewProtocolHelloOptions.parse_bytes(data)
+            option = PacketHPIMHelloOptions.parse_bytes(data)
             option_length = len(option)
             data = data[option_length:]
             protocol_payload.add_option(option)

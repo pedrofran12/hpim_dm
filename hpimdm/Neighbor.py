@@ -3,29 +3,27 @@ import logging
 import ipaddress
 from threading import Timer
 
-from hpimdm import Main
 from hpimdm.utils import TYPE_CHECKING
 from hpimdm.tree.metric import AssertMetric
 from hpimdm.tree import protocol_globals
-from hpimdm.Packet.Packet import Packet
+from hpimdm.packet.Packet import Packet
 if protocol_globals.MSG_FORMAT == "BINARY":
-    from hpimdm.Packet.PacketProtocolAck import PacketNewProtocolAck as PacketProtocolAck
-    from hpimdm.Packet.PacketProtocolSync import PacketNewProtocolSync as PacketProtocolHelloSync
-    from hpimdm.Packet.PacketProtocolHelloOptions import PacketNewProtocolHelloHoldtime as PacketProtocolHelloHoldtime
-    from hpimdm.Packet.PacketProtocolHeader import PacketNewProtocolHeader as PacketProtocolHeader
+    from hpimdm.packet.PacketHPIMSync import PacketHPIMSync
+    from hpimdm.packet.PacketHPIMHelloOptions import PacketHPIMHelloHoldtime
+    from hpimdm.packet.PacketHPIMHeader import PacketHPIMHeader
 else:
-    from hpimdm.Packet.PacketProtocolAck import PacketProtocolAck
-    from hpimdm.Packet.PacketProtocolSync import PacketProtocolHelloSync
-    from hpimdm.Packet.PacketProtocolHelloOptions import PacketProtocolHelloHoldtime
-    from hpimdm.Packet.PacketProtocolHeader import PacketProtocolHeader
+    from hpimdm.packet.PacketHPIMSync import PacketHPIMSyncJson as PacketHPIMSync
+    from hpimdm.packet.PacketHPIMHelloOptions import PacketHPIMHelloHoldtimeJson as PacketHPIMHelloHoldtime
+    from hpimdm.packet.PacketHPIMHeader import PacketHPIMHeaderJson as PacketHPIMHeader
 
 if TYPE_CHECKING:
-    from hpimdm.InterfaceProtocol import InterfaceProtocol
+    from hpimdm.InterfaceHPIM import InterfaceHPIM
 
 DEFAULT_HELLO_HOLD_TIME_DURING_SYNC = 4 * protocol_globals.SYNC_RETRANSMISSION_TIME
 DEFAULT_HELLO_HOLD_TIME_AFTER_SYNC = 120
 
-class NeighborState():
+
+class NeighborState:
     @staticmethod
     def new_neighbor_or_adjacency_reset(neighbor):
         neighbor.set_sync_state(Slave)
@@ -45,12 +43,11 @@ class NeighborState():
         my_more_bit = len(neighbor.my_snapshot_multicast_routing_table) > 0
         my_snapshot_sn = neighbor.my_snapshot_sequencer
 
-        pkt_s = PacketProtocolHelloSync(my_snapshot_sn, 0,
-                                        sync_sn=neighbor.current_sync_sn,
-                                        upstream_trees=my_snapshot_mrt, master_flag=True,
-                                        more_flag=my_more_bit,
-                                        neighbor_boot_time=neighbor.time_of_boot)
-        pkt = Packet(payload=PacketProtocolHeader(pkt_s, neighbor.my_snapshot_boot_time))
+        pkt_s = PacketHPIMSync(my_snapshot_sn, 0,
+                               sync_sn=neighbor.current_sync_sn, upstream_trees=my_snapshot_mrt,
+                               master_flag=True, more_flag=my_more_bit,
+                               neighbor_boot_time=neighbor.time_of_boot)
+        pkt = Packet(payload=PacketHPIMHeader(pkt_s, neighbor.my_snapshot_boot_time))
         neighbor.contact_interface.send(pkt, neighbor.ip)
         neighbor.set_sync_timer()
         neighbor.set_hello_hold_time(DEFAULT_HELLO_HOLD_TIME_DURING_SYNC)
@@ -77,11 +74,11 @@ class Synced(NeighborState):
             return
 
         if master_bit and neighbor.my_snapshot_sequencer == my_snapshot_sn:
-            pkt_s = PacketProtocolHelloSync(my_snapshot_sn, neighbor_snapshot_sn, sync_sn=sync_sn,
-                                            master_flag=False, more_flag=False,
-                                            neighbor_boot_time=neighbor.time_of_boot)
-            pkt_s.add_hello_option(PacketProtocolHelloHoldtime(holdtime=4 * neighbor.contact_interface.HELLO_PERIOD))
-            pkt = Packet(payload=PacketProtocolHeader(pkt_s, neighbor.my_snapshot_boot_time))
+            pkt_s = PacketHPIMSync(my_snapshot_sn, neighbor_snapshot_sn, sync_sn=sync_sn,
+                                   master_flag=False, more_flag=False,
+                                   neighbor_boot_time=neighbor.time_of_boot)
+            pkt_s.add_hello_option(PacketHPIMHelloHoldtime(holdtime=4 * neighbor.contact_interface.HELLO_PERIOD))
+            pkt = Packet(payload=PacketHPIMHeader(pkt_s, neighbor.my_snapshot_boot_time))
             neighbor.send(pkt)
 
 
@@ -109,13 +106,12 @@ class Master(NeighborState):
             my_snapshot_sn = neighbor.my_snapshot_sequencer
             neighbor_sn = neighbor.neighbor_snapshot_sn
 
-            pkt_s = PacketProtocolHelloSync(my_snapshot_sn, neighbor_sn,
-                                            sync_sn=neighbor.current_sync_sn,
-                                            upstream_trees=my_snapshot_mrt, master_flag=False,
-                                            more_flag=my_more_bit, neighbor_boot_time=neighbor.time_of_boot)
+            pkt_s = PacketHPIMSync(my_snapshot_sn, neighbor_sn, sync_sn=neighbor.current_sync_sn,
+                                   upstream_trees=my_snapshot_mrt, master_flag=False, more_flag=my_more_bit,
+                                   neighbor_boot_time=neighbor.time_of_boot)
             if not my_more_bit:
-                pkt_s.add_hello_option(PacketProtocolHelloHoldtime(holdtime=4 * neighbor.contact_interface.HELLO_PERIOD))
-            pkt = Packet(payload=PacketProtocolHeader(pkt_s, neighbor.my_snapshot_boot_time))
+                pkt_s.add_hello_option(PacketHPIMHelloHoldtime(holdtime=4 * neighbor.contact_interface.HELLO_PERIOD))
+            pkt = Packet(payload=PacketHPIMHeader(pkt_s, neighbor.my_snapshot_boot_time))
             neighbor.send(pkt)
 
             if sync_sn > 0 and not more_bit and not my_more_bit:
@@ -139,14 +135,13 @@ class Master(NeighborState):
         my_snapshot_sn = neighbor.my_snapshot_sequencer
         neighbor_sn = neighbor.neighbor_snapshot_sn
 
-        pkt_s = PacketProtocolHelloSync(my_snapshot_sn, neighbor_sn,
-                                        sync_sn=neighbor.current_sync_sn - 1,
-                                        upstream_trees=my_snapshot_mrt, master_flag=False,
-                                        more_flag=my_more_bit, neighbor_boot_time=neighbor.time_of_boot)
+        pkt_s = PacketHPIMSync(my_snapshot_sn, neighbor_sn, sync_sn=neighbor.current_sync_sn - 1,
+                               upstream_trees=my_snapshot_mrt, master_flag=False, more_flag=my_more_bit,
+                               neighbor_boot_time=neighbor.time_of_boot)
         if not my_more_bit:
-            pkt_s.add_hello_option(PacketProtocolHelloHoldtime(holdtime=4 * neighbor.contact_interface.HELLO_PERIOD))
+            pkt_s.add_hello_option(PacketHPIMHelloHoldtime(holdtime=4 * neighbor.contact_interface.HELLO_PERIOD))
 
-        pkt = Packet(payload=PacketProtocolHeader(pkt_s, neighbor.my_snapshot_boot_time))
+        pkt = Packet(payload=PacketHPIMHeader(pkt_s, neighbor.my_snapshot_boot_time))
         neighbor.send(pkt)
         neighbor.set_sync_timer()
 
@@ -198,13 +193,12 @@ class Slave(NeighborState):
                 my_snapshot_sn = neighbor.my_snapshot_sequencer
                 neighbor_sn = neighbor.neighbor_snapshot_sn
 
-                pkt_s = PacketProtocolHelloSync(my_snapshot_sn, neighbor_sn,
-                                                sync_sn=neighbor.current_sync_sn,
-                                                upstream_trees=my_snapshot_mrt, master_flag=True,
-                                                more_flag=my_more_bit, neighbor_boot_time=neighbor.time_of_boot)
+                pkt_s = PacketHPIMSync(my_snapshot_sn, neighbor_sn, sync_sn=neighbor.current_sync_sn,
+                                       upstream_trees=my_snapshot_mrt, master_flag=True, more_flag=my_more_bit,
+                                       neighbor_boot_time=neighbor.time_of_boot)
                 if not my_more_bit:
-                    pkt_s.add_hello_option(PacketProtocolHelloHoldtime(holdtime=4 * neighbor.contact_interface.HELLO_PERIOD))
-                pkt = Packet(payload=PacketProtocolHeader(pkt_s, neighbor.my_snapshot_boot_time))
+                    pkt_s.add_hello_option(PacketHPIMHelloHoldtime(holdtime=4 * neighbor.contact_interface.HELLO_PERIOD))
+                pkt = Packet(payload=PacketHPIMHeader(pkt_s, neighbor.my_snapshot_boot_time))
                 neighbor.send(pkt)
                 neighbor.set_sync_timer()
 
@@ -216,14 +210,13 @@ class Slave(NeighborState):
         my_snapshot_sn = neighbor.my_snapshot_sequencer
         neighbor_sn = neighbor.neighbor_snapshot_sn
 
-        pkt_s = PacketProtocolHelloSync(my_snapshot_sn, neighbor_sn,
-                                        sync_sn=neighbor.current_sync_sn,
-                                        upstream_trees=my_snapshot_mrt, master_flag=True,
-                                        more_flag=my_more_bit, neighbor_boot_time=neighbor.time_of_boot)
+        pkt_s = PacketHPIMSync(my_snapshot_sn, neighbor_sn, sync_sn=neighbor.current_sync_sn,
+                               upstream_trees=my_snapshot_mrt, master_flag=True, more_flag=my_more_bit,
+                               neighbor_boot_time=neighbor.time_of_boot)
         if not my_more_bit:
-            pkt_s.add_hello_option(PacketProtocolHelloHoldtime(holdtime=4 * neighbor.contact_interface.HELLO_PERIOD))
+            pkt_s.add_hello_option(PacketHPIMHelloHoldtime(holdtime=4 * neighbor.contact_interface.HELLO_PERIOD))
 
-        pkt = Packet(payload=PacketProtocolHeader(pkt_s, neighbor.my_snapshot_boot_time))
+        pkt = Packet(payload=PacketHPIMHeader(pkt_s, neighbor.my_snapshot_boot_time))
         neighbor.send(pkt)
         neighbor.set_sync_timer()
 
@@ -254,7 +247,7 @@ class Unknown(NeighborState):
 class Neighbor:
     LOGGER = logging.getLogger('protocol.Interface.Neighbor')
 
-    def __init__(self, contact_interface: "InterfaceProtocol", ip, hello_hold_time: int, neighbor_time_of_boot: int,
+    def __init__(self, contact_interface: "InterfaceHPIM", ip, hello_hold_time: int, neighbor_time_of_boot: int,
                  my_interface_boot_time: int):
         if hello_hold_time == protocol_globals.HELLO_HOLD_TIME_TIMEOUT:
             raise Exception
@@ -368,7 +361,7 @@ class Neighbor:
                                    '; NeighborBootTime=' + str(self.time_of_boot) +
                                    '; NeighborSnapshotSN=' + str(self.neighbor_snapshot_sn))
         if state == Synced:
-            Main.kernel.recheck_all_trees(self.contact_interface.vif_index)
+            self.contact_interface.get_kernel().recheck_all_trees(self.contact_interface.vif_index)
 
     def install_tree_state(self, tree_state: list):
         """
@@ -469,11 +462,14 @@ class Neighbor:
             return False
         elif sn >= last_received_sn:
             (source, group) = tree
-            ack = PacketProtocolAck(source, group, sn, neighbor_boot_time=boot_time,
-                                    neighbor_snapshot_sn=self.neighbor_snapshot_sn,
-                                    my_snapshot_sn=self.my_snapshot_sequencer)
-            ph = PacketProtocolHeader(ack, boot_time=self.contact_interface.time_of_boot)
-            packet = Packet(payload=ph)
+            packet = self.contact_interface.create_ack_msg(self.contact_interface.time_of_boot, sn, source, group,
+                                                           boot_time, self.neighbor_snapshot_sn, self.my_snapshot_sequencer)
+
+            #ack = PacketHPIMAck(source, group, sn, neighbor_boot_time=boot_time,
+            #                    neighbor_snapshot_sn=self.neighbor_snapshot_sn,
+            #                    my_snapshot_sn=self.my_snapshot_sequencer)
+            #ph = PacketHPIMHeader(ack, boot_time=self.contact_interface.time_of_boot)
+            #packet = Packet(payload=ph)
             self.contact_interface.send(packet, self.ip)
 
             if sn > last_received_sn:

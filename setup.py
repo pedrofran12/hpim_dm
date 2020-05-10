@@ -13,7 +13,7 @@ setup(
     long_description=open("README.md", "r").read(),
     long_description_content_type="text/markdown",
     keywords="HPIM-DM Multicast Routing Protocol Dense-Mode Router",
-    version="1.2.1.2",
+    version="1.3",
     url="http://github.com/pedrofran12/hpim_dm",
     author="Pedro Oliveira",
     author_email="pedro.francisco.oliveira@tecnico.ulisboa.pt",

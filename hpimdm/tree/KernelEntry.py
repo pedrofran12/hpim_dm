@@ -107,16 +107,16 @@ class KernelEntry:
         if current_interest_state != interest_state:
             self.interface_state[index].change_interest_state(interest_state)
 
-    def check_igmp_state(self, index):
+    def check_membership_state(self, index):
         """
-        Reverify IGMP state of this tree in interface with VIF index...
-        This is invoked whenver interface index enables or disables IGMP
+        Reverify IGMP/MLD state of this tree in interface with VIF index...
+        This is invoked whenever interface index enables or disables IGMP/MLD
         """
         print("ENTROU CHECK IGMP STATE")
         if index not in self.interface_state:
             return
 
-        self.interface_state[index].check_igmp_state()
+        self.interface_state[index].check_membership_state()
         print("SAI CHECK IGMP STATE")
 
     def get_interface_sync_state(self, vif_index):
@@ -199,13 +199,13 @@ class KernelEntry:
         """
         with self._multicast_change:
             if self.inbound_interface_index is not None and not self.is_tree_inactive():
-                Main.kernel.set_multicast_route(self)
+                self.get_kernel().set_multicast_route(self)
 
     def remove_entry(self):
         """
         Remove entry from the multicast routing table
         """
-        Main.kernel.remove_multicast_route(self)
+        self.get_kernel().remove_multicast_route(self)
 
     def delete_state(self):
         """
@@ -214,6 +214,36 @@ class KernelEntry:
         for state in self.interface_state.values():
             state.delete()
         self.interface_state.clear()
+
+    @staticmethod
+    def get_interface_name(interface_id):
+        """
+        Get name of interface from vif id
+        """
+        return Main.kernel.vif_index_to_name_dic[interface_id]
+
+    @staticmethod
+    def get_interface(interface_id):
+        """
+        Get HPIM interface from interface id
+        """
+        interface_name = KernelEntry.get_interface_name(interface_id)
+        return Main.interfaces.get(interface_name, None)
+
+    @staticmethod
+    def get_membership_interface(interface_id):
+        """
+        Get IGMP interface from interface id
+        """
+        interface_name = KernelEntry.get_interface_name(interface_id)
+        return Main.igmp_interfaces.get(interface_name, None)  # type: InterfaceIGMP
+
+    @staticmethod
+    def get_kernel():
+        """
+        Get kernel
+        """
+        return Main.kernel
 
     ######################################
     # Interface change
@@ -256,7 +286,7 @@ class KernelEntryNonOriginator(KernelEntry):
 
         self.first_check_tree_state()
         with self.CHANGE_STATE_LOCK:
-            for i in Main.kernel.vif_index_to_name_dic.keys():
+            for i in self.get_kernel().vif_index_to_name_dic.keys():
                 try:
                     upstream_state = self._upstream_interface_state.get(i, None)
 
@@ -501,7 +531,7 @@ class KernelEntryOriginator(KernelEntry):
             self.set_tree_state(TreeState.Unsure)
 
         with self.CHANGE_STATE_LOCK:
-            for i in Main.kernel.vif_index_to_name_dic.keys():
+            for i in self.get_kernel().vif_index_to_name_dic.keys():
                 try:
                     upstream_state = self._upstream_interface_state.get(i, None)
 

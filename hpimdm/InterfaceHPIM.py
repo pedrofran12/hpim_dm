@@ -8,39 +8,39 @@ import hashlib
 import logging
 import netifaces
 
-from hpimdm.Interface import Interface
-from hpimdm.Neighbor import Neighbor
 from hpimdm import Main
+from hpimdm.Neighbor import Neighbor
+from hpimdm.Interface import Interface
 from hpimdm.tree.protocol_globals import MSG_FORMAT, HELLO_HOLD_TIME_TIMEOUT
 from hpimdm.ReliableMsgTransmission import ReliableMessageTransmission
 
-from hpimdm.Packet.Packet import Packet
-from hpimdm.Packet.ReceivedPacket import ReceivedPacket
+from hpimdm.packet.Packet import Packet
+from hpimdm.packet.ReceivedPacket import ReceivedPacket
 if MSG_FORMAT == "BINARY":
-    from hpimdm.Packet.PacketProtocolHelloOptions import PacketNewProtocolHelloHoldtime as PacketProtocolHelloHoldtime, \
-        PacketNewProtocolHelloCheckpointSN as PacketProtocolHelloCheckpointSN
-    from hpimdm.Packet.PacketProtocolHello import PacketNewProtocolHello as PacketProtocolHello
-    from hpimdm.Packet.PacketProtocolHeader import PacketNewProtocolHeader as PacketProtocolHeader
-    from hpimdm.Packet.PacketProtocolSync import PacketNewProtocolSyncEntry as PacketProtocolHelloSyncEntry,\
-        PacketNewProtocolSync as PacketProtocolHelloSync
-    from hpimdm.Packet.PacketProtocolInterest import PacketNewProtocolNoInterest as PacketProtocolNoInterest,\
-        PacketNewProtocolInterest as PacketProtocolInterest
-    from hpimdm.Packet.PacketProtocolSetTree import PacketNewProtocolUpstream as PacketProtocolUpstream
-    from hpimdm.Packet.PacketProtocolRemoveTree import PacketNewProtocolNoLongerUpstream as PacketProtocolNoLongerUpstream
-    from hpimdm.Packet.PacketProtocolAck import PacketNewProtocolAck as PacketProtocolAck
+    from hpimdm.packet.PacketHPIMHelloOptions import PacketHPIMHelloHoldtime, \
+        PacketHPIMHelloCheckpointSN
+    from hpimdm.packet.PacketHPIMHello import PacketHPIMHello
+    from hpimdm.packet.PacketHPIMHeader import PacketHPIMHeader
+    from hpimdm.packet.PacketHPIMSync import PacketHPIMSync, PacketHPIMSyncEntry
+    from hpimdm.packet.PacketHPIMInterest import PacketHPIMNoInterest, PacketHPIMInterest
+    from hpimdm.packet.PacketHPIMIamUpstream import PacketHPIMUpstream
+    from hpimdm.packet.PacketHPIMNotUpstream import PacketHPIMNoLongerUpstream
+    from hpimdm.packet.PacketHPIMAck import PacketHPIMAck
 else:
-    from hpimdm.Packet.PacketProtocolHelloOptions import PacketProtocolHelloHoldtime, PacketProtocolHelloCheckpointSN
-    from hpimdm.Packet.PacketProtocolHello import PacketProtocolHello
-    from hpimdm.Packet.PacketProtocolHeader import PacketProtocolHeader
-    from hpimdm.Packet.PacketProtocolSync import PacketProtocolHelloSync
-    from hpimdm.Packet.PacketProtocolSetTree import PacketProtocolUpstream
-    from hpimdm.Packet.PacketProtocolInterest import PacketProtocolNoInterest, PacketProtocolInterest
-    from hpimdm.Packet.PacketProtocolSync import PacketProtocolHelloSyncEntry
-    from hpimdm.Packet.PacketProtocolRemoveTree import PacketProtocolNoLongerUpstream
-    from hpimdm.Packet.PacketProtocolAck import PacketProtocolAck
+    from hpimdm.packet.PacketHPIMHelloOptions import PacketHPIMHelloHoldtimeJson as PacketHPIMHelloHoldtime,\
+        PacketHPIMHelloCheckpointSNJson as PacketHPIMHelloCheckpointSN
+    from hpimdm.packet.PacketHPIMHello import PacketHPIMHelloJson as PacketHPIMHello
+    from hpimdm.packet.PacketHPIMHeader import PacketHPIMHeaderJson as PacketHPIMHeader
+    from hpimdm.packet.PacketHPIMSync import PacketHPIMSyncJson as PacketHPIMSync
+    from hpimdm.packet.PacketHPIMIamUpstream import PacketHPIMUpstreamJson as PacketHPIMUpstream
+    from hpimdm.packet.PacketHPIMInterest import PacketHPIMNoInterestJson as PacketHPIMNoInterest,\
+        PacketHPIMInterestJson as PacketHPIMInterest
+    from hpimdm.packet.PacketHPIMSync import PacketHPIMSyncEntryJson as PacketHPIMSyncEntry
+    from hpimdm.packet.PacketHPIMNotUpstream import PacketHPIMNoLongerUpstreamJson as PacketHPIMNoLongerUpstream
+    from hpimdm.packet.PacketHPIMAck import PacketHPIMAckJson as PacketHPIMAck
 
 
-class InterfaceProtocol(Interface):
+class InterfaceHPIM(Interface):
     MCAST_GRP = '224.0.0.13'
 
     MAX_SEQUENCE_NUMBER = (2**32-1)#45 <- test with lower MAXIMUM_SEQUENCE_NUMBER
@@ -51,8 +51,8 @@ class InterfaceProtocol(Interface):
     LOGGER = logging.getLogger('protocol.Interface')
 
     def __init__(self, interface_name: str, vif_index: int):
-        self.interface_logger = logging.LoggerAdapter(InterfaceProtocol.LOGGER, {'vif': vif_index,
-                                                                                 'interfacename': interface_name})
+        self.interface_logger = logging.LoggerAdapter(InterfaceHPIM.LOGGER, {'vif': vif_index,
+                                                                             'interfacename': interface_name})
 
         # Generate BootTime
         self.time_of_boot = int(time.time())
@@ -105,8 +105,10 @@ class InterfaceProtocol(Interface):
         s.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_LOOP, 0)
 
         super().__init__(interface_name, s, s, vif_index)
-        #super()._enable()
         self.force_send_hello()
+
+    def _get_address_family(self):
+        return socket.AF_INET
 
     def get_ip(self):
         """
@@ -114,7 +116,14 @@ class InterfaceProtocol(Interface):
         """
         return self.ip_interface
 
-    def _receive(self, raw_bytes):
+    @staticmethod
+    def get_kernel():
+        """
+        Get Kernel object
+        """
+        return Main.kernel
+
+    def _receive(self, raw_bytes, ancdata, src_addr):
         """
         Interface received a new control packet
         """
@@ -192,7 +201,7 @@ class InterfaceProtocol(Interface):
         with self.sequencer_lock:
             self.sequencer += 1
 
-            if self.sequencer == InterfaceProtocol.MAX_SEQUENCE_NUMBER:
+            if self.sequencer == InterfaceHPIM.MAX_SEQUENCE_NUMBER:
                 self.time_of_boot = int(time.time())
                 self.sequencer = 1
                 self.clear_reliable_transmission()
@@ -238,17 +247,17 @@ class InterfaceProtocol(Interface):
         """
         self.hello_timer.cancel()
 
-        pim_payload = PacketProtocolHello()
-        pim_payload.add_option(PacketProtocolHelloHoldtime(holdtime=4 * self.HELLO_PERIOD))
+        pim_payload = PacketHPIMHello()
+        pim_payload.add_option(PacketHPIMHelloHoldtime(holdtime=4 * self.HELLO_PERIOD))
 
         with self.neighbors_lock:
             with self.sequencer_lock:
                 with self.reliable_transmission_lock:
                     (bt, checkpoint_sn) = self.get_checkpoint_sn()
                     if bt == self.time_of_boot:
-                        pim_payload.add_option(PacketProtocolHelloCheckpointSN(checkpoint_sn))
+                        pim_payload.add_option(PacketHPIMHelloCheckpointSN(checkpoint_sn))
 
-                ph = PacketProtocolHeader(pim_payload, boot_time=self.time_of_boot)
+                ph = PacketHPIMHeader(pim_payload, boot_time=self.time_of_boot)
         packet = Packet(payload=ph)
         self.send(packet)
 
@@ -265,9 +274,9 @@ class InterfaceProtocol(Interface):
         self.hello_timer = None
 
         # send pim_hello timeout message
-        pim_payload = PacketProtocolHello()
-        pim_payload.add_option(PacketProtocolHelloHoldtime(holdtime=HELLO_HOLD_TIME_TIMEOUT))
-        ph = PacketProtocolHeader(pim_payload, boot_time=self.time_of_boot)
+        pim_payload = PacketHPIMHello()
+        pim_payload.add_option(PacketHPIMHelloHoldtime(holdtime=HELLO_HOLD_TIME_TIMEOUT))
+        ph = PacketHPIMHeader(pim_payload, boot_time=self.time_of_boot)
         packet = Packet(payload=ph)
         self.send(packet)
 
@@ -282,16 +291,18 @@ class InterfaceProtocol(Interface):
         Create a new snapshot
         This method will return the current BootTime, SnapshotSN and all trees to be included in Sync messages
         """
-        with Main.kernel.rwlock.genWlock():
+        with self.get_kernel().rwlock.genWlock():
             with self.sequencer_lock:
                 (snapshot_bt, snapshot_sn) = self.get_sequence_number()
 
-                trees_to_sync = Main.kernel.snapshot_multicast_routing_table(self.vif_index)  # type: dict
+                trees_to_sync = self.get_kernel().snapshot_multicast_routing_table(self.vif_index)  # type: dict
                 tree_to_sync_in_msg_format = {}
 
                 for (source_group, state) in trees_to_sync.items():
-                    tree_to_sync_in_msg_format[source_group] = PacketProtocolHelloSyncEntry(source_group[0], source_group[1], state.metric_preference, state.route_metric)
-
+                    tree_to_sync_in_msg_format[source_group] = self.create_sync_entry_hdr(source_group[0],
+                                                                                          source_group[1],
+                                                                                          state.metric_preference,
+                                                                                          state.route_metric)
                 return (snapshot_bt, snapshot_sn, tree_to_sync_in_msg_format)
 
     ##############################################
@@ -376,7 +387,7 @@ class InterfaceProtocol(Interface):
 
             # verifiar todas as arvores
             print("REMOVER ANTES RECHECK")
-            Main.kernel.recheck_all_trees(self.vif_index)
+            self.get_kernel().recheck_all_trees(self.vif_index)
             print("REMOVER DEPOIS RECHECK")
 
     '''
@@ -397,6 +408,40 @@ class InterfaceProtocol(Interface):
 
         self.ip_interface = new_ip_interface
     '''
+    ###########################################
+    # Create packets
+    ###########################################
+    def create_i_am_upstream_msg(self, my_boot_time, sn, source, group, metric_preference, metric):
+        ph = PacketHPIMUpstream(source, group, metric_preference, metric, sn)
+        return Packet(payload=PacketHPIMHeader(ph, boot_time=my_boot_time))
+
+    def create_i_am_no_longer_upstream_msg(self, my_boot_time, sn, source, group):
+        ph = PacketHPIMNoLongerUpstream(source, group, sn)
+        return Packet(payload=PacketHPIMHeader(ph, boot_time=my_boot_time))
+
+    def create_interest_msg(self, my_boot_time, sn, source, group):
+        ph = PacketHPIMInterest(source, group, sn)
+        return Packet(payload=PacketHPIMHeader(ph, boot_time=my_boot_time))
+
+    def create_no_interest_msg(self, my_boot_time, sn, source, group):
+        ph = PacketHPIMNoInterest(source, group, sn)
+        return Packet(payload=PacketHPIMHeader(ph, boot_time=my_boot_time))
+
+    def create_ack_msg(self, my_boot_time, sn, source, group, neighbor_boot_time,
+                neighbor_snapshot_sn, my_snapshot_sn):
+        ack = PacketHPIMAck(source, group, sn, neighbor_boot_time=neighbor_boot_time,
+                            neighbor_snapshot_sn=neighbor_snapshot_sn,
+                            my_snapshot_sn=my_snapshot_sn)
+        return PacketHPIMHeader(ack, boot_time=my_boot_time)
+
+    def create_sync_entry_hdr(self, source, group, metric_preference, metric):
+        return PacketHPIMSyncEntry(source, group, metric_preference, metric)
+
+    def create_sync_msg(self, my_boot_time, my_snapshot_sn, neighbor_snapshot_sn, sync_sn, upstream_trees,
+                        master_flag, more_flag, neighbor_boot_time):
+        pkt_sync = PacketHPIMSync(my_snapshot_sn, neighbor_snapshot_sn, sync_sn, upstream_trees,
+                                  master_flag, more_flag, neighbor_boot_time)
+        return Packet(payload=PacketHPIMHeader(pkt_sync, my_boot_time))
 
     ###########################################
     # Recv packets
@@ -439,7 +484,7 @@ class InterfaceProtocol(Interface):
         ip = packet.ip_header.ip_src
         boot_time = packet.payload.boot_time
 
-        pkt_hs = packet.payload.payload  # type: PacketProtocolHelloSync
+        pkt_hs = packet.payload.payload  # type: PacketHPIMSync
 
         # Process Sync msg
         my_boot_time = pkt_hs.neighbor_boot_time
@@ -477,7 +522,7 @@ class InterfaceProtocol(Interface):
         neighbor_source_ip = packet.ip_header.ip_src
         boot_time = packet.payload.boot_time
 
-        pkt_jt = packet.payload.payload  # type: PacketProtocolInterest
+        pkt_jt = packet.payload.payload  # type: PacketHPIMInterest
 
         # Process Interest msg
         source_group = (pkt_jt.source, pkt_jt.group)
@@ -499,11 +544,11 @@ class InterfaceProtocol(Interface):
                 if neighbor.recv_reliable_packet(sequence_number, source_group, boot_time):
                     if source_group not in neighbor.tree_metric_state:
                         neighbor.tree_interest_state[source_group] = True
-                        Main.kernel.recv_interest_msg(source_group, self)
+                        self.get_kernel().recv_interest_msg(source_group, self)
                     else:
                         neighbor.tree_interest_state[source_group] = True
                         neighbor.tree_metric_state.pop(source_group, None)
-                        Main.kernel.recv_upstream_msg(source_group, self)
+                        self.get_kernel().recv_upstream_msg(source_group, self)
             except:
                 traceback.print_exc()
 
@@ -514,7 +559,7 @@ class InterfaceProtocol(Interface):
         neighbor_source_ip = packet.ip_header.ip_src
         boot_time = packet.payload.boot_time
 
-        pkt_jt = packet.payload.payload  # type: PacketProtocolNoInterest
+        pkt_jt = packet.payload.payload  # type: PacketHPIMNoInterest
 
         # Process NoInterest msg
         source_group = (pkt_jt.source, pkt_jt.group)
@@ -536,11 +581,11 @@ class InterfaceProtocol(Interface):
                 if neighbor.recv_reliable_packet(sequence_number, source_group, boot_time):
                     if source_group not in neighbor.tree_metric_state:
                         neighbor.tree_interest_state[source_group] = False
-                        Main.kernel.recv_interest_msg(source_group, self)
+                        self.get_kernel().recv_interest_msg(source_group, self)
                     else:
                         neighbor.tree_interest_state[source_group] = False
                         neighbor.tree_metric_state.pop(source_group, None)
-                        Main.kernel.recv_upstream_msg(source_group, self)
+                        self.get_kernel().recv_upstream_msg(source_group, self)
             except:
                 traceback.print_exc()
 
@@ -551,7 +596,7 @@ class InterfaceProtocol(Interface):
         from hpimdm.tree.metric import AssertMetric
         neighbor_source_ip = packet.ip_header.ip_src
         boot_time = packet.payload.boot_time
-        pkt_jt = packet.payload.payload # type: PacketProtocolUpstream
+        pkt_jt = packet.payload.payload # type: PacketHPIMUpstream
 
         # Process IamUpstream msg
         source_group = (pkt_jt.source, pkt_jt.group)
@@ -559,7 +604,8 @@ class InterfaceProtocol(Interface):
 
         metric_preference = pkt_jt.metric_preference
         metric = pkt_jt.metric
-        received_metric = AssertMetric(metric_preference=metric_preference, route_metric=metric, ip_address=neighbor_source_ip)
+        received_metric = AssertMetric(metric_preference=metric_preference, route_metric=metric,
+                                       ip_address=neighbor_source_ip)
 
         self.interface_logger.debug('Received IamUpstream message with BootTime: ' + str(boot_time) +
                                     '; Tree: ' + str(source_group) +
@@ -579,7 +625,7 @@ class InterfaceProtocol(Interface):
                 if neighbor.recv_reliable_packet(sequence_number, source_group, boot_time):
                     neighbor.tree_interest_state.pop(source_group, None)
                     neighbor.tree_metric_state[source_group] = received_metric
-                    Main.kernel.recv_upstream_msg(source_group, self)
+                    self.get_kernel().recv_upstream_msg(source_group, self)
             except:
                 traceback.print_exc()
 
@@ -611,7 +657,7 @@ class InterfaceProtocol(Interface):
                 if neighbor.recv_reliable_packet(sequence_number, source_group, boot_time):
                     neighbor.tree_interest_state.pop(source_group, None)
                     neighbor.tree_metric_state.pop(source_group, None)
-                    Main.kernel.recv_upstream_msg(source_group, self)
+                    self.get_kernel().recv_upstream_msg(source_group, self)
             except:
                 traceback.print_exc()
 
@@ -622,7 +668,7 @@ class InterfaceProtocol(Interface):
         """
         neighbor_source_ip = packet.ip_header.ip_src
         neighbor_boot_time = packet.payload.boot_time
-        pkt_ack = packet.payload.payload  # type: PacketProtocolAck
+        pkt_ack = packet.payload.payload  # type: PacketHPIMAck
 
         # Process Ack msg
         source_group = (pkt_ack.source, pkt_ack.group)
@@ -661,13 +707,13 @@ class InterfaceProtocol(Interface):
 
 
     PKT_FUNCTIONS = {
-        PacketProtocolHello.PIM_TYPE:            receive_hello,
-        PacketProtocolHelloSync.PIM_TYPE:        receive_sync,
-        PacketProtocolUpstream.PIM_TYPE:         receive_i_am_upstream,
-        PacketProtocolNoLongerUpstream.PIM_TYPE: receive_i_am_no_longer_upstream,
-        PacketProtocolInterest.PIM_TYPE:         receive_interest,
-        PacketProtocolNoInterest.PIM_TYPE:       receive_no_interest,
-        PacketProtocolAck.PIM_TYPE:              receive_ack,
+        PacketHPIMHello.PIM_TYPE:            receive_hello,
+        PacketHPIMSync.PIM_TYPE:             receive_sync,
+        PacketHPIMUpstream.PIM_TYPE:         receive_i_am_upstream,
+        PacketHPIMNoLongerUpstream.PIM_TYPE: receive_i_am_no_longer_upstream,
+        PacketHPIMInterest.PIM_TYPE:         receive_interest,
+        PacketHPIMNoInterest.PIM_TYPE:       receive_no_interest,
+        PacketHPIMAck.PIM_TYPE:              receive_ack,
     }
 
 

@@ -1,10 +1,11 @@
 import struct
 import socket
+import ipaddress
 
 ###########################################################################################################
 # JSON FORMAT
 ###########################################################################################################
-class PacketProtocolUpstream():
+class PacketHPIMUpstreamJson():
     PIM_TYPE = "I_AM_UPSTREAM"
 
     def __init__(self, source, group, metric_preference, metric, sequence_number):
@@ -58,19 +59,20 @@ class PacketProtocolUpstream():
 |                            Metric                             |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 '''
-class PacketNewProtocolUpstream:
+class PacketHPIMUpstream:
     PIM_TYPE = 2
 
     PIM_HDR_INSTALL = "! 4s 4s L L L"
     PIM_HDR_INSTALL_LEN = struct.calcsize(PIM_HDR_INSTALL)
+    FAMILY = socket.AF_INET
 
     def __init__(self, source_ip, group_ip, metric_preference, metric, sequence_number):
         if type(source_ip) not in (str, bytes) or type(group_ip) not in (str, bytes):
             raise Exception
         if type(source_ip) is bytes:
-            source_ip = socket.inet_ntoa(source_ip)
+            source_ip = socket.inet_ntop(self.FAMILY, source_ip)
         if type(group_ip) is bytes:
-            group_ip = socket.inet_ntoa(group_ip)
+            group_ip = socket.inet_ntop(self.FAMILY, group_ip)
 
         self.source = source_ip
         self.group = group_ip
@@ -82,8 +84,9 @@ class PacketNewProtocolUpstream:
         """
         Obtain Protocol IamUpstream Packet in a format to be transmitted (binary)
         """
-        msg = struct.pack(PacketNewProtocolUpstream.PIM_HDR_INSTALL, socket.inet_aton(self.source),
-                          socket.inet_aton(self.group), self.sequence_number, self.metric_preference, self.metric)
+        msg = struct.pack(self.PIM_HDR_INSTALL, socket.inet_pton(self.FAMILY, self.source),
+                          socket.inet_pton(self.FAMILY, self.group), self.sequence_number,
+                          self.metric_preference, self.metric)
 
         return msg
 
@@ -95,6 +98,15 @@ class PacketNewProtocolUpstream:
         """
         Parse received Protocol IamUpstream Packet from binary format and convert it into ProtocolUpstream object
         """
-        (tree_source, tree_group, sn, mp, m) = struct.unpack(PacketNewProtocolUpstream.PIM_HDR_INSTALL,
-                                                             data[:PacketNewProtocolUpstream.PIM_HDR_INSTALL_LEN])
+        (tree_source, tree_group, sn, mp, m) = struct.unpack(cls.PIM_HDR_INSTALL,
+                                                             data[:cls.PIM_HDR_INSTALL_LEN])
         return cls(tree_source, tree_group, mp, m, sn)
+
+
+class PacketHPIMUpstream_v6(PacketHPIMUpstream):
+    PIM_HDR_INSTALL = "! 16s 16s L L L"
+    PIM_HDR_INSTALL_LEN = struct.calcsize(PIM_HDR_INSTALL)
+    FAMILY = socket.AF_INET6
+
+    def __init__(self, source_ip, group_ip, metric_preference, metric, sequence_number):
+        super().__init__(source_ip, group_ip, metric_preference, metric, sequence_number)
