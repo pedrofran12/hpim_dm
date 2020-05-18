@@ -7,14 +7,14 @@ from .tree_interface import TreeInterface
 from .root_state_machine import SFMRNewRootState #SFMRRootState
 
 
-class TreeInterfaceUpstream(TreeInterface):
+class TreeInterfaceRoot(TreeInterface):
     LOGGER = logging.getLogger('protocol.KernelEntry.RootInterface')
 
     def __init__(self, kernel_entry, interface_id, best_upstream_router, was_non_root, previous_tree_state, current_tree_state):
         extra_dict_logger = kernel_entry.kernel_entry_logger.extra.copy()
         extra_dict_logger['vif'] = interface_id
         extra_dict_logger['interfacename'] = kernel_entry.get_interface_name(interface_id)
-        logger = logging.LoggerAdapter(TreeInterfaceUpstream.LOGGER, extra_dict_logger)
+        logger = logging.LoggerAdapter(TreeInterfaceRoot.LOGGER, extra_dict_logger)
         TreeInterface.__init__(self, kernel_entry, interface_id, best_upstream_router, current_tree_state, logger)
 
         # event 1

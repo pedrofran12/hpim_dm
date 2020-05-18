@@ -8,14 +8,14 @@ from .protocol_globals import SOURCE_LIFETIME
 from .tree_interface import TreeInterface
 
 
-class TreeInterfaceUpstreamOriginator(TreeInterface):
+class TreeInterfaceRootOriginator(TreeInterface):
     LOGGER = logging.getLogger('protocol.KernelEntry.RootInterface')
 
     def __init__(self, kernel_entry, interface_id, current_tree_state):
         extra_dict_logger = kernel_entry.kernel_entry_logger.extra.copy()
         extra_dict_logger['vif'] = interface_id
         extra_dict_logger['interfacename'] = kernel_entry.get_interface_name(interface_id)
-        logger = logging.LoggerAdapter(TreeInterfaceUpstreamOriginator.LOGGER, extra_dict_logger)
+        logger = logging.LoggerAdapter(TreeInterfaceRootOriginator.LOGGER, extra_dict_logger)
         TreeInterface.__init__(self, kernel_entry, interface_id, None, current_tree_state, logger)
 
         # Originator state
@@ -34,7 +34,6 @@ class TreeInterfaceUpstreamOriginator(TreeInterface):
         receive_thread.start()
 
         self.logger.debug('Created RootInterfaceOriginator')
-
 
     def socket_recv(self):
         """

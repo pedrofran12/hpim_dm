@@ -15,7 +15,7 @@ from hpimdm.InterfaceMLD import InterfaceMLD
 from hpimdm.InterfaceIGMP import InterfaceIGMP
 from hpimdm.InterfaceHPIM import InterfaceHPIM
 from hpimdm.InterfaceHPIM6 import InterfaceHPIM6
-from hpimdm.tree.KernelEntry_v6 import KernelEntryOriginator_v6, KernelEntryNonOriginator_v6
+from .tree.KernelEntryInterface import KernelEntry4Interface, KernelEntry6Interface
 from hpimdm.tree.KernelEntry import KernelEntry, KernelEntryOriginator, KernelEntryNonOriginator
 
 
@@ -276,20 +276,18 @@ class KernelInterface(metaclass=ABCMeta):
             self.routing[ip_src] = {}
 
         if ip_dst not in self.routing[ip_src] and is_directly_connected:
-            #self.routing[ip_src][ip_dst] = KernelEntryOriginator(ip_src, ip_dst, upstream_state_dict, interest_state_dict)
-            self.routing[ip_src][ip_dst] = self._create_originator_kernel_entry(ip_src, ip_dst, upstream_state_dict,
-                                                                                interest_state_dict)
+            self.routing[ip_src][ip_dst] = KernelEntryOriginator(ip_src, ip_dst,
+                                                                 upstream_state_dict, interest_state_dict,
+                                                                 self._get_kernel_entry_interface())
         elif ip_dst not in self.routing[ip_src]:
-            self.routing[ip_src][ip_dst] = self._create_non_originator_kernel_entry(ip_src, ip_dst, upstream_state_dict,
-                                                                                    interest_state_dict)
+            self.routing[ip_src][ip_dst] = KernelEntryNonOriginator(ip_src, ip_dst,
+                                                                    upstream_state_dict, interest_state_dict,
+                                                                    self._get_kernel_entry_interface())
 
+    @staticmethod
     @abstractmethod
-    def _create_originator_kernel_entry(self, ip_src, ip_dst, upstream_state_dict, interest_state_dict):
-        raise NotImplementedError
-
-    @abstractmethod
-    def _create_non_originator_kernel_entry(self, ip_src, ip_dst, upstream_state_dict, interest_state_dict):
-        raise NotImplementedError
+    def _get_kernel_entry_interface():
+        pass
 
     def snapshot_multicast_routing_table(self, vif_index):
         trees_to_sync = {}
@@ -619,11 +617,9 @@ class Kernel4(KernelInterface):
         #kernel_entry.recv_data_msg(iif)
     '''
 
-    def _create_originator_kernel_entry(self, ip_src, ip_dst, upstream_state_dict, interest_state_dict):
-        return KernelEntryOriginator(ip_src, ip_dst, upstream_state_dict, interest_state_dict)
-
-    def _create_non_originator_kernel_entry(self, ip_src, ip_dst, upstream_state_dict, interest_state_dict):
-        return KernelEntryNonOriginator(ip_src, ip_dst, upstream_state_dict, interest_state_dict)
+    @staticmethod
+    def _get_kernel_entry_interface():
+        return KernelEntry4Interface
 
 
 class Kernel6(KernelInterface):
@@ -899,8 +895,6 @@ class Kernel6(KernelInterface):
         #self.get_routing_entry(source_group_pair, create_if_not_existent=True).recv_data_msg(iif)
         return
 
-    def _create_originator_kernel_entry(self, ip_src, ip_dst, upstream_state_dict, interest_state_dict):
-        return KernelEntryOriginator_v6(ip_src, ip_dst, upstream_state_dict, interest_state_dict)
-
-    def _create_non_originator_kernel_entry(self, ip_src, ip_dst, upstream_state_dict, interest_state_dict):
-        return KernelEntryNonOriginator_v6(ip_src, ip_dst, upstream_state_dict, interest_state_dict)
+    @staticmethod
+    def _get_kernel_entry_interface():
+        return KernelEntry6Interface

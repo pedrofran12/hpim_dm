@@ -9,14 +9,14 @@ from .non_root_state_machine import SFMRNonRootState
 from .assert_state import AssertState, SFMRAssertABC
 from .downstream_state import SFMRPruneState, SFMRDownstreamStateABC
 
-class TreeInterfaceDownstream(TreeInterface):
+class TreeInterfaceNonRoot(TreeInterface):
     LOGGER = logging.getLogger('protocol.KernelEntry.NonRootInterface')
 
     def __init__(self, kernel_entry, interface_id, rpc: Metric, best_upstream_router, interest_state, was_root, previous_tree_state, current_tree_state):
         extra_dict_logger = kernel_entry.kernel_entry_logger.extra.copy()
         extra_dict_logger['vif'] = interface_id
         extra_dict_logger['interfacename'] = kernel_entry.get_interface_name(interface_id)
-        logger = logging.LoggerAdapter(TreeInterfaceDownstream.LOGGER, extra_dict_logger)
+        logger = logging.LoggerAdapter(TreeInterfaceNonRoot.LOGGER, extra_dict_logger)
         TreeInterface.__init__(self, kernel_entry, interface_id, best_upstream_router, current_tree_state, logger)
         self.assert_logger = logging.LoggerAdapter(logger.logger.getChild('Assert'), logger.extra)
         self.downstream_logger = logging.LoggerAdapter(logger.logger.getChild('Downstream'), logger.extra)

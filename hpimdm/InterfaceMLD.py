@@ -27,6 +27,8 @@ class InterfaceMLD(Interface):
     IPv6_ALL_ZEROS = IPv6Address("::")
 
     FILTER_MLD = [
+        struct.pack('HBBI', 0x30, 0, 0, 0x00000000),
+        struct.pack('HBBI', 0x45, 0, 9, 0x00000001),
         struct.pack('HBBI', 0x28, 0, 0, 0x0000000c),
         struct.pack('HBBI', 0x15, 0, 7, 0x000086dd),
         struct.pack('HBBI', 0x30, 0, 0, 0x00000014),
@@ -121,7 +123,12 @@ class InterfaceMLD(Interface):
             print("MLD IP_SRC = ", ip_src)
             if not (ip_src == "::" or IPv6Address(ip_src).is_multicast):
                 self.PKT_FUNCTIONS.get(packet.payload.get_mld_type(), InterfaceMLD.receive_unknown_type)(self, packet)
-
+    """
+    def _receive(self, raw_bytes, ancdata, src_addr):
+        if raw_bytes:
+            packet = ReceivedPacket_v6(raw_bytes, ancdata, src_addr, 58, self)
+            self.PKT_FUNCTIONS[packet.payload.get_mld_type(), InterfaceMLD.receive_unknown_type](self, packet)
+    """
     ###########################################
     # Recv packets
     ###########################################
