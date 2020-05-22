@@ -103,7 +103,8 @@ class InterfaceHPIM6(InterfaceHPIM):
     def get_kernel():
         return Main.kernel_v6
 
-    def _get_address_family(self):
+    @staticmethod
+    def _get_address_family():
         return socket.AF_INET6
 
     def send(self, data: bytes, group_ip: str=MCAST_GRP):

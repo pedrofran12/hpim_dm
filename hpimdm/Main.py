@@ -382,7 +382,7 @@ def main():
     """
     # logging
     global logger
-    logger = logging.getLogger('protocol')
+    logger = logging.getLogger('hpim')
     logger.setLevel(logging.DEBUG)
     logger.addHandler(logging.StreamHandler(sys.stdout))
 

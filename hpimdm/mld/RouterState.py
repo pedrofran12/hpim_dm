@@ -36,7 +36,7 @@ class RouterState(object):
         self.group_state_lock = RWLockWrite()
 
         # send general query
-        packet = PacketMLDHeader(type=MULTICAST_LISTENER_QUERY_TYPE, max_resp_delay=QueryResponseInterval)
+        packet = PacketMLDHeader(type=MULTICAST_LISTENER_QUERY_TYPE, max_resp_delay=QueryResponseInterval*1000)
         self.interface.send(packet.bytes())
 
         # set initial general query timer

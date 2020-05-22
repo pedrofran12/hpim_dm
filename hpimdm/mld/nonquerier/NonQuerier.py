@@ -23,7 +23,8 @@ class NonQuerier:
         router_state.change_interface_state(querier=True)
 
         # send general query
-        packet = PacketMLDHeader(type=PacketMLDHeader.MULTICAST_LISTENER_QUERY_TYPE, max_resp_delay=QueryResponseInterval)
+        packet = PacketMLDHeader(type=PacketMLDHeader.MULTICAST_LISTENER_QUERY_TYPE,
+                                 max_resp_delay=QueryResponseInterval*1000)
         router_state.interface.send(packet.bytes())
 
         # set general query timer
@@ -48,7 +49,7 @@ class NonQuerier:
 
     @staticmethod
     def get_group_membership_time(max_response_time: int):
-        return max_response_time * LastListenerQueryCount
+        return (max_response_time/1000.0) * LastListenerQueryCount
 
     # State
     @staticmethod
@@ -62,4 +63,3 @@ class NonQuerier:
     @staticmethod
     def get_no_listeners_present_state():
         return NoListenersPresent
-

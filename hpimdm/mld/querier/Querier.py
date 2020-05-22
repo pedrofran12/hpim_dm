@@ -16,7 +16,8 @@ class Querier:
     def general_query_timeout(router_state: 'RouterState'):
         router_state.router_state_logger.debug('Querier state: general_query_timeout')
         # send general query
-        packet = PacketMLDHeader(type=PacketMLDHeader.MULTICAST_LISTENER_QUERY_TYPE, max_resp_delay=QueryResponseInterval)
+        packet = PacketMLDHeader(type=PacketMLDHeader.MULTICAST_LISTENER_QUERY_TYPE,
+                                 max_resp_delay=QueryResponseInterval*1000)
         router_state.interface.send(packet.bytes())
 
         # set general query timer

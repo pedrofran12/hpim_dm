@@ -245,7 +245,7 @@ class Unknown(NeighborState):
 
 
 class Neighbor:
-    LOGGER = logging.getLogger('protocol.Interface.Neighbor')
+    LOGGER = logging.getLogger('hpim.Interface.Neighbor')
 
     def __init__(self, contact_interface: "InterfaceHPIM", ip, hello_hold_time: int, neighbor_time_of_boot: int,
                  my_interface_boot_time: int):

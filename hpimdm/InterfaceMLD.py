@@ -9,6 +9,11 @@ from .packet.ReceivedPacket import ReceivedPacket_v6
 from .mld.mld_globals import MULTICAST_LISTENER_QUERY_TYPE, MULTICAST_LISTENER_DONE_TYPE, MULTICAST_LISTENER_REPORT_TYPE
 from ctypes import create_string_buffer, addressof
 
+ETH_P_IPV6 = 0x86DD  # IPv6 over bluebook
+SO_ATTACH_FILTER = 26
+ICMP6_FILTER = 1
+IPV6_ROUTER_ALERT = 22
+
 
 def ICMP6_FILTER_SETBLOCKALL():
     return struct.pack("I"*8, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF)
@@ -19,21 +24,18 @@ def ICMP6_FILTER_SETPASS(type, filterp):
 
 
 class InterfaceMLD(Interface):
-    ETH_P_IPV6 = 0x86DD  # IPv6 over bluebook
-    SO_ATTACH_FILTER = 26
-    ICMP6_FILTER = 1
     IPv6_LINK_SCOPE_ALL_NODES = IPv6Address("ff02::1")
     IPv6_LINK_SCOPE_ALL_ROUTERS = IPv6Address("ff02::2")
     IPv6_ALL_ZEROS = IPv6Address("::")
 
     FILTER_MLD = [
-        struct.pack('HBBI', 0x30, 0, 0, 0x00000000),
-        struct.pack('HBBI', 0x45, 0, 9, 0x00000001),
         struct.pack('HBBI', 0x28, 0, 0, 0x0000000c),
-        struct.pack('HBBI', 0x15, 0, 7, 0x000086dd),
+        struct.pack('HBBI', 0x15, 0, 9, 0x000086dd),
         struct.pack('HBBI', 0x30, 0, 0, 0x00000014),
-        struct.pack('HBBI', 0x15, 0, 5, 0x0000003a),
+        struct.pack('HBBI', 0x15, 0, 7, 0x00000000),
         struct.pack('HBBI', 0x30, 0, 0, 0x00000036),
+        struct.pack('HBBI', 0x15, 0, 5, 0x0000003a),
+        struct.pack('HBBI', 0x30, 0, 0, 0x0000003e),
         struct.pack('HBBI', 0x15, 2, 0, 0x00000082),
         struct.pack('HBBI', 0x15, 1, 0, 0x00000083),
         struct.pack('HBBI', 0x15, 0, 1, 0x00000084),
@@ -49,14 +51,18 @@ class InterfaceMLD(Interface):
         if_index = if_nametoindex(interface_name)
         s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_MULTICAST_IF, struct.pack('@I', if_index))
 
+        """
         # set ICMP6 filter to only receive MLD packets
-        #icmp6_filter = ICMP6_FILTER_SETBLOCKALL()
-        #icmp6_filter = ICMP6_FILTER_SETPASS(MULTICAST_LISTENER_REPORT_TYPE, icmp6_filter)
-        #icmp6_filter = ICMP6_FILTER_SETPASS(MULTICAST_LISTENER_DONE_TYPE, icmp6_filter)
-        #icmp6_filter = ICMP6_FILTER_SETPASS(MULTICAST_LISTENER_QUERY_TYPE, icmp6_filter)
-        #s.setsockopt(socket.IPPROTO_ICMPV6, InterfaceMLD.ICMP6_FILTER, icmp6_filter)
-        #s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_RECVPKTINFO, True)
-        #s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_MULTICAST_LOOP, False)
+        icmp6_filter = ICMP6_FILTER_SETBLOCKALL()
+        icmp6_filter = ICMP6_FILTER_SETPASS(MULTICAST_LISTENER_QUERY_TYPE, icmp6_filter)
+        icmp6_filter = ICMP6_FILTER_SETPASS(MULTICAST_LISTENER_REPORT_TYPE, icmp6_filter)
+        icmp6_filter = ICMP6_FILTER_SETPASS(MULTICAST_LISTENER_DONE_TYPE, icmp6_filter)
+        s.setsockopt(socket.IPPROTO_ICMPV6, ICMP6_FILTER, icmp6_filter)
+        s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_RECVPKTINFO, True)
+        s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_MULTICAST_LOOP, False)
+        s.setsockopt(socket.IPPROTO_IPV6, self.IPV6_ROUTER_ALERT, 0)
+        rcv_s = s
+        """
 
         ip_interface = "::"
         for if_addr in netifaces.ifaddresses(interface_name)[netifaces.AF_INET6]:
@@ -69,31 +75,36 @@ class InterfaceMLD(Interface):
         self.ip_interface = ip_interface
 
         # RECEIVE SOCKET
-        rcv_s = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(InterfaceMLD.ETH_P_IPV6))
+        rcv_s = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(ETH_P_IPV6))
 
         # receive only MLD packets by setting a BPF filter
         bpf_filter = b''.join(InterfaceMLD.FILTER_MLD)
         b = create_string_buffer(bpf_filter)
         mem_addr_of_filters = addressof(b)
         fprog = struct.pack('HL', len(InterfaceMLD.FILTER_MLD), mem_addr_of_filters)
-        rcv_s.setsockopt(socket.SOL_SOCKET, InterfaceMLD.SO_ATTACH_FILTER, fprog)
+        rcv_s.setsockopt(socket.SOL_SOCKET, SO_ATTACH_FILTER, fprog)
 
         # bind to interface
-        rcv_s.bind((interface_name, InterfaceMLD.ETH_P_IPV6))
+        rcv_s.bind((interface_name, ETH_P_IPV6))
 
         super().__init__(interface_name=interface_name, recv_socket=rcv_s, send_socket=s, vif_index=vif_index)
         self.interface_enabled = True
         from .mld.RouterState import RouterState
         self.interface_state = RouterState(self)
 
-    def _get_address_family(self):
+    @staticmethod
+    def _get_address_family():
         return socket.AF_INET6
 
     def get_ip(self):
         return self.ip_interface
 
     def send(self, data: bytes, address: str = "FF02::1"):
-        super().send(data, address)
+        # send router alert option
+        cmsg_level = socket.IPPROTO_IPV6
+        cmsg_type = socket.IPV6_HOPOPTS
+        cmsg_data = b'\x3a\x00\x05\x02\x00\x00\x01\x00'
+        self._send_socket.sendmsg([data], [(cmsg_level, cmsg_type, cmsg_data)], 0, (address, 0))
 
     """
     def receive(self):
@@ -114,7 +125,21 @@ class InterfaceMLD(Interface):
             src_addr = (socket.inet_ntop(socket.AF_INET6, raw_bytes[8:24]),)
             print("MLD IP_SRC bf= ", src_addr)
             dst_addr = raw_bytes[24:40]
-            raw_bytes = raw_bytes[40:]
+            (next_header,) = struct.unpack("B", raw_bytes[6:7])
+            print("NEXT HEADER:", next_header)
+            payload_starts_at_len = 40
+            if next_header == 0:
+                # Hop by Hop options
+                (next_header,) = struct.unpack("B", raw_bytes[40:41])
+                if next_header != 58:
+                    return
+                (hdr_ext_len,) = struct.unpack("B", raw_bytes[payload_starts_at_len +1:payload_starts_at_len + 2])
+                if hdr_ext_len > 0:
+                    payload_starts_at_len = payload_starts_at_len + 1 + hdr_ext_len*8
+                else:
+                    payload_starts_at_len = payload_starts_at_len + 8
+
+            raw_bytes = raw_bytes[payload_starts_at_len:]
             ancdata = [(socket.IPPROTO_IPV6, socket.IPV6_PKTINFO, dst_addr)]
             print("RECEIVE MLD")
             print("ANCDATA: ", ancdata, "; SRC_ADDR: ", src_addr)

@@ -12,7 +12,7 @@ from .tree_if_root_originator import TreeInterfaceRootOriginator
 
 
 class KernelEntry:
-    KERNEL_LOGGER = logging.getLogger('protocol.KernelEntry')
+    KERNEL_LOGGER = logging.getLogger('hpim.KernelEntry')
 
     def __init__(self, source_ip: str, group_ip: str, upstream_state_dic, interest_state_dic, kernel_entry_interface):
         self.kernel_entry_logger = logging.LoggerAdapter(self.KERNEL_LOGGER, {'tree': '(' + source_ip + ',' + group_ip + ')'})
@@ -510,7 +510,7 @@ class KernelEntryNonOriginator(KernelEntry):
 
 
 class KernelEntryOriginator(KernelEntry):
-    KERNEL_LOGGER = logging.getLogger('protocol.KernelEntryOriginator')
+    KERNEL_LOGGER = logging.getLogger('hpim.KernelEntryOriginator')
 
     def __init__(self, source_ip: str, group_ip: str, upstream_state_dic, interest_state_dic, kernel_entry_interface):
         super().__init__(source_ip, group_ip, upstream_state_dic, interest_state_dic, kernel_entry_interface)

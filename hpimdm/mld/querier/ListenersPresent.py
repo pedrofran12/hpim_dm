@@ -18,7 +18,8 @@ def receive_done(group_state: 'GroupState'):
     group_state.set_timer(alternative=True)
     group_state.set_retransmit_timer()
 
-    packet = PacketMLDHeader(type=PacketMLDHeader.MULTICAST_LISTENER_QUERY_TYPE, max_resp_delay=LastListenerQueryInterval, group_address=group_ip)
+    packet = PacketMLDHeader(type=PacketMLDHeader.MULTICAST_LISTENER_QUERY_TYPE,
+                             max_resp_delay=LastListenerQueryInterval*1000, group_address=group_ip)
     group_state.router_state.send(data=packet.bytes(), address=group_ip)
 
     group_state.set_state(CheckingListeners)

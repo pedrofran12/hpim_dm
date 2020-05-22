@@ -10,7 +10,7 @@ from .assert_state import AssertState, SFMRAssertABC
 from .downstream_state import SFMRPruneState, SFMRDownstreamStateABC
 
 class TreeInterfaceNonRoot(TreeInterface):
-    LOGGER = logging.getLogger('protocol.KernelEntry.NonRootInterface')
+    LOGGER = logging.getLogger('hpim.KernelEntry.NonRootInterface')
 
     def __init__(self, kernel_entry, interface_id, rpc: Metric, best_upstream_router, interest_state, was_root, previous_tree_state, current_tree_state):
         extra_dict_logger = kernel_entry.kernel_entry_logger.extra.copy()

@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 class GroupState(object):
-    LOGGER = logging.getLogger('protocol.igmp.RouterState.GroupState')
+    LOGGER = logging.getLogger('hpim.igmp.RouterState.GroupState')
 
     def __init__(self, router_state: 'RouterState', group_ip: str):
         #logger

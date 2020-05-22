@@ -109,8 +109,9 @@ class Interface(metaclass=ABCMeta):
             all_networks.add(str(ipaddress.ip_interface(network).network))
         return all_networks
 
+    @staticmethod
     @abstractmethod
-    def _get_address_family(self):
+    def _get_address_family():
         raise NotImplementedError
 
     def get_mtu(self):

@@ -9,7 +9,7 @@ from .tree_interface import TreeInterface
 
 
 class TreeInterfaceRootOriginator(TreeInterface):
-    LOGGER = logging.getLogger('protocol.KernelEntry.RootInterface')
+    LOGGER = logging.getLogger('hpim.KernelEntry.RootInterface')
 
     def __init__(self, kernel_entry, interface_id, current_tree_state):
         extra_dict_logger = kernel_entry.kernel_entry_logger.extra.copy()

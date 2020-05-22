@@ -2,11 +2,12 @@ import socket
 import ipaddress
 from threading import RLock
 from pyroute2 import IPDB, IPRoute
-
 from hpimdm.utils import if_indextoname
+
 
 def get_unicast_info(ip_dst):
     return UnicastRouting.get_unicast_info(ip_dst)
+
 
 class UnicastRouting(object):
     ipdb = None
@@ -79,7 +80,7 @@ class UnicastRouting(object):
                 else:
                     highest_ip = ipaddress.ip_address("::")
                 for m in multipaths:
-                    if m["gateway"] is None:
+                    if m.get("gateway", None) is None:
                         oif = m.get('oif')
                         rpf_node = ip_dst
                         break

@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 class RouterState(object):
-    ROUTER_STATE_LOGGER = logging.getLogger('protocol.igmp.RouterState')
+    ROUTER_STATE_LOGGER = logging.getLogger('hpim.igmp.RouterState')
 
     def __init__(self, interface: 'InterfaceIGMP'):
         #logger

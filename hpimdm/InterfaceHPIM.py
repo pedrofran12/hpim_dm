@@ -48,7 +48,7 @@ class InterfaceHPIM(Interface):
     HELLO_PERIOD = 30
     TRIGGERED_HELLO_PERIOD = 5
 
-    LOGGER = logging.getLogger('protocol.Interface')
+    LOGGER = logging.getLogger('hpim.Interface')
 
     def __init__(self, interface_name: str, vif_index: int):
         self.interface_logger = logging.LoggerAdapter(InterfaceHPIM.LOGGER, {'vif': vif_index,
@@ -107,7 +107,8 @@ class InterfaceHPIM(Interface):
         super().__init__(interface_name, s, s, vif_index)
         self.force_send_hello()
 
-    def _get_address_family(self):
+    @staticmethod
+    def _get_address_family():
         return socket.AF_INET
 
     def get_ip(self):

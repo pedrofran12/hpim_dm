@@ -6,7 +6,7 @@ MulticastListenerInterval = (RobustnessVariable * QueryInterval) + (QueryRespons
 OtherQuerierPresentInterval = (RobustnessVariable * QueryInterval) + 0.5 * QueryResponseInterval
 StartupQueryInterval = (1/4) * QueryInterval
 StartupQueryCount = RobustnessVariable
-LastListenerQueryInterval = 1000
+LastListenerQueryInterval = 1
 LastListenerQueryCount = RobustnessVariable
 UnsolicitedReportInterval = 10
 
