@@ -462,14 +462,11 @@ class Neighbor:
             return False
         elif sn >= last_received_sn:
             (source, group) = tree
-            packet = self.contact_interface.create_ack_msg(self.contact_interface.time_of_boot, sn, source, group,
-                                                           boot_time, self.neighbor_snapshot_sn, self.my_snapshot_sequencer)
-
-            #ack = PacketHPIMAck(source, group, sn, neighbor_boot_time=boot_time,
-            #                    neighbor_snapshot_sn=self.neighbor_snapshot_sn,
-            #                    my_snapshot_sn=self.my_snapshot_sequencer)
-            #ph = PacketHPIMHeader(ack, boot_time=self.contact_interface.time_of_boot)
-            #packet = Packet(payload=ph)
+            packet = self.contact_interface.create_ack_msg(my_boot_time=self.contact_interface.time_of_boot, sn=sn,
+                                                           source=source, group=group,
+                                                           neighbor_boot_time=boot_time,
+                                                           neighbor_snapshot_sn=self.neighbor_snapshot_sn,
+                                                           my_snapshot_sn=self.my_snapshot_sequencer)
             self.contact_interface.send(packet, self.ip)
 
             if sn > last_received_sn:
@@ -537,7 +534,6 @@ class Neighbor:
             self.sync_fragmentation = (self.contact_interface.get_mtu() - 20 - 8 - 16) // 16
         self.contact_interface.neighbor_start_synchronization(self.ip, my_snapshot_bt, my_snapshot_sn)
 
-
     #################################################################
     # Obtain Upstream and Interest information regarding a neighbor
     #################################################################
@@ -557,7 +553,6 @@ class Neighbor:
             print("INTEREST NEIGHBOR ", self.ip, ":", interest_state)
             print("UPSTREAM NEIGHBOR ", self.ip, ":", upstream_state)
             return (interest_state, upstream_state)
-
 
     #######################################
     # Remove state regarding neighbor

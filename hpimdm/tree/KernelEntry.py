@@ -508,7 +508,6 @@ class KernelEntryNonOriginator(KernelEntry):
             self.check_tree_state()
 
 
-
 class KernelEntryOriginator(KernelEntry):
     KERNEL_LOGGER = logging.getLogger('hpim.KernelEntryOriginator')
 

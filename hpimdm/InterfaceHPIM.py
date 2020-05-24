@@ -414,26 +414,24 @@ class InterfaceHPIM(Interface):
     ###########################################
     def create_i_am_upstream_msg(self, my_boot_time, sn, source, group, metric_preference, metric):
         ph = PacketHPIMUpstream(source, group, metric_preference, metric, sn)
-        return Packet(payload=PacketHPIMHeader(ph, boot_time=my_boot_time))
+        return Packet(payload=PacketHPIMHeader(payload=ph, boot_time=my_boot_time))
 
     def create_i_am_no_longer_upstream_msg(self, my_boot_time, sn, source, group):
         ph = PacketHPIMNoLongerUpstream(source, group, sn)
-        return Packet(payload=PacketHPIMHeader(ph, boot_time=my_boot_time))
+        return Packet(payload=PacketHPIMHeader(payload=ph, boot_time=my_boot_time))
 
     def create_interest_msg(self, my_boot_time, sn, source, group):
         ph = PacketHPIMInterest(source, group, sn)
-        return Packet(payload=PacketHPIMHeader(ph, boot_time=my_boot_time))
+        return Packet(payload=PacketHPIMHeader(payload=ph, boot_time=my_boot_time))
 
     def create_no_interest_msg(self, my_boot_time, sn, source, group):
         ph = PacketHPIMNoInterest(source, group, sn)
-        return Packet(payload=PacketHPIMHeader(ph, boot_time=my_boot_time))
+        return Packet(payload=PacketHPIMHeader(payload=ph, boot_time=my_boot_time))
 
-    def create_ack_msg(self, my_boot_time, sn, source, group, neighbor_boot_time,
-                neighbor_snapshot_sn, my_snapshot_sn):
-        ack = PacketHPIMAck(source, group, sn, neighbor_boot_time=neighbor_boot_time,
-                            neighbor_snapshot_sn=neighbor_snapshot_sn,
-                            my_snapshot_sn=my_snapshot_sn)
-        return PacketHPIMHeader(ack, boot_time=my_boot_time)
+    def create_ack_msg(self, my_boot_time, sn, source, group, neighbor_boot_time, neighbor_snapshot_sn, my_snapshot_sn):
+        ack = PacketHPIMAck(source_ip=source, group_ip=group, sequence_number=sn, neighbor_boot_time=neighbor_boot_time,
+                            neighbor_snapshot_sn=neighbor_snapshot_sn, my_snapshot_sn=my_snapshot_sn)
+        return Packet(payload=PacketHPIMHeader(payload=ack, boot_time=my_boot_time))
 
     def create_sync_entry_hdr(self, source, group, metric_preference, metric):
         return PacketHPIMSyncEntry(source, group, metric_preference, metric)

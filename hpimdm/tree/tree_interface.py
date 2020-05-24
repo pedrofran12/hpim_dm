@@ -187,7 +187,7 @@ class TreeInterface(metaclass=ABCMeta):
     ############################################################
     def check_membership_state(self):
         """
-        Reverify IGMP/mld state of this group whenever this interface enabled or disabled IGMP/MLD
+        Reverify IGMP/MLD state of this group whenever this interface enabled or disabled IGMP/MLD
         """
         (_, group_ip) = self.get_tree_id()
         with self._igmp_lock:

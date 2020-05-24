@@ -1,8 +1,8 @@
 import socket
 import ipaddress
 from threading import RLock
+from socket import if_indextoname
 from pyroute2 import IPDB, IPRoute
-from hpimdm.utils import if_indextoname
 
 
 def get_unicast_info(ip_dst):
@@ -17,7 +17,6 @@ class UnicastRouting(object):
         UnicastRouting.ipdb = IPDB()
         self._ipdb = UnicastRouting.ipdb
         self._ipdb.register_callback(UnicastRouting.unicast_changes, mode="post")
-
 
     @staticmethod
     def get_route(ip_dst: str):
@@ -54,7 +53,6 @@ class UnicastRouting(object):
                     info = ipdb.routes[{'dst': 'default', 'family': family}]
             print(info)
             return info
-
 
     @staticmethod
     def get_unicast_info(ip_dst):
@@ -101,7 +99,6 @@ class UnicastRouting(object):
         else:
             rpf_if = Main.kernel_v6.vif_name_to_index_dic.get(interface_name)
         return (metric_administrative_distance, metric_cost, is_directly_connected, rpf_if)
-
 
     @staticmethod
     def unicast_changes(ipdb, msg, action):
@@ -185,7 +182,7 @@ class UnicastRouting(object):
     def stop(self):
         """
         No longer monitor unicast changes....
-        Invoked whenver the protocol is stopped
+        Invoked whenever the protocol is stopped
         """
         if self._ipdb:
             self._ipdb.release()

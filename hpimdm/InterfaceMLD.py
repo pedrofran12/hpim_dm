@@ -2,8 +2,8 @@ import socket
 import struct
 import netifaces
 import ipaddress
+from socket import if_nametoindex
 from ipaddress import IPv6Address
-from .utils import if_nametoindex
 from .Interface import Interface
 from .packet.ReceivedPacket import ReceivedPacket_v6
 from .mld.mld_globals import MULTICAST_LISTENER_QUERY_TYPE, MULTICAST_LISTENER_DONE_TYPE, MULTICAST_LISTENER_REPORT_TYPE

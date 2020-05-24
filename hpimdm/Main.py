@@ -20,19 +20,19 @@ unicast_routing = None
 logger = None
 
 
-def add_protocol_interface(interface_name, ipv4=True, ipv6=False):
+def add_hpim_interface(interface_name, ipv4=True, ipv6=False):
     """
     Add a new interface to be controlled by HPIM-DM
     """
     if interface_name == "*":
         for interface_name in netifaces.interfaces():
-            add_protocol_interface(interface_name, ipv4, ipv6)
+            add_hpim_interface(interface_name, ipv4, ipv6)
         return
 
     if ipv4 and kernel is not None:
-        kernel.create_protocol_interface(interface_name=interface_name)
+        kernel.create_hpim_interface(interface_name=interface_name)
     if ipv6 and kernel_v6 is not None:
-        kernel_v6.create_protocol_interface(interface_name=interface_name)
+        kernel_v6.create_hpim_interface(interface_name=interface_name)
 
 
 def add_membership_interface(interface_name, ipv4=True, ipv6=False):

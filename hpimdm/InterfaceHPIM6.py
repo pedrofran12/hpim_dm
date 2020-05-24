@@ -4,11 +4,11 @@ import struct
 import logging
 import ipaddress
 import netifaces
-from hpimdm import Main
 from threading import RLock
+from socket import if_nametoindex
 
+from hpimdm import Main
 from .packet.Packet import Packet
-from .utils import if_nametoindex
 from .Interface import Interface
 from .InterfaceHPIM import InterfaceHPIM
 from .packet.ReceivedPacket import ReceivedPacket_v6
@@ -120,26 +120,26 @@ class InterfaceHPIM6(InterfaceHPIM):
     ###########################################
     def create_i_am_upstream_msg(self, my_boot_time, sn, source, group, metric_preference, metric):
         ph = PacketHPIMUpstream_v6(source, group, metric_preference, metric, sn)
-        return Packet(payload=PacketHPIMHeader_v6(ph, boot_time=my_boot_time))
+        return Packet(payload=PacketHPIMHeader_v6(payload=ph, boot_time=my_boot_time))
 
     def create_i_am_no_longer_upstream_msg(self, my_boot_time, sn, source, group):
         ph = PacketHPIMNoLongerUpstream_v6(source, group, sn)
-        return Packet(payload=PacketHPIMHeader_v6(ph, boot_time=my_boot_time))
+        return Packet(payload=PacketHPIMHeader_v6(payload=ph, boot_time=my_boot_time))
 
     def create_interest_msg(self, my_boot_time, sn, source, group):
         ph = PacketHPIMInterest_v6(source, group, sn)
-        return Packet(payload=PacketHPIMHeader_v6(ph, boot_time=my_boot_time))
+        return Packet(payload=PacketHPIMHeader_v6(payload=ph, boot_time=my_boot_time))
 
     def create_no_interest_msg(self, my_boot_time, sn, source, group):
         ph = PacketHPIMNoInterest_v6(source, group, sn)
-        return Packet(payload=PacketHPIMHeader_v6(ph, boot_time=my_boot_time))
+        return Packet(payload=PacketHPIMHeader_v6(payload=ph, boot_time=my_boot_time))
 
     def create_ack_msg(self, my_boot_time, sn, source, group, neighbor_boot_time,
-                neighbor_snapshot_sn, my_snapshot_sn):
-        ack = PacketHPIMAck_v6(source, group, sn, neighbor_boot_time=neighbor_boot_time,
-                               neighbor_snapshot_sn=neighbor_snapshot_sn,
+                       neighbor_snapshot_sn, my_snapshot_sn):
+        ack = PacketHPIMAck_v6(source_ip=source, group_ip=group, sequence_number=sn,
+                               neighbor_boot_time=neighbor_boot_time, neighbor_snapshot_sn=neighbor_snapshot_sn,
                                my_snapshot_sn=my_snapshot_sn)
-        return Packet(payload=PacketHPIMHeader_v6(ack, boot_time=my_boot_time))
+        return Packet(payload=PacketHPIMHeader_v6(payload=ack, boot_time=my_boot_time))
 
     def create_sync_entry_hdr(self, source, group, metric_preference, metric):
         return PacketHPIMSyncEntry_v6(source, group, metric_preference, metric)
@@ -147,5 +147,5 @@ class InterfaceHPIM6(InterfaceHPIM):
     def create_sync_msg(self, my_boot_time, my_snapshot_sn, neighbor_snapshot_sn, sync_sn, upstream_trees,
                         master_flag, more_flag, neighbor_boot_time):
         pkt_sync = PacketHPIMSync_v6(my_snapshot_sn, neighbor_snapshot_sn, sync_sn, upstream_trees,
-                                  master_flag, more_flag, neighbor_boot_time)
+                                     master_flag, more_flag, neighbor_boot_time)
         return Packet(payload=PacketHPIMHeader_v6(pkt_sync, my_boot_time))

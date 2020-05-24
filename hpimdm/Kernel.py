@@ -3,10 +3,10 @@ import struct
 import traceback
 import ipaddress
 from threading import Thread
+from socket import if_nametoindex
 from abc import ABCMeta, abstractmethod
 
 from hpimdm import Main
-from hpimdm.utils import if_nametoindex
 from hpimdm.tree import protocol_globals
 from hpimdm.rwlock.RWLock import RWLockWrite
 from hpimdm import UnicastRouting
@@ -55,7 +55,7 @@ class KernelInterface(metaclass=ABCMeta):
     def create_virtual_interface(self, ip_interface: str or bytes, interface_name: str, index, flags=0x0):
         raise NotImplementedError
 
-    def create_protocol_interface(self, interface_name: str):
+    def create_hpim_interface(self, interface_name: str):
         thread = None
         with self.rwlock.genWlock():
             hpim_interface = self.hpim_interface.get(interface_name)
@@ -150,13 +150,13 @@ class KernelInterface(metaclass=ABCMeta):
             if interface_name is None or interface_name not in self.vif_name_to_index_dic:
                 return
             igmp_was_enabled = interface_name in self.membership_interface
-            protocol_was_enabled = interface_name in self.hpim_interface
+            hpim_was_enabled = interface_name in self.hpim_interface
 
         self.remove_interface(interface_name, igmp=True, hpim=True)
         if igmp_was_enabled:
             self.create_membership_interface(interface_name)
-        if protocol_was_enabled:
-            self.create_protocol_interface(interface_name)
+        if hpim_was_enabled:
+            self.create_hpim_interface(interface_name)
 
     def add_interface_security(self, interface_name, security_id, security_algorithm, security_key):
         with self.rwlock.genRlock():

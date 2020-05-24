@@ -24,8 +24,6 @@ class ReliableMessageTransmission(object):
             metric_preference = rpc.metric_preference
             metric = rpc.route_metric
 
-            #ph = PacketHPIMUpstream(source, group, metric_preference, metric, sn)
-            #self._msg_multicast = Packet(payload=PacketHPIMHeader(ph, boot_time=bt))
             self._msg_multicast = self._interface.create_i_am_upstream_msg(my_boot_time=bt, sn=sn,
                                                                            source=source, group=group,
                                                                            metric_preference=metric_preference,
@@ -43,8 +41,6 @@ class ReliableMessageTransmission(object):
 
             (bt, sn) = self._interface.get_sequence_number()
 
-            #ph = PacketHPIMNoLongerUpstream(source, group, sn)
-            #self._msg_multicast = Packet(payload=PacketHPIMHeader(ph, boot_time=bt))
             self._msg_multicast = self._interface.create_i_am_no_longer_upstream_msg(my_boot_time=bt, sn=sn,
                                                                                      source=source, group=group)
 
@@ -60,8 +56,6 @@ class ReliableMessageTransmission(object):
 
             (bt, sn) = self._interface.get_sequence_number()
 
-            #ph = PacketHPIMInterest(source, group, sn)
-            #self._msg_unicast[dst] = Packet(payload=PacketHPIMHeader(ph, boot_time=bt))
             packet = self._interface.create_interest_msg(my_boot_time=bt, sn=sn, source=source, group=group)
             self._msg_unicast[dst] = packet
 
@@ -83,8 +77,6 @@ class ReliableMessageTransmission(object):
 
             (bt, sn) = self._interface.get_sequence_number()
 
-            #ph = PacketHPIMNoInterest(source, group, sn)
-            #self._msg_unicast[dst] = Packet(payload=PacketHPIMHeader(ph, boot_time=bt))
             packet = self._interface.create_no_interest_msg(my_boot_time=bt, sn=sn, source=source, group=group)
             self._msg_unicast[dst] = packet
 

@@ -65,7 +65,7 @@ class MyDaemon(Daemon):
                 print(sys.stderr, 'sending data back to the client')
                 print(pickle.loads(data))
                 args = pickle.loads(data)
-                if 'ipv4' not in args and 'ipv6' not in args or not (args.ipv4 or args.ipv6):
+                if 'ipv4' not in args or 'ipv6' not in args or not (args.ipv4 or args.ipv6):
                     args.ipv4 = True
                     args.ipv6 = False
 
@@ -80,7 +80,7 @@ class MyDaemon(Daemon):
                 elif 'list_sequence_numbers' in args and args.list_sequence_numbers:
                     connection.sendall(pickle.dumps(Main.list_sequence_numbers(ipv4=args.ipv4, ipv6=args.ipv6)))
                 elif 'add_interface' in args and args.add_interface:
-                    Main.add_protocol_interface(args.add_interface[0], ipv4=args.ipv4, ipv6=args.ipv6)
+                    Main.add_hpim_interface(args.add_interface[0], ipv4=args.ipv4, ipv6=args.ipv6)
                     connection.shutdown(socket.SHUT_RDWR)
                 elif 'flood_initial_data' in args and args.flood_initial_data:
                     connection.sendall(pickle.dumps(Main.change_initial_flood_setting()))

@@ -31,7 +31,7 @@ class KernelEntryInterface(metaclass=ABCMeta):
     @abstractmethod
     def get_membership_interface(kernel_tree, interface_id):
         """
-        Get MLD interface from interface id
+        Get IGMP/MLD interface from interface id
         """
         pass
 

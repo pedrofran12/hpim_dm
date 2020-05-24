@@ -12,6 +12,7 @@ Additionally, IGMPv2 and MLDv1 are implemented alongside with HPIM-DM to detect 
 
 # Documents detailing this work
 
+ - [The HPIM Multicast Routing Protocol - Full High Level Description](https://arxiv.org/abs/2002.06635)
  - [HPIM-DM state machines](https://github.com/pedrofran12/hpim_dm/tree/master/docs/HPIMStateMachines.pdf)
  - [Python implementation of IGMPv2, PIM-DM and HPIM-DM](https://github.com/pedrofran12/hpim_dm/tree/master/docs/PythonImplementations.pdf)
  - [Test to Python implementation of IGMPv2, PIM-DM, and HPIM-DM](https://github.com/pedrofran12/hpim_dm/tree/master/docs/PythonTests.pdf)
@@ -26,8 +27,8 @@ Additionally, IGMPv2 and MLDv1 are implemented alongside with HPIM-DM to detect 
  - pip (to install all dependencies)
  - tcpdump
 
-HPIM-DM uses the Linux unicast routing table for RPF checks and also to detect loops (feasibility condition - through comparing the metric preference and metric of upstream neighbors with the router's own routing table). 
-For this reason the Linux routing table must be maintained consistently. However some routing packages like most recent versions of Quagga set the metric of routes with a dummy value causing HPIM-DM to false suspect a loop.
+HPIM-DM uses the Linux unicast routing table for RPF checks and also to detect loops. 
+For this reason the Linux routing table must have consistent information. However some routing packages like most recent versions of Quagga set the metric of routes with a dummy value causing HPIM-DM to false suspect a loop and to not create multicast trees as expected.
 
 # Installation
 
@@ -61,7 +62,7 @@ After starting the protocol process you can enable the protocol in specific inte
 * To have a given interface being monitored by HPIM-DM (to exchange control packets with it), you need to run the following command:
 
   ```
-  sudo hpim-dm -ai INTERFACE_NAME [-6]
+  sudo hpim-dm -ai INTERFACE_NAME [-4 | -6]
   ```
 
 * To have a given interface being monitored by IGMPv2 (to monitor the IPv4 multicast interest of directly connected hosts), you need to run the following command:
@@ -84,7 +85,7 @@ To remove a previously added interface, you need to run the following commands:
 * To remove a previously added HPIM-DM interface:
 
   ```
-  sudo hpim-dm -ri INTERFACE_NAME [-6]
+  sudo hpim-dm -ri INTERFACE_NAME [-4 | -6]
   ```
 
 * To remove a previously added IGMP interface:
@@ -136,7 +137,7 @@ All control messages carry a Security Identifier, which is a number that identif
    Disable security identified by SECURITY_IDENTIFIER from HPIM-DM interface named INTERFACE_NAME.
 
    ```
-   sudo hpim-dm -risec INTERFACE_NAME SECURITY_IDENTIFIER [-6]
+   sudo hpim-dm -risec INTERFACE_NAME SECURITY_IDENTIFIER [-4 | -6]
    ```
 
 
@@ -149,7 +150,7 @@ We have built some list commands that can be used to check the "internals" of th
 	 Show all router interfaces and which ones have HPIM-DM and IGMP/MLD enabled. For IGMP/MLD enabled interfaces outputs the Querier state. For HPIM enabled interfaces outputs security settings.
 
    ```
-   sudo hpim-dm -li [-6]
+   sudo hpim-dm -li [-4 | -6]
    ```
 
  - #### List neighbors:
@@ -157,7 +158,7 @@ We have built some list commands that can be used to check the "internals" of th
 	 Verify neighbors that have established a neighborhood relationship.
 
    ```
-   sudo hpim-dm -ln [-6]
+   sudo hpim-dm -ln [-4 | -6]
    ```
 
  - #### List sequence numbers:
@@ -165,7 +166,7 @@ We have built some list commands that can be used to check the "internals" of th
     Verify all stored sequence numbers.
 
    ```
-   sudo hpim-dm -lsn [-6]
+   sudo hpim-dm -lsn [-4 | -6]
    ```
 
  - #### List neighbor state:
@@ -173,7 +174,7 @@ We have built some list commands that can be used to check the "internals" of th
     Verify all state regarding each neighbor, whether they are UPSTREAM or NOT UPSTREAM and in the latter whether they are INTERESTED or NOT INTERESTED in receiving data packets.
 
    ```
-   sudo hpim-dm -lns [-6]
+   sudo hpim-dm -lns [-4 | -6]
    ```
 
  - #### List state machines:
@@ -181,7 +182,7 @@ We have built some list commands that can be used to check the "internals" of th
     List all state machines and corresponding state of all trees that are being monitored. Also list IGMP/MLD state for each group being monitored.
 
    ```
-   sudo hpim-dm -ls [-6]
+   sudo hpim-dm -ls [-4 | -6]
    ```
 
  - #### Multicast Routing Table:
@@ -189,7 +190,7 @@ We have built some list commands that can be used to check the "internals" of th
    List Linux Multicast Routing Table (equivalent to `ip mroute show`)
 
    ```
-   sudo hpim-dm -mr [-6]
+   sudo hpim-dm -mr [-4 | -6]
    ```
 
 
