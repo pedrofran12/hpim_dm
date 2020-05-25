@@ -1,12 +1,12 @@
 from hpimdm.utils import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .tree_if_upstream import TreeInterfaceUpstream
+    from .tree_if_root import TreeInterfaceRoot
 
 '''
 class SFMRRootState:
     @staticmethod
-    def tree_transitions_to_active_state(interface: 'TreeInterfaceUpstream') -> None:
+    def tree_transitions_to_active_state(interface: 'TreeInterfaceRoot') -> None:
         """
         Tree transitions to Active state AND
         interface roles dont change
@@ -15,7 +15,7 @@ class SFMRRootState:
         interface.send_my_interest()
 
     @staticmethod
-    def tree_remains_in_active_state_and_non_root_transitions_to_root_interface(interface: 'TreeInterfaceUpstream'):
+    def tree_remains_in_active_state_and_non_root_transitions_to_root_interface(interface: 'TreeInterfaceRoot'):
         """
         Tree remains in Active state AND
         Non-root interface transitions to Root type
@@ -25,7 +25,7 @@ class SFMRRootState:
         interface.send_my_interest()
 
     @staticmethod
-    def tree_transitions_from_active_to_inactive_state_due_to_transition_from_non_root_to_root_interface(interface: 'TreeInterfaceUpstream'):
+    def tree_transitions_from_active_to_inactive_state_due_to_transition_from_non_root_to_root_interface(interface: 'TreeInterfaceRoot'):
         """
         Tree transitions from Active to Inactive state AND
         Non-Root interface transitions to Root type
@@ -34,7 +34,7 @@ class SFMRRootState:
         interface.send_i_am_no_longer_upstream()
 
     @staticmethod
-    def tree_transitions_to_active_state_and_non_root_interface_transitions_to_root(interface: 'TreeInterfaceUpstream') -> None:
+    def tree_transitions_to_active_state_and_non_root_interface_transitions_to_root(interface: 'TreeInterfaceRoot') -> None:
         """
         Tree transitions to Active state AND
         Non-Root interface transitions to Root type
@@ -43,7 +43,7 @@ class SFMRRootState:
         SFMRRootState.tree_transitions_to_active_state(interface)
 
     @staticmethod
-    def transition_to_it_or_ot_and_active_tree(interface: 'TreeInterfaceUpstream') -> None:
+    def transition_to_it_or_ot_and_active_tree(interface: 'TreeInterfaceRoot') -> None:
         """
         Tree is in Active state AND
         interface becomes interested or not interested in receiving data packets
@@ -52,7 +52,7 @@ class SFMRRootState:
         interface.send_my_interest()
 
     @staticmethod
-    def tree_is_active_and_best_upstream_router_reelected(interface: 'TreeInterfaceUpstream') -> None:
+    def tree_is_active_and_best_upstream_router_reelected(interface: 'TreeInterfaceRoot') -> None:
         """
         Tree is in Active state AND
         BestUpstream neighbor changes or BestUpstream neighbor sends an IamUpstream message and remains responsible for
@@ -64,7 +64,7 @@ class SFMRRootState:
 
 class SFMRNewRootState:
     @staticmethod
-    def interfaces_roles_change_and_tree_remains_active(interface: 'TreeInterfaceUpstream') -> None:
+    def interfaces_roles_change_and_tree_remains_active(interface: 'TreeInterfaceRoot'):
         """
         Interfaces roles change (NonRoot->Root) AND
         Tree was Active and remains Active
@@ -74,7 +74,7 @@ class SFMRNewRootState:
         interface.send_my_interest()
 
     @staticmethod
-    def interfaces_roles_change_and_tree_was_unsure_and_transitions_to_active(interface: 'TreeInterfaceUpstream'):
+    def interfaces_roles_change_and_tree_was_unsure_and_transitions_to_active(interface: 'TreeInterfaceRoot'):
         """
         Interfaces roles change (NonRoot->Root) AND
         Tree was Unsure and transitions to Active state
@@ -83,7 +83,7 @@ class SFMRNewRootState:
         interface.send_my_interest()
 
     @staticmethod
-    def interfaces_roles_change_and_tree_was_active_and_transitions_to_unsure_and_best_upstream_neighbor_is_null(interface: 'TreeInterfaceUpstream'):
+    def interfaces_roles_change_and_tree_was_active_and_transitions_to_unsure_and_best_upstream_neighbor_is_null(interface: 'TreeInterfaceRoot'):
         """
         Interfaces roles change (NonRoot->Root) AND
         Tree transitions from Active to Unsure state AND
@@ -93,7 +93,7 @@ class SFMRNewRootState:
         interface.send_i_am_no_longer_upstream()
 
     @staticmethod
-    def interfaces_roles_change_and_tree_was_active_and_transitions_to_unsure_and_best_upstream_neighbor_not_null(interface: 'TreeInterfaceUpstream') -> None:
+    def interfaces_roles_change_and_tree_was_active_and_transitions_to_unsure_and_best_upstream_neighbor_not_null(interface: 'TreeInterfaceRoot'):
         """
         Interfaces roles change (NonRoot->Root) AND
         Tree transitions from Active to Unsure state AND
@@ -104,7 +104,7 @@ class SFMRNewRootState:
         interface.send_my_interest()
 
     @staticmethod
-    def interfaces_roles_change_and_tree_remains_unsure_and_best_upstream_neighbor_not_null(interface: 'TreeInterfaceUpstream') -> None:
+    def interfaces_roles_change_and_tree_remains_unsure_and_best_upstream_neighbor_not_null(interface: 'TreeInterfaceRoot'):
         """
         Interfaces roles change (NonRoot->Root) AND
         Tree was Unsure and remains Unsure AND
@@ -114,7 +114,7 @@ class SFMRNewRootState:
         interface.send_my_interest()
 
     @staticmethod
-    def interfaces_roles_dont_change_and_router_transition_to_it_or_ot(interface: 'TreeInterfaceUpstream') -> None:
+    def interfaces_roles_dont_change_and_router_transition_to_it_or_ot(interface: 'TreeInterfaceRoot'):
         """
         Interfaces roles dont change (this interface remains Root) AND
         BestUpstreamNeighbor does not change AND
@@ -125,7 +125,7 @@ class SFMRNewRootState:
 
 
     @staticmethod
-    def interfaces_roles_dont_change_and_best_upstream_neighbor_reelected(interface: 'TreeInterfaceUpstream') -> None:
+    def interfaces_roles_dont_change_and_best_upstream_neighbor_reelected(interface: 'TreeInterfaceRoot'):
         """
         Interfaces roles dont change (this interface remains Root) AND
         BestUpstreamNeighbor changes AND

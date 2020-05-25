@@ -3,20 +3,19 @@ import traceback
 from threading import Timer
 from threading import Thread
 
-from hpimdm import Main
-from . import DataPacketsSocket
-from .protocol_globals import SOURCE_LIFETIME
+from . import data_packets_socket
+from .hpim_globals import SOURCE_LIFETIME
 from .tree_interface import TreeInterface
 
 
-class TreeInterfaceUpstreamOriginator(TreeInterface):
-    LOGGER = logging.getLogger('protocol.KernelEntry.RootInterface')
+class TreeInterfaceRootOriginator(TreeInterface):
+    LOGGER = logging.getLogger('hpim.KernelEntry.RootInterface')
 
     def __init__(self, kernel_entry, interface_id, current_tree_state):
         extra_dict_logger = kernel_entry.kernel_entry_logger.extra.copy()
         extra_dict_logger['vif'] = interface_id
-        extra_dict_logger['interfacename'] = Main.kernel.vif_index_to_name_dic[interface_id]
-        logger = logging.LoggerAdapter(TreeInterfaceUpstreamOriginator.LOGGER, extra_dict_logger)
+        extra_dict_logger['interfacename'] = kernel_entry.get_interface_name(interface_id)
+        logger = logging.LoggerAdapter(TreeInterfaceRootOriginator.LOGGER, extra_dict_logger)
         TreeInterface.__init__(self, kernel_entry, interface_id, None, current_tree_state, logger)
 
         # Originator state
@@ -27,7 +26,7 @@ class TreeInterfaceUpstreamOriginator(TreeInterface):
         self.socket_is_enabled = True
         (s, g) = self.get_tree_id()
         interface_name = self.get_interface_name()
-        self.socket_pkt = DataPacketsSocket.get_s_g_bpf_filter_code(s, g, interface_name)
+        self.socket_pkt = data_packets_socket.get_s_g_bpf_filter_code(s, g, interface_name)
 
         # run receive method in background
         receive_thread = Thread(target=self.socket_recv)
@@ -35,7 +34,6 @@ class TreeInterfaceUpstreamOriginator(TreeInterface):
         receive_thread.start()
 
         self.logger.debug('Created RootInterfaceOriginator')
-
 
     def socket_recv(self):
         """

@@ -3,15 +3,15 @@ from threading import Lock
 from threading import Timer
 
 from hpimdm.utils import TYPE_CHECKING
-from .wrapper import NoMembersPresent
-from .igmp_globals import GroupMembershipInterval, LastMemberQueryInterval
+from .wrapper import NoListenersPresent
+from .mld_globals import MulticastListenerInterval, LastListenerQueryInterval
 
 if TYPE_CHECKING:
     from .RouterState import RouterState
 
 
 class GroupState(object):
-    LOGGER = logging.getLogger('hpim.igmp.RouterState.GroupState')
+    LOGGER = logging.getLogger('hpim.mld.RouterState.GroupState')
 
     def __init__(self, router_state: 'RouterState', group_ip: str):
         #logger
@@ -22,9 +22,8 @@ class GroupState(object):
         #timers and state
         self.router_state = router_state
         self.group_ip = group_ip
-        self.state = NoMembersPresent
+        self.state = NoListenersPresent
         self.timer = None
-        self.v1_host_timer = None
         self.retransmit_timer = None
         # lock
         self.lock = Lock()
@@ -55,7 +54,7 @@ class GroupState(object):
         """
         self.clear_timer()
         if not alternative:
-            time = GroupMembershipInterval
+            time = MulticastListenerInterval
         else:
             time = self.router_state.interface_state.get_group_membership_time(max_response_time)
 
@@ -70,28 +69,12 @@ class GroupState(object):
         if self.timer is not None:
             self.timer.cancel()
 
-    def set_v1_host_timer(self):
-        """
-        Set v1 host timer
-        """
-        self.clear_v1_host_timer()
-        v1_host_timer = Timer(GroupMembershipInterval, self.group_membership_v1_timeout)
-        v1_host_timer.start()
-        self.v1_host_timer = v1_host_timer
-
-    def clear_v1_host_timer(self):
-        """
-        Stop v1 host timer
-        """
-        if self.v1_host_timer is not None:
-            self.v1_host_timer.cancel()
-
     def set_retransmit_timer(self):
         """
         Set retransmit timer
         """
         self.clear_retransmit_timer()
-        retransmit_timer = Timer(LastMemberQueryInterval, self.retransmit_timeout)
+        retransmit_timer = Timer(LastListenerQueryInterval, self.retransmit_timeout)
         retransmit_timer.start()
         self.retransmit_timer = retransmit_timer
 
@@ -121,13 +104,6 @@ class GroupState(object):
         with self.lock:
             self.get_interface_group_state().group_membership_timeout(self)
 
-    def group_membership_v1_timeout(self):
-        """
-        v1 host timer has expired
-        """
-        with self.lock:
-            self.get_interface_group_state().group_membership_v1_timeout(self)
-
     def retransmit_timeout(self):
         """
         Retransmit timer has expired
@@ -138,30 +114,23 @@ class GroupState(object):
     ###########################################
     # Receive Packets
     ###########################################
-    def receive_v1_membership_report(self):
+    def receive_report(self):
         """
-        Received IGMP Version 1 Membership Report packet regarding this group
+        Received MLD Report packet regarding this group
         """
         with self.lock:
-            self.get_interface_group_state().receive_v1_membership_report(self)
+            self.get_interface_group_state().receive_report(self)
 
-    def receive_v2_membership_report(self):
+    def receive_done(self):
         """
-        Received IGMP Membership Report packet regarding this group
-        """
-        with self.lock:
-            self.get_interface_group_state().receive_v2_membership_report(self)
-
-    def receive_leave_group(self):
-        """
-        Received IGMP Leave packet regarding this group
+        Received MLD Done packet regarding this group
         """
         with self.lock:
-            self.get_interface_group_state().receive_leave_group(self)
+            self.get_interface_group_state().receive_done(self)
 
     def receive_group_specific_query(self, max_response_time: int):
         """
-        Received IGMP Group Specific Query packet regarding this group
+        Received MLD Group Specific Query packet regarding this group
         """
         with self.lock:
             self.get_interface_group_state().receive_group_specific_query(self, max_response_time)
@@ -171,7 +140,7 @@ class GroupState(object):
     ###########################################
     def notify_routing_add(self):
         """
-        Notify all tree entries that IGMP considers to have hosts interested in this group
+        Notify all tree entries that MLD considers to have hosts interested in this group
         """
         with self.multicast_interface_state_lock:
             print("notify+", self.multicast_interface_state)
@@ -180,7 +149,7 @@ class GroupState(object):
 
     def notify_routing_remove(self):
         """
-        Notify all tree entries that IGMP considers to have not hosts interested in this group
+        Notify all tree entries that MLD considers to have not hosts interested in this group
         """
         with self.multicast_interface_state_lock:
             print("notify-", self.multicast_interface_state)
@@ -190,7 +159,7 @@ class GroupState(object):
     def add_multicast_routing_entry(self, kernel_entry):
         """
         A new tree is being monitored by the multicast routing protocol that has the same group
-        IGMP will store these entries in order to accelerate the notification process regarding changes in IGMP state
+        MLD will store these entries in order to accelerate the notification process regarding changes in MLD state
         """
         with self.multicast_interface_state_lock:
             self.multicast_interface_state.append(kernel_entry)
@@ -206,20 +175,19 @@ class GroupState(object):
 
     def has_members(self):
         """
-        Determine if IGMP considers to have hosts interested in receiving data packets
+        Determine if MLD considers to have hosts interested in receiving data packets
         """
-        return self.state is not NoMembersPresent
+        return self.state is not NoListenersPresent
 
     def remove(self):
         """
-        Remove this group from the IGMP process
+        Remove this group from the MLD process
         Notify all trees that this group no longer considers to be connected to hosts
-        This method will be invoked whenever an IGMP interface is removed
+        This method will be invoked whenever an MLD interface is removed
         """
         with self.multicast_interface_state_lock:
             self.clear_retransmit_timer()
             self.clear_timer()
-            self.clear_v1_host_timer()
             for interface_state in self.multicast_interface_state:
                 interface_state.notify_membership(has_members=False)
             del self.multicast_interface_state[:]

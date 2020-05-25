@@ -1,12 +1,13 @@
 import socket
 import ipaddress
 from threading import RLock
+from socket import if_indextoname
 from pyroute2 import IPDB, IPRoute
 
-from hpimdm.utils import if_indextoname
 
 def get_unicast_info(ip_dst):
     return UnicastRouting.get_unicast_info(ip_dst)
+
 
 class UnicastRouting(object):
     ipdb = None
@@ -17,36 +18,41 @@ class UnicastRouting(object):
         self._ipdb = UnicastRouting.ipdb
         self._ipdb.register_callback(UnicastRouting.unicast_changes, mode="post")
 
-
     @staticmethod
     def get_route(ip_dst: str):
         """
         Get route from the unicast routing table regarding the entry of IP ip_dst
         """
-        ip_bytes = socket.inet_aton(ip_dst)
-        ip_int = int.from_bytes(ip_bytes, byteorder='big')
+        ip_version = ipaddress.ip_address(ip_dst).version
+        if ip_version == 4:
+            family = socket.AF_INET
+            full_mask = 32
+        elif ip_version == 6:
+            family = socket.AF_INET6
+            full_mask = 128
+        else:
+            raise Exception("Unknown IP version")
         info = None
         with UnicastRouting.lock:
             ipdb = UnicastRouting.ipdb # type:IPDB
 
-            for mask_len in range(32, 0, -1):
-                ip_bytes = (ip_int & (0xFFFFFFFF << (32 - mask_len))).to_bytes(4, "big")
-                ip_dst = socket.inet_ntoa(ip_bytes) + "/" + str(mask_len)
-                print(ip_dst)
-                if ip_dst in ipdb.routes:
+            for mask_len in range(full_mask, 0, -1):
+                dst_network = str(ipaddress.ip_interface(ip_dst + "/" + str(mask_len)).network)
+
+                print(dst_network)
+                if dst_network in ipdb.routes:
                     print(info)
-                    if ipdb.routes[ip_dst]['ipdb_scope'] != 'gc':
-                        info = ipdb.routes[ip_dst]
+                    if ipdb.routes[{'dst': dst_network, 'family': family}]['ipdb_scope'] != 'gc':
+                        info = ipdb.routes[dst_network]
                     break
                 else:
                     continue
             if not info:
-                print("0.0.0.0/0")
+                print("0.0.0.0/0 or ::/0")
                 if "default" in ipdb.routes:
-                    info = ipdb.routes["default"]
+                    info = ipdb.routes[{'dst': 'default', 'family': family}]
             print(info)
             return info
-
 
     @staticmethod
     def get_unicast_info(ip_dst):
@@ -67,9 +73,12 @@ class UnicastRouting(object):
 
                 #rpf_node = ip_dst if (next_hop is None and prefsrc is not None) else next_hop
                 rpf_node = next_hop if next_hop is not None else ip_dst
-                highest_ip = ipaddress.ip_address("0.0.0.0")
+                if ipaddress.ip_address(ip_dst).version == 4:
+                    highest_ip = ipaddress.ip_address("0.0.0.0")
+                else:
+                    highest_ip = ipaddress.ip_address("::")
                 for m in multipaths:
-                    if m["gateway"] is None:
+                    if m.get("gateway", None) is None:
                         oif = m.get('oif')
                         rpf_node = ip_dst
                         break
@@ -85,9 +94,11 @@ class UnicastRouting(object):
 
         interface_name = None if oif is None else if_indextoname(int(oif))
         from hpimdm import Main
-        rpf_if = Main.kernel.vif_name_to_index_dic.get(interface_name)
+        if ipaddress.ip_address(ip_dst).version == 4:
+            rpf_if = Main.kernel.vif_name_to_index_dic.get(interface_name)
+        else:
+            rpf_if = Main.kernel_v6.vif_name_to_index_dic.get(interface_name)
         return (metric_administrative_distance, metric_cost, is_directly_connected, rpf_if)
-
 
     @staticmethod
     def unicast_changes(ipdb, msg, action):
@@ -98,6 +109,7 @@ class UnicastRouting(object):
         print("unicast change?")
         print(action)
         UnicastRouting.lock.acquire()
+        family = msg['family']
         if action == "RTM_NEWROUTE" or action == "RTM_DELROUTE":
             print(ipdb.routes)
             mask_len = msg["dst_len"]
@@ -109,8 +121,10 @@ class UnicastRouting(object):
                 if key == "RTA_DST":
                     network_address = value
                     break
-            if network_address is None:
+            if network_address is None and family == socket.AF_INET:
                 network_address = "0.0.0.0"
+            elif network_address is None and family == socket.AF_INET6:
+                network_address = "::"
             print(network_address)
             print(mask_len)
             print(network_address + "/" + str(mask_len))
@@ -118,7 +132,10 @@ class UnicastRouting(object):
             print(str(subnet))
             UnicastRouting.lock.release()
             from hpimdm import Main
-            Main.kernel.notify_unicast_changes(subnet)
+            if family == socket.AF_INET:
+                Main.kernel.notify_unicast_changes(subnet)
+            elif family == socket.AF_INET6:
+                Main.kernel_v6.notify_unicast_changes(subnet)
             '''
         elif action == "RTM_NEWADDR" or action == "RTM_DELADDR":
             print(action)
@@ -165,7 +182,7 @@ class UnicastRouting(object):
     def stop(self):
         """
         No longer monitor unicast changes....
-        Invoked whenver the protocol is stopped
+        Invoked whenever the protocol is stopped
         """
         if self._ipdb:
             self._ipdb.release()

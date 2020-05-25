@@ -3,8 +3,8 @@ from ipaddress import IPv4Address
 from hpimdm.utils import TYPE_CHECKING
 from hpimdm.igmp.igmp_globals import Membership_Query, QueryResponseInterval, LastMemberQueryCount, LastMemberQueryInterval
 
-from hpimdm.Packet.PacketIGMPHeader import PacketIGMPHeader
-from hpimdm.Packet.ReceivedPacket import ReceivedPacket
+from hpimdm.packet.PacketIGMPHeader import PacketIGMPHeader
+from hpimdm.packet.ReceivedPacket import ReceivedPacket
 from . import CheckingMembership, MembersPresent, Version1MembersPresent, NoMembersPresent
 
 if TYPE_CHECKING:
@@ -37,7 +37,7 @@ class Querier:
     @staticmethod
     def receive_query(router_state: 'RouterState', packet: ReceivedPacket):
         """
-        Interface associated with RouterState is NonQuerier and received a Query packet
+        Interface associated with RouterState is Querier and received a Query packet
         """
         router_state.router_state_logger.debug('Querier state: receive_query')
         source_ip = packet.ip_header.ip_src

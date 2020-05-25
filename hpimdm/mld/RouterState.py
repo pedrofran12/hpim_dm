@@ -1,24 +1,23 @@
-from threading import Timer
 import logging
+from threading import Timer
 
-from hpimdm.packet.PacketIGMPHeader import PacketIGMPHeader
+from hpimdm.packet.PacketMLDHeader import PacketMLDHeader
 from hpimdm.packet.ReceivedPacket import ReceivedPacket
-from hpimdm.rwlock.RWLock import RWLockWrite
 from hpimdm.utils import TYPE_CHECKING
-
-from .GroupState import GroupState
+from hpimdm.rwlock.RWLock import RWLockWrite
 from .querier.Querier import Querier
 from .nonquerier.NonQuerier import NonQuerier
-from .igmp_globals import Membership_Query, QueryResponseInterval, QueryInterval, OtherQuerierPresentInterval
+from .GroupState import GroupState
+from .mld_globals import QueryResponseInterval, QueryInterval, OtherQuerierPresentInterval, MULTICAST_LISTENER_QUERY_TYPE
 
 if TYPE_CHECKING:
-    from hpimdm.InterfaceIGMP import InterfaceIGMP
+    from hpimdm.InterfaceMLD import InterfaceMLD
 
 
 class RouterState(object):
-    ROUTER_STATE_LOGGER = logging.getLogger('hpim.igmp.RouterState')
+    ROUTER_STATE_LOGGER = logging.getLogger('hpim.mld.RouterState')
 
-    def __init__(self, interface: 'InterfaceIGMP'):
+    def __init__(self, interface: 'InterfaceMLD'):
         #logger
         logger_extra = dict()
         logger_extra['vif'] = interface.vif_index
@@ -37,7 +36,7 @@ class RouterState(object):
         self.group_state_lock = RWLockWrite()
 
         # send general query
-        packet = PacketIGMPHeader(type=Membership_Query, max_resp_time=QueryResponseInterval*10)
+        packet = PacketMLDHeader(type=MULTICAST_LISTENER_QUERY_TYPE, max_resp_delay=QueryResponseInterval*1000)
         self.interface.send(packet.bytes())
 
         # set initial general query timer
@@ -132,54 +131,43 @@ class RouterState(object):
                 self.group_state[group_ip] = group_state
             return group_state
 
-    def receive_v1_membership_report(self, packet: ReceivedPacket):
+    def receive_report(self, packet: ReceivedPacket):
         """
-        Received IGMP Version 1 Membership Report packet
+        Received MLD Report packet
         """
-        igmp_group = packet.payload.group_address
-        #if igmp_group not in self.group_state:
-        #    self.group_state[igmp_group] = GroupState(self, igmp_group)
-
-        #self.group_state[igmp_group].receive_v1_membership_report()
-        self.get_group_state(igmp_group).receive_v1_membership_report()
-
-    def receive_v2_membership_report(self, packet: ReceivedPacket):
-        """
-        Received IGMP Membership Report packet
-        """
-        igmp_group = packet.payload.group_address
+        mld_group = packet.payload.group_address
         #if igmp_group not in self.group_state:
         #    self.group_state[igmp_group] = GroupState(self, igmp_group)
 
         #self.group_state[igmp_group].receive_v2_membership_report()
-        self.get_group_state(igmp_group).receive_v2_membership_report()
+        self.get_group_state(mld_group).receive_report()
 
-    def receive_leave_group(self, packet: ReceivedPacket):
+    def receive_done(self, packet: ReceivedPacket):
         """
-        Received IGMP Leave packet
+        Received MLD Done packet
         """
-        igmp_group = packet.payload.group_address
+        mld_group = packet.payload.group_address
         #if igmp_group in self.group_state:
         #    self.group_state[igmp_group].receive_leave_group()
-        self.get_group_state(igmp_group).receive_leave_group()
+        self.get_group_state(mld_group).receive_done()
 
     def receive_query(self, packet: ReceivedPacket):
         """
-        Received IGMP Query packet
+        Received MLD Query packet
         """
         self.interface_state.receive_query(self, packet)
-        igmp_group = packet.payload.group_address
+        mld_group = packet.payload.group_address
 
         # process group specific query
-        if igmp_group != "0.0.0.0" and igmp_group in self.group_state:
+        if mld_group != "::" and mld_group in self.group_state:
         #if igmp_group != "0.0.0.0":
-            max_response_time = packet.payload.max_resp_time
+            max_response_time = packet.payload.max_resp_delay
             #self.group_state[igmp_group].receive_group_specific_query(max_response_time)
-            self.get_group_state(igmp_group).receive_group_specific_query(max_response_time)
+            self.get_group_state(mld_group).receive_group_specific_query(max_response_time)
 
     def remove(self):
         """
-        Remove this IGMP interface
+        Remove this MLD interface
         Clear all state
         """
         for group in self.group_state.values():

@@ -1,11 +1,11 @@
 import struct
 import socket
 
-from .PacketProtocolHelloOptions import PacketNewProtocolHelloOptions, PacketProtocolHelloOptions
+from .PacketHPIMHelloOptions import PacketHPIMHelloOptions, PacketHPIMHelloOptionsJson
 ###########################################################################################################
 # JSON FORMAT
 ###########################################################################################################
-class PacketProtocolHelloSyncEntry():
+class PacketHPIMSyncEntryJson():
     def __init__(self, source, group, metric_preference, metric):
         self.source = source
         self.group = group
@@ -34,10 +34,10 @@ class PacketProtocolHelloSyncEntry():
         group = data["GROUP"]
         metric = data["METRIC"]
         metric_preference = data["METRIC_PREFERENCE"]
-        return PacketProtocolHelloSyncEntry(source, group, metric_preference, metric)
+        return PacketHPIMSyncEntryJson(source, group, metric_preference, metric)
 
 
-class PacketProtocolHelloSync():
+class PacketHPIMSyncJson():
     PIM_TYPE = "SYNC"
 
     def __init__(self, my_snapshot_sn, neighbor_snapshot_sn, sync_sn, upstream_trees=[],
@@ -51,7 +51,7 @@ class PacketProtocolHelloSync():
         self.more_flag = more_flag
         self.options = {}
 
-    def add_hello_option(self, option: 'PacketNewProtocolHelloOptions'):
+    def add_hello_option(self, option: 'PacketHPIMHelloOptions'):
         self.options[option.type] = option
 
     def get_hello_options(self):
@@ -86,7 +86,7 @@ class PacketProtocolHelloSync():
         """
         trees = []
         for entry in data["TREES"]:
-            trees.append(PacketProtocolHelloSyncEntry.parse_bytes(entry))
+            trees.append(PacketHPIMSyncEntryJson.parse_bytes(entry))
 
         sync_sn = data["SYNC_SN"]
         my_snapshot_sn = data["MY_SNAPSHOT_SN"]
@@ -95,10 +95,10 @@ class PacketProtocolHelloSync():
         master_flag = data["MASTER_FLAG"]
         more_flag = data["MORE_FLAG"]
         hello_options = data["HELLO_OPTIONS"]
-        sync_msg = PacketProtocolHelloSync(my_snapshot_sn, neighbor_snapshot_sn, sync_sn, trees, master_flag,
-                                           more_flag, neighbor_boot_time)
+        sync_msg = PacketHPIMSyncJson(my_snapshot_sn, neighbor_snapshot_sn, sync_sn, trees, master_flag,
+                                      more_flag, neighbor_boot_time)
         for (key, value) in hello_options.items():
-            option = PacketProtocolHelloOptions.parse_bytes((key, value))
+            option = PacketHPIMHelloOptionsJson.parse_bytes((key, value))
             sync_msg.add_hello_option(option)
 
         return sync_msg
@@ -120,18 +120,18 @@ class PacketProtocolHelloSync():
 |                            Metric                             |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 '''
-class PacketNewProtocolSyncEntry():
+class PacketHPIMSyncEntry:
     PIM_HDR_SYNC_ENTRY = "! 4s 4s L L"
     PIM_HDR_SYNC_ENTRY_LEN = struct.calcsize(PIM_HDR_SYNC_ENTRY)
-
+    FAMILY = socket.AF_INET
 
     def __init__(self, source, group, metric_preference, metric):
         if type(source) not in (str, bytes) or type(group) not in (str, bytes):
             raise Exception
         if type(source) is bytes:
-            source = socket.inet_ntoa(source)
+            source = socket.inet_ntop(self.FAMILY, source)
         if type(group) is bytes:
-            group = socket.inet_ntoa(group)
+            group = socket.inet_ntop(self.FAMILY, group)
 
         self.source = source
         self.group = group
@@ -139,26 +139,34 @@ class PacketNewProtocolSyncEntry():
         self.metric_preference = metric_preference
 
     def __len__(self):
-        return PacketNewProtocolSyncEntry.PIM_HDR_SYNC_ENTRY_LEN
+        return self.PIM_HDR_SYNC_ENTRY_LEN
 
     def bytes(self):
         """
         Obtain entry of Protocol Sync in a format to be transmitted (binary)
         """
-        msg = struct.pack(PacketNewProtocolSyncEntry.PIM_HDR_SYNC_ENTRY, socket.inet_aton(self.source),
-                          socket.inet_aton(self.group), self.metric_preference, self.metric)
+        msg = struct.pack(self.PIM_HDR_SYNC_ENTRY, socket.inet_pton(self.FAMILY, self.source),
+                          socket.inet_pton(self.FAMILY, self.group), self.metric_preference, self.metric)
         return msg
 
-    @staticmethod
-    def parse_bytes(data: bytes):
+    @classmethod
+    def parse_bytes(cls, data: bytes):
         """
         Parse received entry of Protocol Sync Packet from binary format
         and convert it into ProtocolSyncEntry object and PacketProtocolSyncEntries
         """
-        (source, group, metric_preference, metric) = struct.unpack(
-            PacketNewProtocolSyncEntry.PIM_HDR_SYNC_ENTRY,
-            data[:PacketNewProtocolSyncEntry.PIM_HDR_SYNC_ENTRY_LEN])
-        return PacketNewProtocolSyncEntry(source, group, metric_preference, metric)
+        (source, group, metric_preference, metric) = struct.unpack(cls.PIM_HDR_SYNC_ENTRY,
+                                                                   data[:cls.PIM_HDR_SYNC_ENTRY_LEN])
+        return cls(source, group, metric_preference, metric)
+
+
+class PacketHPIMSyncEntry_v6(PacketHPIMSyncEntry):
+    PIM_HDR_SYNC_ENTRY = "! 16s 16s L L"
+    PIM_HDR_SYNC_ENTRY_LEN = struct.calcsize(PIM_HDR_SYNC_ENTRY)
+    FAMILY = socket.AF_INET6
+
+    def __init__(self, source, group, metric_preference, metric):
+        super().__init__(source, group, metric_preference, metric)
 
 
 '''
@@ -176,7 +184,7 @@ class PacketNewProtocolSyncEntry():
 |     Trees (equivalent to multiple IamUpstream messages)       |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 '''
-class PacketNewProtocolSync:
+class PacketHPIMSync:
     PIM_TYPE = 1
 
     PIM_HDR_INSTALL_WITHOUT_TREES = "! L L L L"
@@ -196,7 +204,7 @@ class PacketNewProtocolSync:
     def add_tree(self, t):
         self.upstream_trees.append(t)
 
-    def add_hello_option(self, option: 'PacketNewProtocolHelloOptions'):
+    def add_hello_option(self, option: 'PacketHPIMHelloOptions'):
         self.options[option.TYPE] = option
 
     def get_hello_options(self):
@@ -208,7 +216,7 @@ class PacketNewProtocolSync:
         """
         flags_and_sync_sn = (self.master_flag << 31) | (self.more_flag << 30) | self.sync_sequence_number
 
-        msg = struct.pack(PacketNewProtocolSync.PIM_HDR_INSTALL_WITHOUT_TREES, self.my_snapshot_sn,
+        msg = struct.pack(self.PIM_HDR_INSTALL_WITHOUT_TREES, self.my_snapshot_sn,
                           self.neighbor_snapshot_sn, self.neighbor_boot_time, flags_and_sync_sn)
         if self.more_flag:
             for t in self.upstream_trees:
@@ -222,31 +230,46 @@ class PacketNewProtocolSync:
         return len(self.bytes())
 
     @staticmethod
-    def parse_bytes(data: bytes):
+    def _get_entry_object():
+        return PacketHPIMSyncEntry
+
+    @classmethod
+    def parse_bytes(cls, data: bytes):
         """
         Parse received Protocol Sync Packet and all its entries from binary format
         and convert it into ProtocolSync object and PacketProtocolSyncEntries
         """
         (my_snapshot_sn, neighbor_snapshot_sn, neighbor_boot_time, flags_and_sync_sn) = \
-            struct.unpack(PacketNewProtocolSync.PIM_HDR_INSTALL_WITHOUT_TREES,
-                          data[:PacketNewProtocolSync.PIM_HDR_INSTALL_WITHOUT_TREES_LEN])
+            struct.unpack(cls.PIM_HDR_INSTALL_WITHOUT_TREES,
+                          data[:cls.PIM_HDR_INSTALL_WITHOUT_TREES_LEN])
 
         sync_sn = flags_and_sync_sn & 0x3FFFFFFF
         master_flag = flags_and_sync_sn >> 31
         more_flag = (flags_and_sync_sn & 0x4FFFFFFF) >> 30
-        data = data[PacketNewProtocolSync.PIM_HDR_INSTALL_WITHOUT_TREES_LEN:]
-        sync_msg = PacketNewProtocolSync(my_snapshot_sn, neighbor_snapshot_sn, sync_sn, [], master_flag=master_flag,
-                                         more_flag=more_flag, neighbor_boot_time=neighbor_boot_time)
+        data = data[cls.PIM_HDR_INSTALL_WITHOUT_TREES_LEN:]
+        sync_msg = cls(my_snapshot_sn, neighbor_snapshot_sn, sync_sn, [], master_flag=master_flag,
+                       more_flag=more_flag, neighbor_boot_time=neighbor_boot_time)
         if more_flag:
             while data != b'':
-                tree_msg = PacketNewProtocolSyncEntry.parse_bytes(data)
+                tree_msg = cls._get_entry_object().parse_bytes(data)
 
                 sync_msg.add_tree(tree_msg)
                 data = data[len(tree_msg):]
         else:
             while data != b'':
-                option = PacketNewProtocolHelloOptions.parse_bytes(data)
+                option = PacketHPIMHelloOptions.parse_bytes(data)
                 option_length = len(option)
                 data = data[option_length:]
                 sync_msg.add_hello_option(option)
         return sync_msg
+
+
+class PacketHPIMSync_v6(PacketHPIMSync):
+    def __init__(self, my_snapshot_sn, neighbor_snapshot_sn, sync_sn, upstream_trees,
+                 master_flag, more_flag, neighbor_boot_time):
+        super().__init__(my_snapshot_sn, neighbor_snapshot_sn, sync_sn, upstream_trees,
+                         master_flag, more_flag, neighbor_boot_time)
+
+    @staticmethod
+    def _get_entry_object():
+        return PacketHPIMSyncEntry_v6

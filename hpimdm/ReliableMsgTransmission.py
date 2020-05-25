@@ -1,18 +1,5 @@
 from threading import Timer, RLock
-from hpimdm.tree.protocol_globals import MSG_FORMAT, MESSAGE_RETRANSMISSION_TIME, ACK_FAILURE_THRESHOLD
-from hpimdm.Packet.Packet import Packet
-if MSG_FORMAT == "BINARY":
-    from hpimdm.Packet.PacketProtocolHeader import PacketNewProtocolHeader as PacketProtocolHeader
-    from hpimdm.Packet.PacketProtocolSetTree import PacketNewProtocolUpstream as PacketProtocolUpstream
-    from hpimdm.Packet.PacketProtocolRemoveTree import PacketNewProtocolNoLongerUpstream as PacketProtocolNoLongerUpstream
-    from hpimdm.Packet.PacketProtocolInterest import PacketNewProtocolInterest as PacketProtocolInterest
-    from hpimdm.Packet.PacketProtocolInterest import PacketNewProtocolNoInterest as PacketProtocolNoInterest
-else:
-    from hpimdm.Packet.PacketProtocolHeader import PacketProtocolHeader
-    from hpimdm.Packet.PacketProtocolSetTree import PacketProtocolUpstream
-    from hpimdm.Packet.PacketProtocolRemoveTree import PacketProtocolNoLongerUpstream
-    from hpimdm.Packet.PacketProtocolInterest import PacketProtocolInterest
-    from hpimdm.Packet.PacketProtocolInterest import PacketProtocolNoInterest
+from hpimdm.tree.hpim_globals import MESSAGE_RETRANSMISSION_TIME, ACK_FAILURE_THRESHOLD
 
 
 class ReliableMessageTransmission(object):
@@ -37,8 +24,10 @@ class ReliableMessageTransmission(object):
             metric_preference = rpc.metric_preference
             metric = rpc.route_metric
 
-            ph = PacketProtocolUpstream(source, group, metric_preference, metric, sn)
-            self._msg_multicast = Packet(payload=PacketProtocolHeader(ph, boot_time=bt))
+            self._msg_multicast = self._interface.create_i_am_upstream_msg(my_boot_time=bt, sn=sn,
+                                                                           source=source, group=group,
+                                                                           metric_preference=metric_preference,
+                                                                           metric=metric)
 
             self.set_retransmission_timer()
             self._interface.send(self._msg_multicast)
@@ -52,8 +41,8 @@ class ReliableMessageTransmission(object):
 
             (bt, sn) = self._interface.get_sequence_number()
 
-            ph = PacketProtocolNoLongerUpstream(source, group, sn)
-            self._msg_multicast = Packet(payload=PacketProtocolHeader(ph, boot_time=bt))
+            self._msg_multicast = self._interface.create_i_am_no_longer_upstream_msg(my_boot_time=bt, sn=sn,
+                                                                                     source=source, group=group)
 
             self.set_retransmission_timer()
             self._interface.send(self._msg_multicast)
@@ -67,11 +56,11 @@ class ReliableMessageTransmission(object):
 
             (bt, sn) = self._interface.get_sequence_number()
 
-            ph = PacketProtocolInterest(source, group, sn)
-            self._msg_unicast[dst] = Packet(payload=PacketProtocolHeader(ph, boot_time=bt))
+            packet = self._interface.create_interest_msg(my_boot_time=bt, sn=sn, source=source, group=group)
+            self._msg_unicast[dst] = packet
 
             self.set_retransmission_timer()
-            self._interface.send(self._msg_unicast[dst], dst)
+            self._interface.send(packet, dst)
 
             # msg multicast doesnt require to be reliably protected to dst (because unicast msgs can only be transmitted
             # in concurrency with IamNoLongerUpstream - interest msg implies that neighbor is not Upstream... so dont
@@ -88,11 +77,11 @@ class ReliableMessageTransmission(object):
 
             (bt, sn) = self._interface.get_sequence_number()
 
-            ph = PacketProtocolNoInterest(source, group, sn)
-            self._msg_unicast[dst] = Packet(payload=PacketProtocolHeader(ph, boot_time=bt))
+            packet = self._interface.create_no_interest_msg(my_boot_time=bt, sn=sn, source=source, group=group)
+            self._msg_unicast[dst] = packet
 
             self.set_retransmission_timer()
-            self._interface.send(self._msg_unicast[dst], dst)
+            self._interface.send(packet, dst)
 
             # msg multicast doesnt require to be reliably protected to dst (because unicast msgs can only be transmitted
             # in concurrency with IamNoLongerUpstream - interest msg implies that neighbor is not Upstream... so dont
