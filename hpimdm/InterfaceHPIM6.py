@@ -12,7 +12,7 @@ from .packet.Packet import Packet
 from .Interface import Interface
 from .InterfaceHPIM import InterfaceHPIM
 from .packet.ReceivedPacket import ReceivedPacket_v6
-from hpimdm.tree.protocol_globals import MSG_FORMAT
+from hpimdm.tree.hpim_globals import MSG_FORMAT
 if MSG_FORMAT == "BINARY":
     from hpimdm.packet.PacketHPIMHeader import PacketHPIMHeader_v6
     from hpimdm.packet.PacketHPIMIamUpstream import PacketHPIMUpstream_v6

@@ -37,7 +37,7 @@ class Querier:
     @staticmethod
     def receive_query(router_state: 'RouterState', packet: ReceivedPacket):
         """
-        Interface associated with RouterState is NonQuerier and received a Query packet
+        Interface associated with RouterState is Querier and received a Query packet
         """
         router_state.router_state_logger.debug('Querier state: receive_query')
         source_ip = packet.ip_header.ip_src

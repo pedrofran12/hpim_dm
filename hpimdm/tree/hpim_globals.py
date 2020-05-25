@@ -3,16 +3,21 @@
 INITIAL_FLOOD_ENABLED = True
 INITIAL_FLOOD_TIME = 15
 
-MSG_FORMAT = "BINARY"  # other msg format is JSON
+# Define control packets format. Two formats are available: JSON and BINARY
+MSG_FORMAT = "BINARY"
+
+# Periodicity of Hello messages
+HELLO_PERIOD = 10
 
 # Originator will stop considering the tree Active after not hearing data packets
 # from the source after SOURCE_LIFETIME SECONDS
 SOURCE_LIFETIME = 210
 
 # Periodicity for message retransmission
-MESSAGE_RETRANSMISSION_TIME = 10
+MESSAGE_RETRANSMISSION_TIME = 3
 
-
+# Value to be transmitted on a Hello message after an interface is explicitly removed from the protocol.
+# DONT CHANGE THIS VALUE!
 HELLO_HOLD_TIME_TIMEOUT = 0
 
 # Control fragmentation of Sync messages

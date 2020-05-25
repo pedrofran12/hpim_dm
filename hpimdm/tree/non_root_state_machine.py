@@ -6,7 +6,7 @@ if TYPE_CHECKING:
 
 class SFMRNonRootState:
     @staticmethod
-    def interfaces_roles_dont_change_and_tree_transitions_to_active_state(interface: 'TreeInterfaceNonRoot') -> None:
+    def interfaces_roles_dont_change_and_tree_transitions_to_active_state(interface: 'TreeInterfaceNonRoot'):
         """
         Tree transitions to Active state AND
         interface not directly connected to the source AND
@@ -16,7 +16,7 @@ class SFMRNonRootState:
         interface.send_i_am_upstream()
 
     @staticmethod
-    def interfaces_roles_change_and_tree_remains_or_transitions_to_active_state(interface: 'TreeInterfaceNonRoot') -> None:
+    def interfaces_roles_change_and_tree_remains_or_transitions_to_active_state(interface: 'TreeInterfaceNonRoot'):
         """
         Tree remains or changes to Active state AND
         interface not directly connected to the source AND
@@ -85,7 +85,7 @@ class SFMRNonRootState:
         interface.send_no_interest()
 
     @staticmethod
-    def tree_remains_active_and_my_rpc_changes(interface: 'TreeInterfaceNonRoot') -> None:
+    def tree_remains_active_and_my_rpc_changes(interface: 'TreeInterfaceNonRoot'):
         """
         Tree is Active AND
         interface not directly connected to the source AND

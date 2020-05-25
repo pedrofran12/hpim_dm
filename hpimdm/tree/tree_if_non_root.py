@@ -2,7 +2,7 @@ import logging
 import _thread
 from threading import Timer
 
-from . import protocol_globals
+from . import hpim_globals
 from .metric import AssertMetric, Metric
 from .tree_interface import TreeInterface
 from .non_root_state_machine import SFMRNonRootState
@@ -29,7 +29,7 @@ class TreeInterfaceNonRoot(TreeInterface):
         self.downstream_logger.debug('Downstream interest state transitions to ' + str(self._downstream_node_interest_state))
 
         # Assert Winner State
-        self._hold_forwarding_state_timer = Timer(protocol_globals.AL_HOLD_FORWARDING_STATE_TIME,
+        self._hold_forwarding_state_timer = Timer(hpim_globals.AL_HOLD_FORWARDING_STATE_TIME,
                                                   self.hold_forwarding_state_timeout)
         self._assert_state = AssertState.Winner
         self.assert_logger.debug('Assert state transitions to ' + str(self._assert_state))
@@ -196,8 +196,8 @@ class TreeInterfaceNonRoot(TreeInterface):
         """
         self.clear_hold_forwarding_state_timer()
 
-        if protocol_globals.AL_HOLD_FORWARDING_STATE_ENABLED:
-            self._hold_forwarding_state_timer = Timer(protocol_globals.AL_HOLD_FORWARDING_STATE_TIME,
+        if hpim_globals.AL_HOLD_FORWARDING_STATE_ENABLED:
+            self._hold_forwarding_state_timer = Timer(hpim_globals.AL_HOLD_FORWARDING_STATE_TIME,
                                                       self.hold_forwarding_state_timeout)
             self._hold_forwarding_state_timer.start()
 

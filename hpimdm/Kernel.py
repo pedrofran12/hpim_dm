@@ -7,7 +7,7 @@ from socket import if_nametoindex
 from abc import ABCMeta, abstractmethod
 
 from hpimdm import Main
-from hpimdm.tree import protocol_globals
+from hpimdm.tree import hpim_globals
 from hpimdm.rwlock.RWLock import RWLockWrite
 from hpimdm import UnicastRouting
 
@@ -485,7 +485,7 @@ class Kernel4(KernelInterface):
         outbound_interfaces[inbound_interface_index] = 0
 
         # outbound_interfaces_and_other_parameters = list(kernel_entry.outbound_interfaces) + [0]*4
-        outbound_interfaces_and_other_parameters = outbound_interfaces + [0] * 3 + [protocol_globals.INITIAL_FLOOD_TIME]
+        outbound_interfaces_and_other_parameters = outbound_interfaces + [0] * 3 + [hpim_globals.INITIAL_FLOOD_TIME]
 
         # outbound_interfaces, 0, 0, 0, 0 <- only works with python>=3.5
         # struct_mfcctl = struct.pack("4s 4s H " + "B"*Kernel.MAXVIFS + " IIIi", source_ip, group_ip, inbound_interface_index, *outbound_interfaces, 0, 0, 0, 0)
@@ -593,13 +593,13 @@ class Kernel4(KernelInterface):
             if ip_src in self.routing and ip_dst in self.routing[ip_src]:
                 self.routing[ip_src][ip_dst].recv_data_msg(iif)
             elif is_directly_connected:
-                if protocol_globals.INITIAL_FLOOD_ENABLED:
+                if hpim_globals.INITIAL_FLOOD_ENABLED:
                     # flood
                     self.set_flood_multicast_route(ip_src, ip_dst, rpf_if)
                 if rpf_if is not None:
                     self.create_entry(ip_src, ip_dst)
                     self.routing[ip_src][ip_dst].recv_data_msg(iif)
-            elif not is_directly_connected and protocol_globals.INITIAL_FLOOD_ENABLED:
+            elif not is_directly_connected and hpim_globals.INITIAL_FLOOD_ENABLED:
                 # flood
                 self.set_flood_multicast_route(ip_src, ip_dst, rpf_if)
 
@@ -879,13 +879,13 @@ class Kernel6(KernelInterface):
             if ip_src in self.routing and ip_dst in self.routing[ip_src]:
                 self.routing[ip_src][ip_dst].recv_data_msg(iif)
             elif is_directly_connected:
-                if protocol_globals.INITIAL_FLOOD_ENABLED:
+                if hpim_globals.INITIAL_FLOOD_ENABLED:
                     # flood
                     self.set_flood_multicast_route(ip_src, ip_dst, rpf_if)
                 if rpf_if is not None:
                     self.create_entry(ip_src, ip_dst)
                     self.routing[ip_src][ip_dst].recv_data_msg(iif)
-            elif not is_directly_connected and protocol_globals.INITIAL_FLOOD_ENABLED:
+            elif not is_directly_connected and hpim_globals.INITIAL_FLOOD_ENABLED:
                 # flood
                 self.set_flood_multicast_route(ip_src, ip_dst, rpf_if)
 

@@ -3,7 +3,7 @@ from .Packet import Packet
 from .PacketMLDHeader import PacketMLDHeader
 from .PacketIGMPHeader import PacketIGMPHeader
 from .PacketIpHeader import PacketIpv4Header, PacketIpv6Header
-from hpimdm.tree.protocol_globals import MSG_FORMAT
+from hpimdm.tree.hpim_globals import MSG_FORMAT
 from hpimdm.utils import TYPE_CHECKING
 
 if TYPE_CHECKING:

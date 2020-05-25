@@ -11,7 +11,7 @@ import netifaces
 from hpimdm import Main
 from hpimdm.Neighbor import Neighbor
 from hpimdm.Interface import Interface
-from hpimdm.tree.protocol_globals import MSG_FORMAT, HELLO_HOLD_TIME_TIMEOUT
+from hpimdm.tree.hpim_globals import MSG_FORMAT, HELLO_HOLD_TIME_TIMEOUT, HELLO_PERIOD
 from hpimdm.ReliableMsgTransmission import ReliableMessageTransmission
 
 from hpimdm.packet.Packet import Packet
@@ -45,7 +45,6 @@ class InterfaceHPIM(Interface):
 
     MAX_SEQUENCE_NUMBER = (2**32-1)#45 <- test with lower MAXIMUM_SEQUENCE_NUMBER
 
-    HELLO_PERIOD = 30
     TRIGGERED_HELLO_PERIOD = 5
 
     LOGGER = logging.getLogger('hpim.Interface')
@@ -249,7 +248,7 @@ class InterfaceHPIM(Interface):
         self.hello_timer.cancel()
 
         pim_payload = PacketHPIMHello()
-        pim_payload.add_option(PacketHPIMHelloHoldtime(holdtime=4 * self.HELLO_PERIOD))
+        pim_payload.add_option(PacketHPIMHelloHoldtime(holdtime=4 * HELLO_PERIOD))
 
         with self.neighbors_lock:
             with self.sequencer_lock:
@@ -263,7 +262,7 @@ class InterfaceHPIM(Interface):
         self.send(packet)
 
         # reschedule hello_timer
-        self.hello_timer = Timer(self.HELLO_PERIOD, self.send_hello)
+        self.hello_timer = Timer(HELLO_PERIOD, self.send_hello)
         self.hello_timer.start()
 
     def remove(self):

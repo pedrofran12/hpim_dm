@@ -1,5 +1,5 @@
 from threading import Timer, RLock
-from hpimdm.tree.protocol_globals import MESSAGE_RETRANSMISSION_TIME, ACK_FAILURE_THRESHOLD
+from hpimdm.tree.hpim_globals import MESSAGE_RETRANSMISSION_TIME, ACK_FAILURE_THRESHOLD
 
 
 class ReliableMessageTransmission(object):

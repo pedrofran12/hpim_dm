@@ -102,7 +102,6 @@ class GroupState(object):
         if self.retransmit_timer is not None:
             self.retransmit_timer.cancel()
 
-
     ###########################################
     # Get group state from specific interface state
     ###########################################

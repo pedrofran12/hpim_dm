@@ -4,7 +4,7 @@ from threading import Timer
 from threading import Thread
 
 from . import data_packets_socket
-from .protocol_globals import SOURCE_LIFETIME
+from .hpim_globals import SOURCE_LIFETIME
 from .tree_interface import TreeInterface
 
 

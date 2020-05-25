@@ -64,7 +64,7 @@ class SFMRRootState:
 
 class SFMRNewRootState:
     @staticmethod
-    def interfaces_roles_change_and_tree_remains_active(interface: 'TreeInterfaceRoot') -> None:
+    def interfaces_roles_change_and_tree_remains_active(interface: 'TreeInterfaceRoot'):
         """
         Interfaces roles change (NonRoot->Root) AND
         Tree was Active and remains Active
@@ -93,7 +93,7 @@ class SFMRNewRootState:
         interface.send_i_am_no_longer_upstream()
 
     @staticmethod
-    def interfaces_roles_change_and_tree_was_active_and_transitions_to_unsure_and_best_upstream_neighbor_not_null(interface: 'TreeInterfaceRoot') -> None:
+    def interfaces_roles_change_and_tree_was_active_and_transitions_to_unsure_and_best_upstream_neighbor_not_null(interface: 'TreeInterfaceRoot'):
         """
         Interfaces roles change (NonRoot->Root) AND
         Tree transitions from Active to Unsure state AND
@@ -104,7 +104,7 @@ class SFMRNewRootState:
         interface.send_my_interest()
 
     @staticmethod
-    def interfaces_roles_change_and_tree_remains_unsure_and_best_upstream_neighbor_not_null(interface: 'TreeInterfaceRoot') -> None:
+    def interfaces_roles_change_and_tree_remains_unsure_and_best_upstream_neighbor_not_null(interface: 'TreeInterfaceRoot'):
         """
         Interfaces roles change (NonRoot->Root) AND
         Tree was Unsure and remains Unsure AND
@@ -114,7 +114,7 @@ class SFMRNewRootState:
         interface.send_my_interest()
 
     @staticmethod
-    def interfaces_roles_dont_change_and_router_transition_to_it_or_ot(interface: 'TreeInterfaceRoot') -> None:
+    def interfaces_roles_dont_change_and_router_transition_to_it_or_ot(interface: 'TreeInterfaceRoot'):
         """
         Interfaces roles dont change (this interface remains Root) AND
         BestUpstreamNeighbor does not change AND
@@ -125,7 +125,7 @@ class SFMRNewRootState:
 
 
     @staticmethod
-    def interfaces_roles_dont_change_and_best_upstream_neighbor_reelected(interface: 'TreeInterfaceRoot') -> None:
+    def interfaces_roles_dont_change_and_best_upstream_neighbor_reelected(interface: 'TreeInterfaceRoot'):
         """
         Interfaces roles dont change (this interface remains Root) AND
         BestUpstreamNeighbor changes AND

@@ -5,9 +5,10 @@ from threading import Timer
 
 from hpimdm.utils import TYPE_CHECKING
 from hpimdm.tree.metric import AssertMetric
-from hpimdm.tree import protocol_globals
+from hpimdm.tree import hpim_globals
+from hpimdm.tree.hpim_globals import HELLO_PERIOD
 from hpimdm.packet.Packet import Packet
-if protocol_globals.MSG_FORMAT == "BINARY":
+if hpim_globals.MSG_FORMAT == "BINARY":
     from hpimdm.packet.PacketHPIMSync import PacketHPIMSync
     from hpimdm.packet.PacketHPIMHelloOptions import PacketHPIMHelloHoldtime
     from hpimdm.packet.PacketHPIMHeader import PacketHPIMHeader
@@ -19,7 +20,7 @@ else:
 if TYPE_CHECKING:
     from hpimdm.InterfaceHPIM import InterfaceHPIM
 
-DEFAULT_HELLO_HOLD_TIME_DURING_SYNC = 4 * protocol_globals.SYNC_RETRANSMISSION_TIME
+DEFAULT_HELLO_HOLD_TIME_DURING_SYNC = 4 * hpim_globals.SYNC_RETRANSMISSION_TIME
 DEFAULT_HELLO_HOLD_TIME_AFTER_SYNC = 120
 
 
@@ -77,7 +78,7 @@ class Synced(NeighborState):
             pkt_s = PacketHPIMSync(my_snapshot_sn, neighbor_snapshot_sn, sync_sn=sync_sn,
                                    master_flag=False, more_flag=False,
                                    neighbor_boot_time=neighbor.time_of_boot)
-            pkt_s.add_hello_option(PacketHPIMHelloHoldtime(holdtime=4 * neighbor.contact_interface.HELLO_PERIOD))
+            pkt_s.add_hello_option(PacketHPIMHelloHoldtime(holdtime=4 * HELLO_PERIOD))
             pkt = Packet(payload=PacketHPIMHeader(pkt_s, neighbor.my_snapshot_boot_time))
             neighbor.send(pkt)
 
@@ -110,7 +111,7 @@ class Master(NeighborState):
                                    upstream_trees=my_snapshot_mrt, master_flag=False, more_flag=my_more_bit,
                                    neighbor_boot_time=neighbor.time_of_boot)
             if not my_more_bit:
-                pkt_s.add_hello_option(PacketHPIMHelloHoldtime(holdtime=4 * neighbor.contact_interface.HELLO_PERIOD))
+                pkt_s.add_hello_option(PacketHPIMHelloHoldtime(holdtime=4 * HELLO_PERIOD))
             pkt = Packet(payload=PacketHPIMHeader(pkt_s, neighbor.my_snapshot_boot_time))
             neighbor.send(pkt)
 
@@ -139,7 +140,7 @@ class Master(NeighborState):
                                upstream_trees=my_snapshot_mrt, master_flag=False, more_flag=my_more_bit,
                                neighbor_boot_time=neighbor.time_of_boot)
         if not my_more_bit:
-            pkt_s.add_hello_option(PacketHPIMHelloHoldtime(holdtime=4 * neighbor.contact_interface.HELLO_PERIOD))
+            pkt_s.add_hello_option(PacketHPIMHelloHoldtime(holdtime=4 * HELLO_PERIOD))
 
         pkt = Packet(payload=PacketHPIMHeader(pkt_s, neighbor.my_snapshot_boot_time))
         neighbor.send(pkt)
@@ -197,7 +198,7 @@ class Slave(NeighborState):
                                        upstream_trees=my_snapshot_mrt, master_flag=True, more_flag=my_more_bit,
                                        neighbor_boot_time=neighbor.time_of_boot)
                 if not my_more_bit:
-                    pkt_s.add_hello_option(PacketHPIMHelloHoldtime(holdtime=4 * neighbor.contact_interface.HELLO_PERIOD))
+                    pkt_s.add_hello_option(PacketHPIMHelloHoldtime(holdtime=4 * HELLO_PERIOD))
                 pkt = Packet(payload=PacketHPIMHeader(pkt_s, neighbor.my_snapshot_boot_time))
                 neighbor.send(pkt)
                 neighbor.set_sync_timer()
@@ -214,7 +215,7 @@ class Slave(NeighborState):
                                upstream_trees=my_snapshot_mrt, master_flag=True, more_flag=my_more_bit,
                                neighbor_boot_time=neighbor.time_of_boot)
         if not my_more_bit:
-            pkt_s.add_hello_option(PacketHPIMHelloHoldtime(holdtime=4 * neighbor.contact_interface.HELLO_PERIOD))
+            pkt_s.add_hello_option(PacketHPIMHelloHoldtime(holdtime=4 * HELLO_PERIOD))
 
         pkt = Packet(payload=PacketHPIMHeader(pkt_s, neighbor.my_snapshot_boot_time))
         neighbor.send(pkt)
@@ -249,7 +250,7 @@ class Neighbor:
 
     def __init__(self, contact_interface: "InterfaceHPIM", ip, hello_hold_time: int, neighbor_time_of_boot: int,
                  my_interface_boot_time: int):
-        if hello_hold_time == protocol_globals.HELLO_HOLD_TIME_TIMEOUT:
+        if hello_hold_time == hpim_globals.HELLO_HOLD_TIME_TIMEOUT:
             raise Exception
         logger_info = dict(contact_interface.interface_logger.extra)
         logger_info['neighbor_ip'] = ip
@@ -296,7 +297,7 @@ class Neighbor:
         Set Sync timer... useful when the Sync process is making progress and a Sync message from the neighbor node must be received
         """
         self.clear_sync_timer()
-        self.sync_timer = Timer(protocol_globals.SYNC_RETRANSMISSION_TIME, self.sync_timeout)
+        self.sync_timer = Timer(hpim_globals.SYNC_RETRANSMISSION_TIME, self.sync_timeout)
         self.sync_timer.start()
 
     def clear_sync_timer(self):
@@ -326,7 +327,7 @@ class Neighbor:
         if self.neighbor_liveness_timer is not None:
             self.neighbor_liveness_timer.cancel()
 
-        if hello_hold_time == protocol_globals.HELLO_HOLD_TIME_TIMEOUT:
+        if hello_hold_time == hpim_globals.HELLO_HOLD_TIME_TIMEOUT:
             self.remove()
         else:
             self.neighbor_liveness_timer = Timer(hello_hold_time, self.remove)
@@ -529,7 +530,7 @@ class Neighbor:
         self.my_snapshot_boot_time = my_snapshot_bt
         self.my_snapshot_sequencer = my_snapshot_sn
         self.my_snapshot_multicast_routing_table = list(my_snapshot_mrt.values())
-        self.sync_fragmentation = protocol_globals.SYNC_FRAGMENTATION_MSG
+        self.sync_fragmentation = hpim_globals.SYNC_FRAGMENTATION_MSG
         if self.sync_fragmentation == 0:
             self.sync_fragmentation = (self.contact_interface.get_mtu() - 20 - 8 - 16) // 16
         self.contact_interface.neighbor_start_synchronization(self.ip, my_snapshot_bt, my_snapshot_sn)
@@ -549,7 +550,7 @@ class Neighbor:
             upstream_state = self.tree_metric_state.get(tree, None)
             interest_state = False
             if upstream_state is None:
-                interest_state = self.tree_interest_state.get(tree, protocol_globals.INITIAL_FLOOD_ENABLED)
+                interest_state = self.tree_interest_state.get(tree, hpim_globals.INITIAL_FLOOD_ENABLED)
             print("INTEREST NEIGHBOR ", self.ip, ":", interest_state)
             print("UPSTREAM NEIGHBOR ", self.ip, ":", upstream_state)
             return (interest_state, upstream_state)

@@ -22,12 +22,12 @@ Additionally, IGMPv2 and MLDv1 are implemented alongside with HPIM-DM to detect 
 # Requirements
 
  - Linux machine
- - Unicast routing protocol
- - Python3 (we have written all code to be compatible with at least Python v3.2)
+ - Unicast routing protocol*
+ - Python3 (we have written all code to be compatible with at least Python v3.3)
  - pip (to install all dependencies)
  - tcpdump
 
-HPIM-DM uses the Linux unicast routing table for RPF checks and also to detect loops. 
+*HPIM-DM uses the Linux unicast routing table for RPF checks and also to detect loops. 
 For this reason the Linux routing table must have consistent information. However some routing packages like most recent versions of Quagga set the metric of routes with a dummy value causing HPIM-DM to false suspect a loop and to not create multicast trees as expected.
 
 # Installation
@@ -129,7 +129,7 @@ All control messages carry a Security Identifier, which is a number that identif
    Enable security on HPIM-DM interface named INTERFACE_NAME. The SECURITY_IDENTIFIER is a number and identifies the algorithm and key of the HMAC. To check the available algorithms run -lsec.
 
    ```
-   sudo hpim-dm -aisec INTERFACE_NAME SECURITY_IDENTIFIER SECURITY_ALGORITHM SECURITY_KEY [-6]
+   sudo hpim-dm -aisec INTERFACE_NAME SECURITY_IDENTIFIER SECURITY_ALGORITHM SECURITY_KEY [-4 | -6]
    ```
 
  - #### Remove security from interface:
@@ -212,9 +212,10 @@ We have built some list commands that can be used to check the "internals" of th
    sudo hpim-dm -hfs
    ```
 
-Files tree/protocol_globals.py and igmp/igmp_globals.py store all timer values and some configurations regarding IGMPv2 and HPIM-DM. If you want to tune the protocol, you can change the values of these files. These configurations are used by all interfaces, meaning that there is no tuning per interface.
+Files tree/hpim_globals.py, igmp/igmp_globals.py and mld/mld_globals.py store all timer values and some configurations regarding HPIM-DM, IGMPv2 and MLDv1. If you want to tune the protocol, you can change the values of these files. These configurations are used by all interfaces, meaning that there is no tuning per interface.
 
 
+<!-- 
 ## Logs
 
 To see the logs run:
@@ -224,7 +225,7 @@ To see the logs run:
   ```
 
 Currently the logs are not very expressive... Better logging is planned for a future release.
-
+-->
 
 ## Help command
 In order to determine which commands and corresponding arguments are available you can call the help command:
@@ -244,11 +245,11 @@ We have created a wireshark dissector in order to interpret HPIM-DM control pack
 We have performed tests to our specification and implementation. You can check on the corresponding branches:
 
 - [promela](https://github.com/pedrofran12/hpim_dm/tree/promela) - Validation of correctness properties, through model checking, of different HPIM-DM state machines using Promela and Spin.
-- [Test_NewProtocol_BroadcastTree](https://github.com/pedrofran12/hpim_dm/tree/Test_NewProtocol_BroadcastTree) - Topology used to test our implementation regarding the creation and maintenance of the broadcast tree.
-- [Test_NewProtocol_Sync_Without_Trees](https://github.com/pedrofran12/hpim_dm/tree/Test_NewProtocol_Sync_Without_Trees) - Topology used to test the implementation of HPIM-DM neighbor discovery and synchronization without trees established on the network.
-- [Test_NewProtocol_Sync_With_Trees](https://github.com/pedrofran12/hpim_dm/tree/Test_NewProtocol_Sync_With_Trees) - Topology used to test the implementation of HPIM-DM neighbor discovery and synchronization mechanism with trees already established on the network.
-- [Test_NewProtocol_Assert](https://github.com/pedrofran12/hpim_dm/tree/Test_NewProtocol_Assert) - Topology used to test the implementation of the HPIM-DM AssertWinner election.
-- [Test_NewProtocol_Interest](https://github.com/pedrofran12/hpim_dm/tree/Test_NewProtocol_Interest) - Topology used to test HPIM-DM implementation regarding the forwarding decision of routers by having multicast interest changes.
-- [Test_NewProtocol_Loop](https://github.com/pedrofran12/hpim_dm/tree/Test_NewProtocol_Loop) - Topology used to test the avoidance of trees being maintained indefinitely in the presence of loops on HPIM-DM.
-- [Test_NewProtocol_Source_Loop](https://github.com/pedrofran12/hpim_dm/tree/Test_NewProtocol_Source_Loop) - Topology used to test the prevention of data packets being looped when a originator router has multiple interfaces directly connected to the source.
+- [Test_HPIM_BroadcastTree](https://github.com/pedrofran12/hpim_dm/tree/Test_NewProtocol_BroadcastTree) - Topology used to test our implementation regarding the creation and maintenance of the broadcast tree.
+- [Test_HPIM_Sync_Without_Trees](https://github.com/pedrofran12/hpim_dm/tree/Test_NewProtocol_Sync_Without_Trees) - Topology used to test the implementation of HPIM-DM neighbor discovery and synchronization without trees established on the network.
+- [Test_HPIM_Sync_With_Trees](https://github.com/pedrofran12/hpim_dm/tree/Test_NewProtocol_Sync_With_Trees) - Topology used to test the implementation of HPIM-DM neighbor discovery and synchronization mechanism with trees already established on the network.
+- [Test_HPIM_Assert](https://github.com/pedrofran12/hpim_dm/tree/Test_NewProtocol_Assert) - Topology used to test the implementation of the HPIM-DM AssertWinner election.
+- [Test_HPIM_Interest](https://github.com/pedrofran12/hpim_dm/tree/Test_NewProtocol_Interest) - Topology used to test HPIM-DM implementation regarding the forwarding decision of routers by having multicast interest changes.
+- [Test_HPIM_Loop](https://github.com/pedrofran12/hpim_dm/tree/Test_NewProtocol_Loop) - Topology used to test the avoidance of trees being maintained indefinitely in the presence of loops on HPIM-DM.
+- [Test_HPIM_Source_Loop](https://github.com/pedrofran12/hpim_dm/tree/Test_NewProtocol_Source_Loop) - Topology used to test the prevention of data packets being looped when a originator router has multiple interfaces directly connected to the source.
 - [Test_IGMP](https://github.com/pedrofran12/hpim_dm/tree/Test_IGMP) - Topology used to test our IGMPv2 implementation.

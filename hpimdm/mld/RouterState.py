@@ -58,32 +58,53 @@ class RouterState(object):
         return self.interface_state.state_name()
 
     def set_general_query_timer(self):
+        """
+        Set general query timer
+        """
         self.clear_general_query_timer()
         general_query_timer = Timer(QueryInterval, self.general_query_timeout)
         general_query_timer.start()
         self.general_query_timer = general_query_timer
 
     def clear_general_query_timer(self):
+        """
+        Stop general query timer
+        """
         if self.general_query_timer is not None:
             self.general_query_timer.cancel()
 
     def set_other_querier_present_timer(self):
+        """
+        Set other querier present timer
+        """
         self.clear_other_querier_present_timer()
         other_querier_present_timer = Timer(OtherQuerierPresentInterval, self.other_querier_present_timeout)
         other_querier_present_timer.start()
         self.other_querier_present_timer = other_querier_present_timer
 
     def clear_other_querier_present_timer(self):
+        """
+        Stop other querier present timer
+        """
         if self.other_querier_present_timer is not None:
             self.other_querier_present_timer.cancel()
 
     def general_query_timeout(self):
+        """
+        General Query timer has expired
+        """
         self.interface_state.general_query_timeout(self)
 
     def other_querier_present_timeout(self):
+        """
+        Other Querier Present timer has expired
+        """
         self.interface_state.other_querier_present_timeout(self)
 
     def change_interface_state(self, querier: bool):
+        """
+        Change state regarding querier state machine (Querier/NonQuerier)
+        """
         if querier:
             self.interface_state = Querier
             self.router_state_logger.debug('change querier state to -> Querier')
@@ -95,6 +116,9 @@ class RouterState(object):
     # group state methods
     ############################################
     def get_group_state(self, group_ip):
+        """
+        Get object that monitors a given group (with group_ip IP address)
+        """
         with self.group_state_lock.genRlock():
             if group_ip in self.group_state:
                 return self.group_state[group_ip]
@@ -108,6 +132,9 @@ class RouterState(object):
             return group_state
 
     def receive_report(self, packet: ReceivedPacket):
+        """
+        Received MLD Report packet
+        """
         mld_group = packet.payload.group_address
         #if igmp_group not in self.group_state:
         #    self.group_state[igmp_group] = GroupState(self, igmp_group)
@@ -116,12 +143,18 @@ class RouterState(object):
         self.get_group_state(mld_group).receive_report()
 
     def receive_done(self, packet: ReceivedPacket):
+        """
+        Received MLD Done packet
+        """
         mld_group = packet.payload.group_address
         #if igmp_group in self.group_state:
         #    self.group_state[igmp_group].receive_leave_group()
         self.get_group_state(mld_group).receive_done()
 
     def receive_query(self, packet: ReceivedPacket):
+        """
+        Received MLD Query packet
+        """
         self.interface_state.receive_query(self, packet)
         mld_group = packet.payload.group_address
 
@@ -133,5 +166,9 @@ class RouterState(object):
             self.get_group_state(mld_group).receive_group_specific_query(max_response_time)
 
     def remove(self):
+        """
+        Remove this MLD interface
+        Clear all state
+        """
         for group in self.group_state.values():
             group.remove()

@@ -7,7 +7,7 @@ import logging.handlers
 from prettytable import PrettyTable
 from hpimdm.TestLogger import RootFilter
 
-from hpimdm.tree import protocol_globals
+from hpimdm.tree import hpim_globals
 from hpimdm import UnicastRouting
 
 interfaces = {}  # interfaces with multicast routing protocol enabled
@@ -317,13 +317,13 @@ def change_initial_flood_setting():
     Change Initial Flood Setting, used to control the implicit interest of all neighbors
     (in order to flood or ignore initial packets)
     """
-    protocol_globals.INITIAL_FLOOD_ENABLED ^= True
+    hpim_globals.INITIAL_FLOOD_ENABLED ^= True
     if kernel is not None:
         kernel.recheck_all_trees_in_all_interfaces()
     if kernel_v6 is not None:
         kernel_v6.recheck_all_trees_in_all_interfaces()
 
-    return "Flood is enabled?: " + str(protocol_globals.INITIAL_FLOOD_ENABLED)
+    return "Flood is enabled?: " + str(hpim_globals.INITIAL_FLOOD_ENABLED)
 
 
 def hold_forwarding_state():
@@ -331,8 +331,8 @@ def hold_forwarding_state():
     Change Hold Forwarding State Setting, used to hold the forwarding state of an interface that was AW and that became
     AL
     """
-    protocol_globals.AL_HOLD_FORWARDING_STATE_ENABLED ^= True
-    return "Hold Forwarding State is enabled?: " + str(protocol_globals.AL_HOLD_FORWARDING_STATE_ENABLED)
+    hpim_globals.AL_HOLD_FORWARDING_STATE_ENABLED ^= True
+    return "Hold Forwarding State is enabled?: " + str(hpim_globals.AL_HOLD_FORWARDING_STATE_ENABLED)
 
 
 def stop():
