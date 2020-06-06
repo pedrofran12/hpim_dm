@@ -117,17 +117,17 @@ class KernelInterface(metaclass=ABCMeta):
     def _create_membership_interface_object(self, interface_name, index):
         raise NotImplementedError
 
-    def remove_interface(self, interface_name, igmp: bool = False, hpim: bool = False):
+    def remove_interface(self, interface_name, membership: bool = False, hpim: bool = False):
         thread = None
         with self.rwlock.genWlock():
             hpim_interface = self.hpim_interface.get(interface_name)
             membership_interface = self.membership_interface.get(interface_name)
-            if (not igmp and not hpim) or (interface_name not in self.vif_name_to_index_dic):
+            if (not membership and not hpim) or (interface_name not in self.vif_name_to_index_dic):
                 return
             if hpim and hpim_interface is not None:
                 hpim_interface = self.hpim_interface.pop(interface_name)
                 hpim_interface.remove()
-            if igmp and membership_interface is not None:
+            if membership and membership_interface is not None:
                 membership_interface = self.membership_interface.pop(interface_name)
                 membership_interface.remove()
 
@@ -152,7 +152,7 @@ class KernelInterface(metaclass=ABCMeta):
             igmp_was_enabled = interface_name in self.membership_interface
             hpim_was_enabled = interface_name in self.hpim_interface
 
-        self.remove_interface(interface_name, igmp=True, hpim=True)
+        self.remove_interface(interface_name, membership=True, hpim=True)
         if igmp_was_enabled:
             self.create_membership_interface(interface_name)
         if hpim_was_enabled:
