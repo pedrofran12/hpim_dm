@@ -339,7 +339,7 @@ def stop():
     """
     Stop process
     """
-    remove_interface("*", hpim=True, membership=True)
+    remove_interface("*", hpim=True, membership=True, ipv4=True, ipv6=True)
     if kernel is not None:
         kernel.exit()
     if kernel_v6 is not None:
