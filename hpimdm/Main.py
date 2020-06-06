@@ -50,19 +50,19 @@ def add_membership_interface(interface_name, ipv4=True, ipv6=False):
         kernel_v6.create_membership_interface(interface_name=interface_name)
 
 
-def remove_interface(interface_name, hpim=False, igmp=False, ipv4=True, ipv6=False):
+def remove_interface(interface_name, hpim=False, membership=False, ipv4=True, ipv6=False):
     """
     Remove HPIM-DM/IGMP interface
     """
     if interface_name == "*":
         for interface_name in netifaces.interfaces():
-            remove_interface(interface_name, hpim, igmp, ipv4, ipv6)
+            remove_interface(interface_name, hpim, membership, ipv4, ipv6)
         return
 
     if ipv4 and kernel is not None:
-        kernel.remove_interface(interface_name, hpim=hpim, igmp=igmp)
+        kernel.remove_interface(interface_name, hpim=hpim, membership=membership)
     if ipv6 and kernel_v6 is not None:
-        kernel_v6.remove_interface(interface_name, hpim=hpim, mld=igmp)
+        kernel_v6.remove_interface(interface_name, hpim=hpim, membership=membership)
 
 
 def list_neighbors(ipv4=False, ipv6=False):
@@ -339,7 +339,7 @@ def stop():
     """
     Stop process
     """
-    remove_interface("*", hpim=True, igmp=True)
+    remove_interface("*", hpim=True, membership=True, ipv4=True, ipv6=True)
     if kernel is not None:
         kernel.exit()
     if kernel_v6 is not None:

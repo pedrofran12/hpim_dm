@@ -9,7 +9,7 @@ import _pickle as pickle
 from hpimdm.daemon.Daemon import Daemon
 from hpimdm import Main
 
-VERSION = "1.3"
+VERSION = "1.3.1"
 
 
 def client_socket(data_to_send):
@@ -96,10 +96,10 @@ class MyDaemon(Daemon):
                     Main.remove_interface(args.remove_interface[0], hpim=True, ipv4=args.ipv4, ipv6=args.ipv6)
                     connection.shutdown(socket.SHUT_RDWR)
                 elif 'remove_interface_igmp' in args and args.remove_interface_igmp:
-                    Main.remove_interface(args.remove_interface_igmp[0], igmp=True, ipv4=True, ipv6=False)
+                    Main.remove_interface(args.remove_interface_igmp[0], membership=True, ipv4=True, ipv6=False)
                     connection.shutdown(socket.SHUT_RDWR)
                 elif 'remove_interface_mld' in args and args.remove_interface_mld:
-                    Main.remove_interface(args.remove_interface_mld[0], igmp=True, ipv4=False, ipv6=True)
+                    Main.remove_interface(args.remove_interface_mld[0], membership=True, ipv4=False, ipv6=True)
                     connection.shutdown(socket.SHUT_RDWR)
                 elif 'list_hmac_algorithms' in args and args.list_hmac_algorithms:
                     connection.sendall(pickle.dumps(Main.list_hash_algorithms()))
