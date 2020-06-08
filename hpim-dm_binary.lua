@@ -107,6 +107,7 @@ assert(ProtoExpert.new, "Wireshark does not have the ProtoExpert class, so it's 
 
 ----------------------------------------
 
+ip_version = Field.new("ip.version")
 
 ----------------------------------------
 -- creates a Proto object, but doesn't register it yet
@@ -118,7 +119,9 @@ local pf_security_id                       = ProtoField.new("Security ID", "hpim
 local pf_security_length                   = ProtoField.new("Security Length", "hpim.security_length", ftypes.UINT8)
 local pf_security_value                    = ProtoField.new("Security Value", "hpim.security_value", ftypes.BYTES)
 local pf_tree_source                       = ProtoField.new("Source", "hpim.options.tree_source", ftypes.IPv4)
+local pf_tree_source_v6                    = ProtoField.new("Source", "hpim.options.tree_source", ftypes.IPv6)
 local pf_tree_group                        = ProtoField.new("Group", "hpim.options.tree_group", ftypes.IPv4)
+local pf_tree_group_v6                     = ProtoField.new("Group", "hpim.options.tree_group", ftypes.IPv6)
 local pf_hello_holdtime                    = ProtoField.new("Holdtime", "hpim.options.hello_holdtime", ftypes.UINT16)
 local pf_assert_metric                     = ProtoField.new("Metric", "hpim.options.assert_metric", ftypes.UINT32)
 local pf_assert_metric_preference          = ProtoField.new("Metric Preference", "hpim.options.assert_metric_preference", ftypes.UINT32)
@@ -153,7 +156,8 @@ local pf_sync_sequence_number       = ProtoField.new("Sync Sequence Number", "hp
 -- in a real script I wouldn't do it this way; I'd build a table of fields programmatically
 -- and then set protocol.fields to it, so as to avoid forgetting a field
 
-protocol.fields = {pf_version, pf_type, pf_boot_time, pf_tree_source, pf_tree_group, pf_assert_metric,
+protocol.fields = {pf_version, pf_type, pf_boot_time, pf_tree_source, pf_tree_source_v6,
+      pf_tree_group, pf_tree_group_v6, pf_assert_metric,
       pf_assert_metric_preference, pf_hello_holdtime,
       pf_sequence_number, pf_my_snapshot_sequence_number,
       pf_neighbor_snapshot_sequence_number, pf_sync_sequence_number, pf_master_flag,
@@ -294,25 +298,46 @@ function protocol.dissector(tvbuf,pktinfo,root)
           pktlen_remaining = pktlen_remaining - (4 + length)
        end
     elseif msg_type == "INTEREST" or msg_type == "NO_INTEREST" or msg_type == "I_AM_NO_LONGER_UPSTREAM" then
-      queries_tree:add(pf_tree_source, tvbuf:range(pos, 4))
-      queries_tree:add(pf_tree_group, tvbuf:range(pos + 4, 4))
-      queries_tree:add(pf_sequence_number, tvbuf:range(pos + 8, 4))
-      pos = pos + 12
+      if tostring(ip_version()) == "4" then
+          queries_tree:add(pf_tree_source, tvbuf:range(pos, 4))
+          queries_tree:add(pf_tree_group, tvbuf:range(pos + 4, 4))
+          pos = pos + 8
+      elseif tostring(ip_version()) == "6" then
+          queries_tree:add(pf_tree_source_v6, tvbuf:range(pos, 16))
+          queries_tree:add(pf_tree_group_v6, tvbuf:range(pos + 16, 16))
+          pos = pos + 32
+      end
+      queries_tree:add(pf_sequence_number, tvbuf:range(pos, 4))
+      pos = pos + 4
     elseif msg_type == "ACK" then
-      queries_tree:add(pf_tree_source, tvbuf:range(pos, 4))
-      queries_tree:add(pf_tree_group, tvbuf:range(pos + 4, 4))
-      queries_tree:add(pf_neighbor_boot_time, tvbuf:range(pos + 8, 4))
-      queries_tree:add(pf_neighbor_snapshot_sequence_number, tvbuf:range(pos + 12, 4))
-      queries_tree:add(pf_my_snapshot_sequence_number, tvbuf:range(pos + 16, 4))
-      queries_tree:add(pf_sequence_number, tvbuf:range(pos + 20, 4))
-      pos = pos + 24
+      if tostring(ip_version()) == "4" then
+          queries_tree:add(pf_tree_source, tvbuf:range(pos, 4))
+          queries_tree:add(pf_tree_group, tvbuf:range(pos + 4, 4))
+          pos = pos + 8
+      elseif tostring(ip_version()) == "6" then
+          queries_tree:add(pf_tree_source_v6, tvbuf:range(pos, 16))
+          queries_tree:add(pf_tree_group_v6, tvbuf:range(pos + 16, 16))
+          pos = pos + 32
+      end
+      queries_tree:add(pf_neighbor_boot_time, tvbuf:range(pos, 4))
+      queries_tree:add(pf_neighbor_snapshot_sequence_number, tvbuf:range(pos + 4, 4))
+      queries_tree:add(pf_my_snapshot_sequence_number, tvbuf:range(pos + 8, 4))
+      queries_tree:add(pf_sequence_number, tvbuf:range(pos + 12, 4))
+      pos = pos + 16
     elseif msg_type == "I_AM_UPSTREAM" then
-      queries_tree:add(pf_tree_source, tvbuf:range(pos, 4))
-      queries_tree:add(pf_tree_group, tvbuf:range(pos + 4, 4))
-      queries_tree:add(pf_sequence_number, tvbuf:range(pos + 8, 4))
-      queries_tree:add(pf_assert_metric_preference, tvbuf:range(pos + 12, 4))
-      queries_tree:add(pf_assert_metric, tvbuf:range(pos + 16, 4))
-      pos = pos + 20
+      if tostring(ip_version()) == "4" then
+          queries_tree:add(pf_tree_source, tvbuf:range(pos, 4))
+          queries_tree:add(pf_tree_group, tvbuf:range(pos + 4, 4))
+          pos = pos + 8
+      elseif tostring(ip_version()) == "6" then
+          queries_tree:add(pf_tree_source_v6, tvbuf:range(pos, 16))
+          queries_tree:add(pf_tree_group_v6, tvbuf:range(pos + 16, 16))
+          pos = pos + 32
+      end
+      queries_tree:add(pf_sequence_number, tvbuf:range(pos, 4))
+      queries_tree:add(pf_assert_metric_preference, tvbuf:range(pos + 4, 4))
+      queries_tree:add(pf_assert_metric, tvbuf:range(pos + 8, 4))
+      pos = pos + 12
    elseif msg_type == "SYNC" then
       queries_tree:add(pf_my_snapshot_sequence_number, tvbuf:range(pos, 4))
       queries_tree:add(pf_neighbor_snapshot_sequence_number, tvbuf:range(pos + 4, 4))
@@ -325,13 +350,23 @@ function protocol.dissector(tvbuf,pktinfo,root)
       local pktlen_remaining = pktlen - pos
       if more_flag == 1 then
           while pktlen_remaining > 0 do
-                local tree_info = queries_tree:add("Tree (".. string.format("%s",tvbuf:range(pos, 4):ipv4()) .. ", " .. string.format("%s",tvbuf:range(pos + 4, 4):ipv4()) .. ")")
-                tree_info:add(pf_tree_source, tvbuf:range(pos, 4))
-                tree_info:add(pf_tree_group, tvbuf:range(pos + 4, 4))
-                tree_info:add(pf_assert_metric_preference, tvbuf:range(pos + 8, 4))
-                tree_info:add(pf_assert_metric, tvbuf:range(pos + 12, 4))
-                pos = pos + 16
-                pktlen_remaining = pktlen_remaining - 16
+                local tree_info
+                if tostring(ip_version()) == "4" then
+                    tree_info = queries_tree:add("Tree (".. string.format("%s",tvbuf:range(pos, 4):ipv4()) .. ", " .. string.format("%s",tvbuf:range(pos + 4, 4):ipv4()) .. ")")
+                    tree_info:add(pf_tree_source, tvbuf:range(pos, 4))
+                    tree_info:add(pf_tree_group, tvbuf:range(pos + 4, 4))
+                    pos = pos + 8
+                    pktlen_remaining = pktlen_remaining - 16
+                elseif tostring(ip_version()) == "6" then
+                    tree_info = queries_tree:add("Tree (".. string.format("%s",tvbuf:range(pos, 16):ipv6()) .. ", " .. string.format("%s",tvbuf:range(pos + 16, 16):ipv6()) .. ")")
+                    tree_info:add(pf_tree_source_v6, tvbuf:range(pos, 16))
+                    tree_info:add(pf_tree_group_v6, tvbuf:range(pos + 16, 16))
+                    pos = pos + 32
+                    pktlen_remaining = pktlen_remaining - 40
+                end
+                tree_info:add(pf_assert_metric_preference, tvbuf:range(pos, 4))
+                tree_info:add(pf_assert_metric, tvbuf:range(pos + 4, 4))
+                pos = pos + 8
            end
       else
           while pktlen_remaining > 0 do
