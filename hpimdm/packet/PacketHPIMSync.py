@@ -1,3 +1,4 @@
+import json
 import struct
 import socket
 
@@ -21,7 +22,6 @@ class PacketHPIMSyncEntryJson():
                "METRIC": self.metric,
                "METRIC_PREFERENCE": self.metric_preference,
               }
-
         return msg
 
     @staticmethod
@@ -35,6 +35,9 @@ class PacketHPIMSyncEntryJson():
         metric = data["METRIC"]
         metric_preference = data["METRIC_PREFERENCE"]
         return PacketHPIMSyncEntryJson(source, group, metric_preference, metric)
+
+    def __len__(self):
+        return len(json.dumps(self.bytes()).encode())
 
 
 class PacketHPIMSyncJson():

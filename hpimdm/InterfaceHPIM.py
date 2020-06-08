@@ -108,7 +108,17 @@ class InterfaceHPIM(Interface):
 
     @staticmethod
     def _get_address_family():
+        """
+        Get address family for this interface
+        """
         return socket.AF_INET
+
+    @staticmethod
+    def get_ip_header_length():
+        """"
+        Method for getting fixed IPv4 header length. Useful for doing calculations with MTU
+        """
+        return 20
 
     def get_ip(self):
         """
@@ -173,8 +183,8 @@ class InterfaceHPIM(Interface):
     def add_security_key(self, security_identifier, security_function, security_key):
         """
         Set Security information for the HMAC of control messages. Set the Security Identifier used to identify
-         the Hash algorithm of received control messages, the corresponding hash algorithm and the SecurityKey used to
-          calculate the HMAC
+        the Hash algorithm of received control messages, the corresponding hash algorithm and the SecurityKey used to
+        calculate the HMAC
         """
         self.security_id = security_identifier
         self.security_len = len(hashlib.new(security_function).digest())
@@ -344,8 +354,7 @@ class InterfaceHPIM(Interface):
         """
         Get all neighbors
         """
-        with self.neighbors_lock:
-            return self.neighbors.values()
+        return list(self.neighbors.values())
 
     def get_neighbors_ip(self):
         """
@@ -659,7 +668,6 @@ class InterfaceHPIM(Interface):
             except:
                 traceback.print_exc()
 
-
     def receive_ack(self, packet):
         """
         Received an Ack packet
@@ -682,7 +690,6 @@ class InterfaceHPIM(Interface):
                                     '; Tree: ' + str(source_group) +
                                     '; SN: ' + str(sequence_number) +
                                     ' from neighbor ' + neighbor_source_ip)
-
 
         # check neighbor existence
         with self.neighbors_lock:

@@ -5,11 +5,12 @@ import sys
 import socket
 import argparse
 import traceback
+import faulthandler
 import _pickle as pickle
 from hpimdm.daemon.Daemon import Daemon
 from hpimdm import Main
 
-VERSION = "1.3.1"
+VERSION = "1.3.2"
 
 
 def client_socket(data_to_send):
@@ -118,6 +119,9 @@ class MyDaemon(Daemon):
                 elif 'test' in args and args.test:
                     Main.test(args.test[0], args.test[1])
                     connection.shutdown(socket.SHUT_RDWR)
+                elif 'traceback' in args and args.traceback:
+                    faulthandler.dump_traceback(file=sys.stderr, all_threads=True)
+                    connection.shutdown(socket.SHUT_RDWR)
             except Exception:
                 connection.shutdown(socket.SHUT_RDWR)
                 traceback.print_exc()
@@ -186,6 +190,8 @@ def main():
                        help="Verbose (print all debug messages)")
     group.add_argument("-t", "--test", nargs=2, metavar=('ROUTER_NAME', 'SERVER_LOG_IP'),
                        help="Tester... send log information to SERVER_LOG_IP. Set the router name to ROUTER_NAME")
+    group.add_argument("-traceback", "--traceback", action="store_true", default=False,
+                       help="Dump the tracebacks of all threads into file")
     group.add_argument("--version", action='version', version='%(prog)s ' + VERSION)
     group_ipversion = parser.add_mutually_exclusive_group(required=False)
     group_ipversion.add_argument("-4", "--ipv4", action="store_true", default=False, help="Setting for IPv4")

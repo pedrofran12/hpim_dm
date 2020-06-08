@@ -532,7 +532,9 @@ class Neighbor:
         self.my_snapshot_multicast_routing_table = list(my_snapshot_mrt.values())
         self.sync_fragmentation = hpim_globals.SYNC_FRAGMENTATION_MSG
         if self.sync_fragmentation == 0:
-            self.sync_fragmentation = (self.contact_interface.get_mtu() - 20 - 8 - 16) // 16
+            sync_entry_len = len(self.contact_interface.create_sync_entry_hdr("", "", 0, 0))
+            self.sync_fragmentation = (self.contact_interface.get_mtu() - self.contact_interface.get_ip_header_length()
+                                       - 8 - self.contact_interface.security_len - 16) // sync_entry_len
         self.contact_interface.neighbor_start_synchronization(self.ip, my_snapshot_bt, my_snapshot_sn)
 
     #################################################################

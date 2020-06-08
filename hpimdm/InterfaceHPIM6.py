@@ -101,16 +101,35 @@ class InterfaceHPIM6(InterfaceHPIM):
 
     @staticmethod
     def get_kernel():
+        """
+        Get Kernel object
+        """
         return Main.kernel_v6
 
     @staticmethod
     def _get_address_family():
+        """
+        Get address family for this interface
+        """
         return socket.AF_INET6
 
+    @staticmethod
+    def get_ip_header_length():
+        """"
+        Method for getting fixed IPv6 header length. Useful for doing calculations with MTU
+        """
+        return 40
+
     def send(self, data: bytes, group_ip: str=MCAST_GRP):
+        """
+        Send a new packet destined to group_ip IP
+        """
         super().send(data=data, group_ip=group_ip)
 
     def _receive(self, raw_bytes, ancdata, src_addr):
+        """
+        Interface received a new control packet
+        """
         if raw_bytes:
             packet = ReceivedPacket_v6(raw_bytes, ancdata, src_addr, 103, self)
             self.PKT_FUNCTIONS[packet.payload.get_pim_type()](self, packet)

@@ -180,33 +180,34 @@ class ReliableMessageTransmission(object):
         Retransmission timer has expired
         """
         neighbors_not_acked = set()
-        with self._lock:
-            # recheck if all neighbors acked
-            if self._msg_multicast is not None and self.did_all_neighbors_acked():
-                self.cancel_messsage_multicast()
-            elif self._msg_multicast is not None:
-                # take note of all neighbors that have not acked the multicast msg
-                neighbors_not_acked = self.get_interface_neighbors() - self._neighbors_that_acked
+        with self._interface.neighbors_lock:
+            with self._lock:
+                # recheck if all neighbors acked
+                if self._msg_multicast is not None and self.did_all_neighbors_acked():
+                    self.cancel_messsage_multicast()
+                elif self._msg_multicast is not None:
+                    # take note of all neighbors that have not acked the multicast msg
+                    neighbors_not_acked = self.get_interface_neighbors() - self._neighbors_that_acked
 
-            # didnt received acks from every neighbor... so lets resend msg and reschedule timer
-            msg = self._msg_multicast
-            if msg is not None:
-                self._interface.send(msg)
+                # didnt received acks from every neighbor... so lets resend msg and reschedule timer
+                msg = self._msg_multicast
+                if msg is not None:
+                    self._interface.send(msg)
 
-            for (dst, msg) in self._msg_unicast.copy().items():
-                if self._interface.is_neighbor(dst):
-                    self._interface.send(msg, dst)
-                    neighbors_not_acked.add(dst)  # take note of all neighbors that have not acked unicast messages
-                else:
-                    self.cancel_message_unicast(dst)
+                for (dst, msg) in self._msg_unicast.copy().items():
+                    if self._interface.is_neighbor(dst):
+                        self._interface.send(msg, dst)
+                        neighbors_not_acked.add(dst)  # take note of all neighbors that have not acked unicast messages
+                    else:
+                        self.cancel_message_unicast(dst)
 
-            if self._msg_multicast is not None or len(self._msg_unicast) > 0:
-                self.set_retransmission_timer()
+                if self._msg_multicast is not None or len(self._msg_unicast) > 0:
+                    self.set_retransmission_timer()
 
-            # update number of failed acks per neighbor and check which ones should be considered to have failed
-            for neighbor_ip in neighbors_not_acked:
-                self._number_of_failed_acks[neighbor_ip] = self._number_of_failed_acks.get(neighbor_ip, 0) + 1
-            self.check_neighbor_failures()
+                # update number of failed acks per neighbor and check which ones should be considered to have failed
+                for neighbor_ip in neighbors_not_acked:
+                    self._number_of_failed_acks[neighbor_ip] = self._number_of_failed_acks.get(neighbor_ip, 0) + 1
+                self.check_neighbor_failures()
 
     #############################################
     # Get Sequence Number for CheckpointSN
