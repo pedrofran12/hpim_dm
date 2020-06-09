@@ -4,7 +4,7 @@ from threading import Timer
 
 from hpimdm.utils import TYPE_CHECKING
 from .wrapper import NoListenersPresent
-from .mld_globals import MulticastListenerInterval, LastListenerQueryInterval
+from .mld_globals import MULTICAST_LISTENER_INTERVAL, LAST_LISTENER_QUERY_INTERVAL
 
 if TYPE_CHECKING:
     from .RouterState import RouterState
@@ -48,13 +48,13 @@ class GroupState(object):
     ###########################################
     # Set timers
     ###########################################
-    def set_timer(self, alternative: bool=False, max_response_time: int=None):
+    def set_timer(self, alternative: bool = False, max_response_time: int = None):
         """
         Set timer
         """
         self.clear_timer()
         if not alternative:
-            time = MulticastListenerInterval
+            time = MULTICAST_LISTENER_INTERVAL
         else:
             time = self.router_state.interface_state.get_group_membership_time(max_response_time)
 
@@ -74,7 +74,7 @@ class GroupState(object):
         Set retransmit timer
         """
         self.clear_retransmit_timer()
-        retransmit_timer = Timer(LastListenerQueryInterval, self.retransmit_timeout)
+        retransmit_timer = Timer(LAST_LISTENER_QUERY_INTERVAL, self.retransmit_timeout)
         retransmit_timer.start()
         self.retransmit_timer = retransmit_timer
 

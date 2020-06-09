@@ -1,6 +1,6 @@
 from hpimdm.packet.PacketIGMPHeader import PacketIGMPHeader
 from hpimdm.utils import TYPE_CHECKING
-from hpimdm.igmp.igmp_globals import Membership_Query, LastMemberQueryInterval
+from hpimdm.igmp.igmp_globals import MEMBERSHIP_QUERY, LAST_MEMBER_QUERY_INTERVAL
 from ..wrapper import Version1MembersPresent, CheckingMembership, NoMembersPresent
 if TYPE_CHECKING:
     from ..GroupState import GroupState
@@ -63,7 +63,8 @@ def receive_leave_group(group_state: 'GroupState'):
     group_state.set_timer(alternative=True)
     group_state.set_retransmit_timer()
 
-    packet = PacketIGMPHeader(type=Membership_Query, max_resp_time=LastMemberQueryInterval*10, group_address=group_ip)
+    packet = PacketIGMPHeader(type=MEMBERSHIP_QUERY, max_resp_time=LAST_MEMBER_QUERY_INTERVAL * 10,
+                              group_address=group_ip)
     group_state.router_state.send(data=packet.bytes(), address=group_ip)
 
     group_state.set_state(CheckingMembership)

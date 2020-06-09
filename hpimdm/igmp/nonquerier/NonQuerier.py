@@ -1,6 +1,6 @@
 from ipaddress import IPv4Address
 
-from hpimdm.igmp.igmp_globals import Membership_Query, QueryResponseInterval, LastMemberQueryCount
+from hpimdm.igmp.igmp_globals import MEMBERSHIP_QUERY, QUERY_RESPONSE_INTERVAL, LAST_MEMBER_QUERY_COUNT
 from hpimdm.utils import TYPE_CHECKING
 from hpimdm.packet.ReceivedPacket import ReceivedPacket
 from hpimdm.packet.PacketIGMPHeader import PacketIGMPHeader
@@ -31,7 +31,7 @@ class NonQuerier:
         router_state.change_interface_state(querier=True)
 
         # send general query
-        packet = PacketIGMPHeader(type=Membership_Query, max_resp_time=QueryResponseInterval*10)
+        packet = PacketIGMPHeader(type=MEMBERSHIP_QUERY, max_resp_time=QUERY_RESPONSE_INTERVAL * 10)
         router_state.interface.send(packet.bytes())
 
         # set general query timer
@@ -62,7 +62,7 @@ class NonQuerier:
         """
         Get time to set timer*
         """
-        return (max_response_time/10.0) * LastMemberQueryCount
+        return (max_response_time/10.0) * LAST_MEMBER_QUERY_COUNT
 
     # State
     @staticmethod

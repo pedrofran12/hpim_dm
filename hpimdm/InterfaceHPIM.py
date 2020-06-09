@@ -223,7 +223,7 @@ class InterfaceHPIM(Interface):
         """
         Get the CheckpointSN to be transmitted in a new Hello message
         """
-        print("A ENTRAR CHECK_SN")
+        print("ENTER CHECK_SN")
         with self.neighbors_lock:
             with self.sequencer_lock:
                 with self.reliable_transmission_lock:
@@ -235,7 +235,7 @@ class InterfaceHPIM(Interface):
                         if msg_boot_time == time_of_boot and checkpoint_sn > msg_checkpoint_sn:
                             checkpoint_sn = msg_checkpoint_sn
 
-                    print("A SAIR CHECK_SN")
+                    print("EXIT CHECK_SN")
                     return (time_of_boot, checkpoint_sn)
 
     #Random interval for initial Hello message on bootup or triggered Hello message to a rebooting neighbor

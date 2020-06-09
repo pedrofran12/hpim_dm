@@ -1,6 +1,6 @@
 from hpimdm.packet.PacketIGMPHeader import PacketIGMPHeader
 from hpimdm.utils import TYPE_CHECKING
-from hpimdm.igmp.igmp_globals import Membership_Query, LastMemberQueryInterval
+from hpimdm.igmp.igmp_globals import MEMBERSHIP_QUERY, LAST_MEMBER_QUERY_INTERVAL
 from ..wrapper import NoMembersPresent, MembersPresent, Version1MembersPresent
 if TYPE_CHECKING:
     from ..GroupState import GroupState
@@ -33,7 +33,8 @@ def retransmit_timeout(group_state: 'GroupState'):
     """
     group_state.group_state_logger.debug('Querier CheckingMembership: retransmit_timeout')
     group_addr = group_state.group_ip
-    packet = PacketIGMPHeader(type=Membership_Query, max_resp_time=LastMemberQueryInterval*10, group_address=group_addr)
+    packet = PacketIGMPHeader(type=MEMBERSHIP_QUERY, max_resp_time=LAST_MEMBER_QUERY_INTERVAL * 10,
+                              group_address=group_addr)
     group_state.router_state.send(data=packet.bytes(), address=group_addr)
 
     group_state.set_retransmit_timer()

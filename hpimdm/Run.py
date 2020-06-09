@@ -7,10 +7,11 @@ import argparse
 import traceback
 import faulthandler
 import _pickle as pickle
+from hpimdm.tree import hpim_globals
 from hpimdm.daemon.Daemon import Daemon
 from hpimdm import Main
 
-VERSION = "1.3.2"
+VERSION = "1.3.3.1"
 
 
 def client_socket(data_to_send):
@@ -220,9 +221,9 @@ def main():
         sys.exit(0)
     elif args.multicast_routes:
         if args.ipv4 or not args.ipv6:
-            os.system("ip mroute show")
+            os.system("ip mroute show table " + str(hpim_globals.MULTICAST_TABLE_ID))
         elif args.ipv6:
-            os.system("ip -6 mroute show")
+            os.system("ip -6 mroute show table " + str(hpim_globals.MULTICAST_TABLE_ID))
         sys.exit(0)
     elif not daemon.is_running():
         print("HPIM-DM is not running")

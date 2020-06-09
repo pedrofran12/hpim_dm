@@ -4,7 +4,7 @@ from threading import Timer
 
 from hpimdm.utils import TYPE_CHECKING
 from .wrapper import NoMembersPresent
-from .igmp_globals import GroupMembershipInterval, LastMemberQueryInterval
+from .igmp_globals import GROUP_MEMBERSHIP_INTERVAL, LAST_MEMBER_QUERY_INTERVAL
 
 if TYPE_CHECKING:
     from .RouterState import RouterState
@@ -49,13 +49,13 @@ class GroupState(object):
     ###########################################
     # Set timers
     ###########################################
-    def set_timer(self, alternative: bool=False, max_response_time: int=None):
+    def set_timer(self, alternative: bool = False, max_response_time: int = None):
         """
         Set timer
         """
         self.clear_timer()
         if not alternative:
-            time = GroupMembershipInterval
+            time = GROUP_MEMBERSHIP_INTERVAL
         else:
             time = self.router_state.interface_state.get_group_membership_time(max_response_time)
 
@@ -75,7 +75,7 @@ class GroupState(object):
         Set v1 host timer
         """
         self.clear_v1_host_timer()
-        v1_host_timer = Timer(GroupMembershipInterval, self.group_membership_v1_timeout)
+        v1_host_timer = Timer(GROUP_MEMBERSHIP_INTERVAL, self.group_membership_v1_timeout)
         v1_host_timer.start()
         self.v1_host_timer = v1_host_timer
 
@@ -91,7 +91,7 @@ class GroupState(object):
         Set retransmit timer
         """
         self.clear_retransmit_timer()
-        retransmit_timer = Timer(LastMemberQueryInterval, self.retransmit_timeout)
+        retransmit_timer = Timer(LAST_MEMBER_QUERY_INTERVAL, self.retransmit_timeout)
         retransmit_timer.start()
         self.retransmit_timer = retransmit_timer
 

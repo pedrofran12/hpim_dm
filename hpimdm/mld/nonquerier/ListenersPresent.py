@@ -50,5 +50,3 @@ def retransmit_timeout(group_state: 'GroupState'):
     group_state.group_state_logger.debug('NonQuerier ListenersPresent: retransmit_timeout')
     # do nothing
     return
-
-

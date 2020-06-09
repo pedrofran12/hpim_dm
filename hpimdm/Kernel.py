@@ -26,8 +26,9 @@ class KernelInterface(metaclass=ABCMeta):
         # Kernel is running
         self.running = True
 
-        # KEY : interface_ip, VALUE : vif_index
+        # KEY : vif_index, VALUE : interface_name
         self.vif_index_to_name_dic = {}
+        # KEY : interface_name, VALUE : vif_index
         self.vif_name_to_index_dic = {}
 
         # KEY : source_ip, VALUE : {group_ip: KernelEntry}
@@ -36,7 +37,7 @@ class KernelInterface(metaclass=ABCMeta):
         self.socket = kernel_socket
         self.rwlock = RWLockWrite()
 
-        self.hpim_interface = {} # name: interface_protocol
+        self.hpim_interface = {}  # name: interface_protocol
         self.membership_interface = {}  # name: interface_igmp
 
         # logs
@@ -218,7 +219,7 @@ class KernelInterface(metaclass=ABCMeta):
         ip_src = source_group[0]
         ip_dst = source_group[1]
 
-        print("ENTROU RCV_UPSTREAM")
+        print("ENTER RCV_UPSTREAM")
         with self.rwlock.genWlock():
             if interface not in self.hpim_interface.values():
                 return
@@ -226,7 +227,7 @@ class KernelInterface(metaclass=ABCMeta):
             (interest_state, upstream_state) = interface.get_tree_state(source_group)
             tree_is_not_inactive = upstream_state is not None
             print("RCV INSTALL/UNINSTALL")
-            print("INTERESSE: ", interest_state)
+            print("INTEREST: ", interest_state)
 
             if tree_is_not_inactive and (ip_src not in self.routing or ip_dst not in self.routing.get(ip_src, {})):
                 self.create_entry(ip_src, ip_dst)
@@ -234,13 +235,13 @@ class KernelInterface(metaclass=ABCMeta):
                 self.routing[ip_src][ip_dst].check_interface_state(interface.vif_index, upstream_state, interest_state)
             else:
                 interface.remove_tree_state(ip_src, ip_dst)
-        print("SAIU RCV_UPSTREAM")
+        print("EXIT RCV_UPSTREAM")
 
     def recv_interest_msg(self, source_group, interface: "InterfaceHPIM"):
         ip_src = source_group[0]
         ip_dst = source_group[1]
 
-        print("ENTROU RECV_INTEREST")
+        print("ENTER RECV_INTEREST")
         with self.rwlock.genRlock():
             if interface not in self.hpim_interface.values():
                 return
@@ -251,7 +252,7 @@ class KernelInterface(metaclass=ABCMeta):
 
             (interest_state, upstream_state) = interface.get_tree_state(source_group)
             self.routing[ip_src][ip_dst].check_interest_state(interface.vif_index, interest_state)
-        print("SAIU RECV_INTEREST")
+        print("EXIT RECV_INTEREST")
 
     #############################################################
     # Create kernel entries (data structure representing a tree)
@@ -291,18 +292,18 @@ class KernelInterface(metaclass=ABCMeta):
 
     def snapshot_multicast_routing_table(self, vif_index):
         trees_to_sync = {}
-        print("ENTROU SNAPSHOT")
+        print("ENTER SNAPSHOT")
         #with self.rwlock.genWlock():
         for (ip_src, src_dict) in self.routing.items():
             for (ip_dst, kernel_entry) in self.routing[ip_src].items():
                 tree = kernel_entry.get_interface_sync_state(vif_index)
                 if tree is not None:
                     trees_to_sync[(ip_src, ip_dst)] = tree
-        print("SAIU SNAPSHOT")
+        print("EXIT SNAPSHOT")
         return trees_to_sync
 
     def recheck_all_trees(self, vif_index: int):
-        print("ENTROU RECHECK")
+        print("ENTER RECHECK")
         with self.rwlock.genWlock():
             interface_name = self.vif_index_to_name_dic.get(vif_index, None)
             interface = self.hpim_interface.get(interface_name, None)
@@ -331,15 +332,15 @@ class KernelInterface(metaclass=ABCMeta):
                     self.create_entry(tree[0], tree[1])
                 elif tree[0] in self.routing and tree[1] in self.routing[tree[0]]:
                     self.routing[tree[0]][tree[1]].check_interface_state(vif_index, upstream_state, interest_state)
-        print("SAIU RECHECK")
+        print("EXIT RECHECK")
 
     def recheck_membership_all_trees(self, vif_index: int):
-        print("ENTROU RECHECK IGMP")
+        print("ENTER RECHECK IGMP")
         with self.rwlock.genWlock():
             for src_dict in self.routing.values():
                 for entry in src_dict.values():
                     entry.check_membership_state(vif_index)
-            print("SAIU RECHECK IGMP")
+            print("EXIT RECHECK IGMP")
 
     def recheck_all_trees_in_all_interfaces(self):
         for i in list(self.vif_index_to_name_dic.keys()):
@@ -378,8 +379,14 @@ class Kernel4(KernelInterface):
     VIFF_USE_IFINDEX = 0x8  # use vifc_lcl_ifindex instead of vifc_lcl_addr to find an interface
 
     def __init__(self):
-        # KEY : interface_ip, VALUE : vif_index
         s = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_IGMP)
+
+        # MRT TABLE
+        if hpim_globals.MULTICAST_TABLE_ID != 0:
+            try:
+                s.setsockopt(socket.IPPROTO_IP, Kernel4.MRT_TABLE, hpim_globals.MULTICAST_TABLE_ID)
+            except:
+                traceback.print_exc()
 
         # MRT INIT
         s.setsockopt(socket.IPPROTO_IP, Kernel4.MRT_INIT, 1)
@@ -655,10 +662,14 @@ class Kernel6(KernelInterface):
     MIFF_REGISTER = 0x1         # /* register vif	*/
 
     def __init__(self):
-        # KEY : source_ip, VALUE : {group_ip: KernelEntry}
-        self.routing = {}
-
         s = socket.socket(socket.AF_INET6, socket.SOCK_RAW, socket.IPPROTO_ICMPV6)
+
+        # MRT TABLE
+        if hpim_globals.MULTICAST_TABLE_ID != 0:
+            try:
+                s.setsockopt(socket.IPPROTO_IPV6, Kernel6.MRT6_TABLE, hpim_globals.MULTICAST_TABLE_ID)
+            except:
+                traceback.print_exc()
 
         # MRT INIT
         s.setsockopt(socket.IPPROTO_IPV6, Kernel6.MRT6_INIT, 1)

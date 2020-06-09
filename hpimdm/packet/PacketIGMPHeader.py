@@ -1,6 +1,6 @@
 import struct
-from hpimdm.utils import checksum
 import socket
+from hpimdm.utils import checksum
 from .PacketPayload import PacketPayload
 '''
  0                   1                   2                   3
@@ -41,7 +41,7 @@ class PacketIGMPHeader(PacketPayload):
     Leave_Group = 0x17
     Version_1_Membership_Report = 0x12
 
-    def __init__(self, type: int, max_resp_time: int, group_address: str="0.0.0.0"):
+    def __init__(self, type: int, max_resp_time: int, group_address: str = "0.0.0.0"):
         # todo check type
         self.type = type
         self.max_resp_time = max_resp_time

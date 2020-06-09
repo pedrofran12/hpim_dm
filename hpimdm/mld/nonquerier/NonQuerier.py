@@ -1,6 +1,6 @@
 from ipaddress import IPv6Address
 from hpimdm.utils import TYPE_CHECKING
-from ..mld_globals import QueryResponseInterval, LastListenerQueryCount
+from ..mld_globals import QUERY_RESPONSE_INTERVAL, LAST_LISTENER_QUERY_COUNT
 from hpimdm.packet.PacketMLDHeader import PacketMLDHeader
 from hpimdm.packet.ReceivedPacket import ReceivedPacket
 from . import NoListenersPresent, ListenersPresent, CheckingListeners
@@ -30,7 +30,7 @@ class NonQuerier:
 
         # send general query
         packet = PacketMLDHeader(type=PacketMLDHeader.MULTICAST_LISTENER_QUERY_TYPE,
-                                 max_resp_delay=QueryResponseInterval*1000)
+                                 max_resp_delay=QUERY_RESPONSE_INTERVAL * 1000)
         router_state.interface.send(packet.bytes())
 
         # set general query timer
@@ -61,7 +61,7 @@ class NonQuerier:
         """
         Get time to set timer*
         """
-        return (max_response_time/1000.0) * LastListenerQueryCount
+        return (max_response_time/1000.0) * LAST_LISTENER_QUERY_COUNT
 
     # State
     @staticmethod
