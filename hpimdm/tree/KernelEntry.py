@@ -81,14 +81,14 @@ class KernelEntry:
         """
         if index not in self.interface_state or self.is_tree_inactive():
             return
-        print("ENTROU CHECK INTERFACE STATE")
+        print("ENTER CHECK INTERFACE STATE")
         self._upstream_interface_state[index] = upstream_state
 
         self.interface_state[index].change_best_upstream_neighbor_state(upstream_state)
         self.check_interest_state(index, interest_state)
 
         self.check_tree_state()
-        print("SAI CHECK INTERFACE STATE")
+        print("EXIT CHECK INTERFACE STATE")
 
     def check_interest_state(self, index, interest_state):
         """
@@ -109,12 +109,12 @@ class KernelEntry:
         Reverify IGMP/MLD state of this tree in interface with VIF index...
         This is invoked whenever interface index enables or disables IGMP/MLD
         """
-        print("ENTROU CHECK IGMP STATE")
+        print("ENTER CHECK IGMP STATE")
         if index not in self.interface_state:
             return
 
         self.interface_state[index].check_membership_state()
-        print("SAI CHECK IGMP STATE")
+        print("EXIT CHECK IGMP STATE")
 
     def get_interface_sync_state(self, vif_index):
         """
@@ -316,7 +316,7 @@ class KernelEntryNonOriginator(KernelEntry):
                     len(self.interface_state) > 0 and\
                     self._upstream_interface_state.get(self.inbound_interface_index, None) is not None and \
                     (not self._rpc.is_better_than(self._upstream_interface_state.get(self.inbound_interface_index))
-                    and self._rpc != self._upstream_interface_state.get(self.inbound_interface_index)):
+                     and self._rpc != self._upstream_interface_state.get(self.inbound_interface_index)):
                 # tree is Active
                 print("PARA ACTIVE")
                 self._tree_state.transition_to_active(self)

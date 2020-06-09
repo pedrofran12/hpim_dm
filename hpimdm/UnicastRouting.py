@@ -3,6 +3,7 @@ import ipaddress
 from threading import RLock
 from socket import if_indextoname
 from pyroute2 import IPDB, IPRoute
+from .tree import hpim_globals
 
 
 def get_unicast_info(ip_dst):
@@ -34,23 +35,25 @@ class UnicastRouting(object):
             raise Exception("Unknown IP version")
         info = None
         with UnicastRouting.lock:
-            ipdb = UnicastRouting.ipdb # type:IPDB
+            ipdb = UnicastRouting.ipdb  # type:IPDB
 
             for mask_len in range(full_mask, 0, -1):
                 dst_network = str(ipaddress.ip_interface(ip_dst + "/" + str(mask_len)).network)
 
                 print(dst_network)
-                if dst_network in ipdb.routes:
+                if dst_network in ipdb.routes.tables[hpim_globals.UNICAST_TABLE_ID]:
                     print(info)
-                    if ipdb.routes[{'dst': dst_network, 'family': family}]['ipdb_scope'] != 'gc':
-                        info = ipdb.routes[dst_network]
+                    if ipdb.routes[{'dst': dst_network, 'family': family,
+                                    'table': hpim_globals.UNICAST_TABLE_ID}]['ipdb_scope'] != 'gc':
+                        info = ipdb.routes[{'dst': dst_network, 'family': family,
+                                            'table': hpim_globals.UNICAST_TABLE_ID}]
                     break
                 else:
                     continue
             if not info:
                 print("0.0.0.0/0 or ::/0")
                 if "default" in ipdb.routes:
-                    info = ipdb.routes[{'dst': 'default', 'family': family}]
+                    info = ipdb.routes[{'dst': 'default', 'family': family, 'table': hpim_globals.UNICAST_TABLE_ID}]
             print(info)
             return info
 

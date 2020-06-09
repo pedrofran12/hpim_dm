@@ -6,7 +6,8 @@ from ctypes import create_string_buffer, addressof
 
 from hpimdm.packet.ReceivedPacket import ReceivedPacket
 from hpimdm.Interface import Interface
-from hpimdm.igmp.igmp_globals import Version_1_Membership_Report, Version_2_Membership_Report, Leave_Group, Membership_Query
+from hpimdm.igmp.igmp_globals import VERSION_1_MEMBERSHIP_REPORT, VERSION_2_MEMBERSHIP_REPORT, LEAVE_GROUP,\
+    MEMBERSHIP_QUERY
 if not hasattr(socket, 'SO_BINDTODEVICE'):
     socket.SO_BINDTODEVICE = 25
 
@@ -125,10 +126,10 @@ class InterfaceIGMP(Interface):
         return
 
     PKT_FUNCTIONS = {
-        Version_1_Membership_Report: receive_version_1_membership_report,
-        Version_2_Membership_Report: receive_version_2_membership_report,
-        Leave_Group: receive_leave_group,
-        Membership_Query: receive_membership_query,
+        VERSION_1_MEMBERSHIP_REPORT: receive_version_1_membership_report,
+        VERSION_2_MEMBERSHIP_REPORT: receive_version_2_membership_report,
+        LEAVE_GROUP: receive_leave_group,
+        MEMBERSHIP_QUERY: receive_membership_query,
     }
 
     ##################

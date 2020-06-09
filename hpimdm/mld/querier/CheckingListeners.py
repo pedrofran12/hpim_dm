@@ -1,6 +1,6 @@
 from hpimdm.packet.PacketMLDHeader import PacketMLDHeader
 from hpimdm.utils import TYPE_CHECKING
-from ..mld_globals import LastListenerQueryInterval
+from ..mld_globals import LAST_LISTENER_QUERY_INTERVAL
 from ..wrapper import ListenersPresent, NoListenersPresent
 if TYPE_CHECKING:
     from ..GroupState import GroupState
@@ -53,9 +53,7 @@ def retransmit_timeout(group_state: 'GroupState'):
     group_state.group_state_logger.debug('Querier CheckingListeners: retransmit_timeout')
     group_addr = group_state.group_ip
     packet = PacketMLDHeader(type=PacketMLDHeader.MULTICAST_LISTENER_QUERY_TYPE,
-                             max_resp_delay=LastListenerQueryInterval*1000, group_address=group_addr)
+                             max_resp_delay=LAST_LISTENER_QUERY_INTERVAL * 1000, group_address=group_addr)
     group_state.router_state.send(data=packet.bytes(), address=group_addr)
 
     group_state.set_retransmit_timer()
-
-

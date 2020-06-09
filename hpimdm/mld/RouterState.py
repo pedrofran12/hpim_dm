@@ -1,14 +1,16 @@
 import logging
 from threading import Timer
 
-from hpimdm.packet.PacketMLDHeader import PacketMLDHeader
-from hpimdm.packet.ReceivedPacket import ReceivedPacket
 from hpimdm.utils import TYPE_CHECKING
 from hpimdm.rwlock.RWLock import RWLockWrite
+
+from .GroupState import GroupState
 from .querier.Querier import Querier
 from .nonquerier.NonQuerier import NonQuerier
-from .GroupState import GroupState
-from .mld_globals import QueryResponseInterval, QueryInterval, OtherQuerierPresentInterval, MULTICAST_LISTENER_QUERY_TYPE
+from hpimdm.packet.ReceivedPacket import ReceivedPacket
+from hpimdm.packet.PacketMLDHeader import PacketMLDHeader
+from .mld_globals import QUERY_RESPONSE_INTERVAL, QUERY_INTERVAL, OTHER_QUERIER_PRESENT_INTERVAL, \
+    MULTICAST_LISTENER_QUERY_TYPE
 
 if TYPE_CHECKING:
     from hpimdm.InterfaceMLD import InterfaceMLD
@@ -36,11 +38,11 @@ class RouterState(object):
         self.group_state_lock = RWLockWrite()
 
         # send general query
-        packet = PacketMLDHeader(type=MULTICAST_LISTENER_QUERY_TYPE, max_resp_delay=QueryResponseInterval*1000)
+        packet = PacketMLDHeader(type=MULTICAST_LISTENER_QUERY_TYPE, max_resp_delay=QUERY_RESPONSE_INTERVAL * 1000)
         self.interface.send(packet.bytes())
 
         # set initial general query timer
-        timer = Timer(QueryInterval, self.general_query_timeout)
+        timer = Timer(QUERY_INTERVAL, self.general_query_timeout)
         timer.start()
         self.general_query_timer = timer
 
@@ -62,7 +64,7 @@ class RouterState(object):
         Set general query timer
         """
         self.clear_general_query_timer()
-        general_query_timer = Timer(QueryInterval, self.general_query_timeout)
+        general_query_timer = Timer(QUERY_INTERVAL, self.general_query_timeout)
         general_query_timer.start()
         self.general_query_timer = general_query_timer
 
@@ -78,7 +80,7 @@ class RouterState(object):
         Set other querier present timer
         """
         self.clear_other_querier_present_timer()
-        other_querier_present_timer = Timer(OtherQuerierPresentInterval, self.other_querier_present_timeout)
+        other_querier_present_timer = Timer(OTHER_QUERIER_PRESENT_INTERVAL, self.other_querier_present_timeout)
         other_querier_present_timer.start()
         self.other_querier_present_timer = other_querier_present_timer
 
@@ -136,10 +138,6 @@ class RouterState(object):
         Received MLD Report packet
         """
         mld_group = packet.payload.group_address
-        #if igmp_group not in self.group_state:
-        #    self.group_state[igmp_group] = GroupState(self, igmp_group)
-
-        #self.group_state[igmp_group].receive_v2_membership_report()
         self.get_group_state(mld_group).receive_report()
 
     def receive_done(self, packet: ReceivedPacket):
@@ -147,8 +145,6 @@ class RouterState(object):
         Received MLD Done packet
         """
         mld_group = packet.payload.group_address
-        #if igmp_group in self.group_state:
-        #    self.group_state[igmp_group].receive_leave_group()
         self.get_group_state(mld_group).receive_done()
 
     def receive_query(self, packet: ReceivedPacket):
@@ -160,9 +156,7 @@ class RouterState(object):
 
         # process group specific query
         if mld_group != "::" and mld_group in self.group_state:
-        #if igmp_group != "0.0.0.0":
             max_response_time = packet.payload.max_resp_delay
-            #self.group_state[igmp_group].receive_group_specific_query(max_response_time)
             self.get_group_state(mld_group).receive_group_specific_query(max_response_time)
 
     def remove(self):

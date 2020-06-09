@@ -58,7 +58,7 @@ class TreeInterfaceRoot(TreeInterface):
         while self.socket_is_enabled:
             try:
                 self.socket_pkt.recvfrom(0)
-                print("PACOTE DADOS RECEBIDO")
+                print("DATA RECEIVED")
                 self.recv_data_msg()
             except:
                 traceback.print_exc()
