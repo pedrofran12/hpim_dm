@@ -1,19 +1,27 @@
-# pim
+# HPIM-DM - Test Loop prevention on Source subnet of HPIM-DM
 
 ### Topology
 ![topology](topology.png)
 
+### Requirements
 
-### Execute test
+- Kathara (https://www.kathara.org/)
+- Docker
+- gnome-terminal
+
+
+### Execute lab test
+
 
 ```sh
 $ . script.sh
 ```
 
-### Close test
+This script file will clone hpim-dm repository to get the most updated version on the lab environment. Then will start the VMs through Kathara and change some settings on the virtual bridges that connect the VMs.
+
+### Close lab test
 
 ```sh
-$ cd emulation/
-$ lcrash
+$ kathara wipe
 ```
 
