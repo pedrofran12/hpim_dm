@@ -4,7 +4,7 @@ from abc import ABCMeta, abstractmethod
 
 class CustomFilter(logging.Filter):
     def filter(self, record):
-        return record.name in ("protocol.KernelEntry", "protocol.KernelEntry.NonRootInterface.Assert", "protocol.KernelEntry.RootInterface") and \
+        return record.name in ("hpim.KernelEntry", "hpim.KernelEntry.NonRootInterface.Assert", "hpim.KernelEntry.RootInterface") and \
                 record.routername in ["R2", "R3", "R4", "R5", "R6"]
 
 
