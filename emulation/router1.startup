@@ -1,4 +1,5 @@
 ip addr add dev eth0 10.0.0.1/24
+ip -6 addr add dev eth0 2001::1/64
 ip link set dev eth0 up
 
 
