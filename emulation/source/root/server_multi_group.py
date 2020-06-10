@@ -67,7 +67,6 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 ttl = struct.pack('b', 12)
 sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, ttl)
 
-
 interface_name = chooseInterface()
 ip_interface = netifaces.ifaddresses(interface_name)[netifaces.AF_INET][0]['addr']
 

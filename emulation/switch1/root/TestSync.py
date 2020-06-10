@@ -4,7 +4,7 @@ from abc import ABCMeta, abstractmethod
 
 class CustomFilter(logging.Filter):
     def filter(self, record):
-        return record.name in ("protocol.Interface.Neighbor", "protocol.Interface") and \
+        return record.name in ("hpim.Interface.Neighbor", "hpim.Interface") and \
                 record.routername in ["R2", "R3", "R4", "R5", "R6"]
 
 
