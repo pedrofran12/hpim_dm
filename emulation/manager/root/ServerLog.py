@@ -1,3 +1,4 @@
+import os
 import pickle
 import logging
 import logging.handlers
@@ -5,6 +6,7 @@ import socketserver
 import struct
 from TestSync import CustomFilter, Test1, Test2, Test3
 import sys
+import time
 import threading
 from queue import Queue
 
@@ -23,7 +25,10 @@ def worker():
 
 class TestHandler(logging.StreamHandler):
     currentTest = Test1()
+    currentTest.stop_everything()
+    currentTest.set_initial_settings()
     currentTest.print_test()
+    currentTest.set_router_state()
     nextTests = [Test2(), Test3()]
     main = None
 
@@ -33,6 +38,7 @@ class TestHandler(logging.StreamHandler):
             if len(TestHandler.nextTests) > 0:
                 TestHandler.currentTest = TestHandler.nextTests.pop(0)
                 TestHandler.currentTest.print_test()
+                TestHandler.currentTest.set_router_state()
             else:
                 TestHandler.currentTest = None
                 TestHandler.main.abort = True
@@ -85,7 +91,7 @@ class LogRecordSocketReceiver(socketserver.ThreadingTCPServer):
 
     def serve_until_stopped(self):
         import select
-        abort = 0
+        abort = False
         while not abort:
             rd, wr, ex = select.select([self.socket.fileno()],
                                        [], [],
@@ -97,17 +103,20 @@ class LogRecordSocketReceiver(socketserver.ThreadingTCPServer):
 
 def main():
     handler = TestHandler(sys.stdout)
-    formatter = logging.Formatter('%(name)-50s %(levelname)-8s %(tree)-35s %(vif)-2s %(interfacename)-5s %(routername)-2s %(message)s')
+    formatter = logging.Formatter('%(name)-50s %(levelname)-8s %(asctime)-20s %(tree)-35s %(vif)-2s %(interfacename)-5s %(routername)-2s %(message)s')
     handler.setFormatter(formatter)
     logging.getLogger('my_logger').addHandler(handler)
     logging.getLogger('my_logger').addFilter(CustomFilter())
 
-    t = threading.Thread(target=worker)
+    t = threading.Thread(target=worker, daemon=True)
     t.start()
 
-    tcpserver = LogRecordSocketReceiver(host='10.5.5.7')
+    tcpserver = LogRecordSocketReceiver(host='172.16.1.100')
     print('About to start TCP server...')
     tcpserver.serve_until_stopped()
+    time.sleep(10)
+    tcpserver.server_close()
+    os.system('kill -9 %d' % os.getpid())
 
 
 if __name__ == '__main__':
