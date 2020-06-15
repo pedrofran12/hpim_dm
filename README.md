@@ -24,4 +24,4 @@ This script file will clone hpim-dm repository to get the most updated version o
 ```sh
 $ kathara wipe
 ```
-	
+
