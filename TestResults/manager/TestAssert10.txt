@@ -1,0 +1,455 @@
+Test1: No info about (10.1.1.100,224.12.12.12) and data packets are flooded on the network
+Expected: R4 AssertWinner
+About to start TCP server...
+hpim.KernelEntry                                   DEBUG    2020-06-16 18:52:11,926   (10.1.1.100,224.12.12.12)                    R6     Tree transitions to Inactive
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:11,927   (10.1.1.100,224.12.12.12)           1  eth1  R6     TREE IS INACTIVE AND UPSTREAM NEIGHBOR CONNECTED TO THIS INTERFACE
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:11,929   (10.1.1.100,224.12.12.12)           0  eth0  R3     BEST UPSTREAM NEIGHBOR IS NONE AND TREE IS ACTIVE
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:11,929   (10.1.1.100,224.12.12.12)           0  eth0  R3     Assert state transitions to AssertWinner
+hpim.KernelEntry                                   DEBUG    2020-06-16 18:52:11,931   (10.1.1.100,224.12.12.12)                    R5     Tree transitions to Unsure
+hpim.KernelEntry.RootInterface                     DEBUG    2020-06-16 18:52:11,936   (10.1.1.100,224.12.12.12)           1  eth1  R3     interfaces_roles_dont_change_and_router_transition_to_it_or_ot
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:11,937   (10.1.1.100,224.12.12.12)           1  eth1  R5     TREE IS UNSURE AND UPSTREAM NEIGHBOR CONNECTED TO THIS INTERFACE
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:11,937   (10.1.1.100,224.12.12.12)           1  eth1  R5     TREE IS UNSURE AND NO UPSTREAM NEIGHBOR
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:11,938   (10.1.1.100,224.12.12.12)           1  eth1  R5     Assert state transitions to AssertWinner
+hpim.KernelEntry                                   DEBUG    2020-06-16 18:52:11,939   (10.1.1.100,224.12.12.12)                    R5     Tree transitions to Inactive
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:11,939   (10.1.1.100,224.12.12.12)           1  eth1  R5     TREE IS INACTIVE AND UPSTREAM NEIGHBOR CONNECTED TO THIS INTERFACE
+hpim.KernelEntry                                   DEBUG    2020-06-16 18:52:11,950   (10.1.1.100,224.12.12.12)                    R3     Tree transitions to Inactive
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:11,951   (10.1.1.100,224.12.12.12)           0  eth0  R3     TREE IS INACTIVE AND UPSTREAM NEIGHBOR CONNECTED TO THIS INTERFACE
+tests                                              DEBUG    2020-06-16 18:52:12,450                                                R4     ifconfig eth1 up
+tests                                              DEBUG    2020-06-16 18:52:12,459                                                R4     python3 Run.py -start
+tests                                              DEBUG    2020-06-16 18:52:12,459                                                R4     python3 Run.py -start
+tests                                              DEBUG    2020-06-16 18:52:12,459                                                R4     python3 Run.py -start
+tests                                              DEBUG    2020-06-16 18:52:12,459                                                R4     python3 Run.py -start
+tests                                              DEBUG    2020-06-16 18:52:12,459                                                R4     python3 Run.py -start
+tests                                              DEBUG    2020-06-16 18:52:12,459                                                R4     python3 Run.py -start
+tests                                              DEBUG    2020-06-16 18:52:12,459                                                R4     python3 Run.py -start
+tests                                              DEBUG    2020-06-16 18:52:12,459                                                R4     python3 Run.py -start
+tests                                              DEBUG    2020-06-16 18:52:12,459                                                R4     python3 Run.py -start
+tests                                              DEBUG    2020-06-16 18:52:12,459                                                R4     python3 Run.py -start
+tests                                              DEBUG    2020-06-16 18:52:12,560                                                R6     python3 Run.py -start
+tests                                              DEBUG    2020-06-16 18:52:12,562                                                R3     vtysh -c "configure terminal" -c "interface eth0" -c "ip ospf cost 10"
+tests                                              DEBUG    2020-06-16 18:52:12,596                                                R3     python3 Run.py -start
+tests                                              DEBUG    2020-06-16 18:52:12,596                                                R3     python3 Run.py -start
+tests                                              DEBUG    2020-06-16 18:52:12,596                                                R3     python3 Run.py -start
+tests                                              DEBUG    2020-06-16 18:52:12,596                                                R3     python3 Run.py -start
+tests                                              DEBUG    2020-06-16 18:52:12,596                                                R3     python3 Run.py -start
+tests                                              DEBUG    2020-06-16 18:52:12,596                                                R3     python3 Run.py -start
+tests                                              DEBUG    2020-06-16 18:52:12,596                                                R3     python3 Run.py -start
+tests                                              DEBUG    2020-06-16 18:52:12,596                                                R3     python3 Run.py -start
+tests                                              DEBUG    2020-06-16 18:52:12,596                                                R3     python3 Run.py -start
+tests                                              DEBUG    2020-06-16 18:52:12,596                                                R3     python3 Run.py -start
+tests                                              DEBUG    2020-06-16 18:52:12,780                                                R5     python3 Run.py -start
+tests                                              DEBUG    2020-06-16 18:52:13,001                                                R4     python3 Run.py -t R4 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,001                                                R4     python3 Run.py -t R4 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,001                                                R4     python3 Run.py -t R4 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,001                                                R4     python3 Run.py -t R4 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,001                                                R4     python3 Run.py -t R4 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,001                                                R4     python3 Run.py -t R4 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,001                                                R4     python3 Run.py -t R4 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,001                                                R4     python3 Run.py -t R4 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,001                                                R4     python3 Run.py -t R4 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,001                                                R4     python3 Run.py -t R4 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,065                                                R6     python3 Run.py -t R6 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,065                                                R6     python3 Run.py -t R6 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,065                                                R6     python3 Run.py -t R6 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,065                                                R6     python3 Run.py -t R6 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,065                                                R6     python3 Run.py -t R6 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,065                                                R6     python3 Run.py -t R6 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,065                                                R6     python3 Run.py -t R6 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,065                                                R6     python3 Run.py -t R6 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,065                                                R6     python3 Run.py -t R6 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,071                                                R2     python3 Run.py -start
+tests                                              DEBUG    2020-06-16 18:52:13,065                                                R6     python3 Run.py -t R6 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,134                                                R3     python3 Run.py -t R3 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,134                                                R3     python3 Run.py -t R3 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,134                                                R3     python3 Run.py -t R3 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,134                                                R3     python3 Run.py -t R3 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,134                                                R3     python3 Run.py -t R3 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,134                                                R3     python3 Run.py -t R3 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,134                                                R3     python3 Run.py -t R3 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,134                                                R3     python3 Run.py -t R3 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,134                                                R3     python3 Run.py -t R3 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,134                                                R3     python3 Run.py -t R3 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,458                                                R5     python3 Run.py -t R5 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,458                                                R5     python3 Run.py -t R5 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,458                                                R5     python3 Run.py -t R5 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,458                                                R5     python3 Run.py -t R5 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,458                                                R5     python3 Run.py -t R5 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,458                                                R5     python3 Run.py -t R5 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,458                                                R5     python3 Run.py -t R5 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,458                                                R5     python3 Run.py -t R5 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,458                                                R5     python3 Run.py -t R5 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,458                                                R5     python3 Run.py -t R5 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,734                                                R6     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:13,734                                                R6     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:13,734                                                R6     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:13,734                                                R6     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:13,734                                                R6     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:13,734                                                R6     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:13,734                                                R6     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:13,734                                                R6     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:13,734                                                R6     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:13,734                                                R6     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:13,857                                                R3     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:13,857                                                R3     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:13,857                                                R3     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:13,857                                                R3     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:13,857                                                R3     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:13,857                                                R3     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:13,857                                                R3     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:13,857                                                R3     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:13,857                                                R3     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:13,857                                                R3     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:13,934                                                R4     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:13,934                                                R4     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:13,934                                                R4     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:13,934                                                R4     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:13,934                                                R4     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:13,934                                                R4     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:13,934                                                R4     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:13,934                                                R4     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:13,934                                                R4     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:13,934                                                R4     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:13,978                                                R2     python3 Run.py -t R2 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,978                                                R2     python3 Run.py -t R2 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,978                                                R2     python3 Run.py -t R2 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,978                                                R2     python3 Run.py -t R2 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,978                                                R2     python3 Run.py -t R2 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,978                                                R2     python3 Run.py -t R2 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,978                                                R2     python3 Run.py -t R2 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:13,978                                                R2     python3 Run.py -t R2 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:14,141                                                R5     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:14,141                                                R5     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:14,141                                                R5     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:14,141                                                R5     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:14,141                                                R5     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:14,141                                                R5     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:14,141                                                R5     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:14,141                                                R5     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:14,141                                                R5     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:14,141                                                R5     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:14,283                                                R6     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,283                                                R6     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,283                                                R6     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,283                                                R6     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,283                                                R6     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,283                                                R6     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,283                                                R6     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,283                                                R6     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,283                                                R6     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,283                                                R6     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,315                                                R3     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,315                                                R3     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,315                                                R3     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,315                                                R3     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,315                                                R3     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,315                                                R3     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,315                                                R3     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,315                                                R3     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,315                                                R3     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,315                                                R3     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,389                                                R4     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,389                                                R4     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,389                                                R4     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,389                                                R4     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,389                                                R4     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,389                                                R4     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,389                                                R4     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,389                                                R4     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,389                                                R4     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,389                                                R4     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,490                                                R5     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,490                                                R5     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,490                                                R5     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,490                                                R5     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,490                                                R5     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,490                                                R5     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,490                                                R5     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,490                                                R5     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,490                                                R5     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,490                                                R5     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:14,693                                                R6     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:14,693                                                R6     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:14,693                                                R6     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:14,693                                                R6     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:14,693                                                R6     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:14,693                                                R6     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:14,693                                                R6     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:14,693                                                R6     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:14,693                                                R6     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:14,693                                                R6     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:14,741                                                R3     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:14,741                                                R3     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:14,741                                                R3     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:14,741                                                R3     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:14,741                                                R3     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:14,741                                                R3     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:14,741                                                R3     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:14,741                                                R3     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:14,741                                                R3     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:14,741                                                R3     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:14,903                                                R4     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:14,903                                                R4     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:14,903                                                R4     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:14,903                                                R4     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:14,903                                                R4     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:14,903                                                R4     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:14,903                                                R4     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:14,903                                                R4     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:14,903                                                R4     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:14,903                                                R4     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:13,978                                                R2     python3 Run.py -t R2 172.16.1.100
+tests                                              DEBUG    2020-06-16 18:52:15,057                                                R5     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:15,057                                                R5     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:15,057                                                R5     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:15,057                                                R5     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:15,057                                                R5     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:15,057                                                R5     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:15,057                                                R5     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:15,057                                                R5     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:15,057                                                R5     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:15,057                                                R5     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:15,314                                                R3     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,314                                                R3     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,314                                                R3     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,314                                                R3     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,314                                                R3     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,314                                                R3     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,314                                                R3     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,314                                                R3     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,314                                                R3     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,314                                                R3     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,353                                                R6     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,353                                                R6     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,353                                                R6     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,353                                                R6     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,353                                                R6     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,353                                                R6     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,353                                                R6     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,353                                                R6     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,353                                                R6     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,353                                                R6     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,630                                                R2     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:15,630                                                R2     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:15,630                                                R2     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:15,630                                                R2     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:15,630                                                R2     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:15,630                                                R2     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:15,630                                                R2     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:15,630                                                R2     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:15,630                                                R2     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:15,630                                                R2     python3 Run.py -ai eth0
+tests                                              DEBUG    2020-06-16 18:52:15,650                                                R4     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,650                                                R4     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,650                                                R4     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,650                                                R4     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,650                                                R4     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,650                                                R4     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,650                                                R4     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,650                                                R4     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,650                                                R4     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,650                                                R4     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,748                                                R5     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,748                                                R5     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,748                                                R5     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,748                                                R5     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,748                                                R5     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,748                                                R5     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,748                                                R5     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,748                                                R5     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,748                                                R5     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:15,748                                                R5     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:16,260                                                R2     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:16,260                                                R2     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:16,260                                                R2     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:16,260                                                R2     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:16,260                                                R2     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:16,260                                                R2     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:16,260                                                R2     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:16,260                                                R2     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:16,260                                                R2     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:16,260                                                R2     python3 Run.py -aiigmp eth0
+tests                                              DEBUG    2020-06-16 18:52:16,584                                                R2     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:16,584                                                R2     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:16,584                                                R2     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:16,584                                                R2     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:16,584                                                R2     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:16,584                                                R2     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:16,584                                                R2     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:16,584                                                R2     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:16,584                                                R2     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:16,584                                                R2     python3 Run.py -ai eth1
+tests                                              DEBUG    2020-06-16 18:52:16,912                                                R2     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:16,912                                                R2     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:16,912                                                R2     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:16,912                                                R2     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:16,912                                                R2     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:16,912                                                R2     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:16,912                                                R2     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:16,912                                                R2     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:16,912                                                R2     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:16,912                                                R2     python3 Run.py -aiigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:17,241                                                R2     python3 Run.py -ai eth2
+tests                                              DEBUG    2020-06-16 18:52:17,241                                                R2     python3 Run.py -ai eth2
+tests                                              DEBUG    2020-06-16 18:52:17,241                                                R2     python3 Run.py -ai eth2
+tests                                              DEBUG    2020-06-16 18:52:17,241                                                R2     python3 Run.py -ai eth2
+tests                                              DEBUG    2020-06-16 18:52:17,241                                                R2     python3 Run.py -ai eth2
+tests                                              DEBUG    2020-06-16 18:52:17,241                                                R2     python3 Run.py -ai eth2
+tests                                              DEBUG    2020-06-16 18:52:17,241                                                R2     python3 Run.py -ai eth2
+tests                                              DEBUG    2020-06-16 18:52:17,241                                                R2     python3 Run.py -ai eth2
+tests                                              DEBUG    2020-06-16 18:52:17,241                                                R2     python3 Run.py -ai eth2
+tests                                              DEBUG    2020-06-16 18:52:17,241                                                R2     python3 Run.py -ai eth2
+tests                                              DEBUG    2020-06-16 18:52:17,552                                                R2     python3 Run.py -aiigmp eth2
+tests                                              DEBUG    2020-06-16 18:52:17,552                                                R2     python3 Run.py -aiigmp eth2
+tests                                              DEBUG    2020-06-16 18:52:17,552                                                R2     python3 Run.py -aiigmp eth2
+tests                                              DEBUG    2020-06-16 18:52:17,552                                                R2     python3 Run.py -aiigmp eth2
+tests                                              DEBUG    2020-06-16 18:52:17,552                                                R2     python3 Run.py -aiigmp eth2
+tests                                              DEBUG    2020-06-16 18:52:17,552                                                R2     python3 Run.py -aiigmp eth2
+tests                                              DEBUG    2020-06-16 18:52:17,552                                                R2     python3 Run.py -aiigmp eth2
+tests                                              DEBUG    2020-06-16 18:52:17,552                                                R2     python3 Run.py -aiigmp eth2
+tests                                              DEBUG    2020-06-16 18:52:17,552                                                R2     python3 Run.py -aiigmp eth2
+tests                                              DEBUG    2020-06-16 18:52:17,552                                                R2     python3 Run.py -aiigmp eth2
+hpim.KernelEntry                                   DEBUG    2020-06-16 18:52:22,626   (10.1.1.100,224.12.12.12)                    R2     Create KernelEntry
+hpim.KernelEntry                                   DEBUG    2020-06-16 18:52:22,628   (10.1.1.100,224.12.12.12)                    R2     Tree transitions to Active
+hpim.KernelEntry                                   DEBUG    2020-06-16 18:52:22,629   (10.1.1.100,224.12.12.12)                    R3     Create KernelEntry
+hpim.KernelEntry                                   DEBUG    2020-06-16 18:52:22,631   (10.1.1.100,224.12.12.12)                    R3     Tree transitions to Active
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:22,631   (10.1.1.100,224.12.12.12)           1  eth1  R3     Assert state transitions to AssertWinner
+hpim.KernelEntry                                   DEBUG    2020-06-16 18:52:22,632   (10.1.1.100,224.12.12.12)                    R4     Create KernelEntry
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:22,632   (10.1.1.100,224.12.12.12)           1  eth1  R3     BEST UPSTREAM NEIGHBOR IS NONE AND TREE IS ACTIVE
+hpim.KernelEntry                                   DEBUG    2020-06-16 18:52:22,635   (10.1.1.100,224.12.12.12)                    R5     Create KernelEntry
+hpim.KernelEntry                                   DEBUG    2020-06-16 18:52:22,635   (10.1.1.100,224.12.12.12)                    R4     Tree transitions to Active
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:22,636   (10.1.1.100,224.12.12.12)           1  eth1  R4     Assert state transitions to AssertWinner
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:22,636   (10.1.1.100,224.12.12.12)           1  eth1  R4     BEST UPSTREAM NEIGHBOR IS NONE AND TREE IS ACTIVE
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:22,631   (10.1.1.100,224.12.12.12)           1  eth1  R2     Assert state transitions to AssertWinner
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:22,631   (10.1.1.100,224.12.12.12)           1  eth1  R2     BEST UPSTREAM NEIGHBOR IS NONE AND TREE IS ACTIVE
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:22,638   (10.1.1.100,224.12.12.12)           1  eth1  R5     BEST UPSTREAM NEIGHBOR IS NONE AND TREE IS ACTIVE
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:22,638   (10.1.1.100,224.12.12.12)           1  eth1  R5     Assert state transitions to AssertWinner
+hpim.KernelEntry                                   DEBUG    2020-06-16 18:52:22,636   (10.1.1.100,224.12.12.12)                    R6     Create KernelEntry
+hpim.KernelEntry.RootInterface                     DEBUG    2020-06-16 18:52:22,640   (10.1.1.100,224.12.12.12)           0  eth0  R4     interfaces_roles_dont_change_and_best_upstream_neighbor_reelected
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:22,639   (10.1.1.100,224.12.12.12)           1  eth1  R6     Assert state transitions to AssertWinner
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:22,639   (10.1.1.100,224.12.12.12)           1  eth1  R6     BEST UPSTREAM NEIGHBOR IS NONE AND TREE IS ACTIVE
+hpim.KernelEntry.RootInterface                     DEBUG    2020-06-16 18:52:22,640   (10.1.1.100,224.12.12.12)           0  eth0  R3     interfaces_roles_dont_change_and_best_upstream_neighbor_reelected
+hpim.KernelEntry.RootInterface                     DEBUG    2020-06-16 18:52:22,642   (10.1.1.100,224.12.12.12)           0  eth0  R5     interfaces_roles_dont_change_and_best_upstream_neighbor_reelected
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:22,641   (10.1.1.100,224.12.12.12)           2  eth2  R2     Assert state transitions to AssertWinner
+hpim.KernelEntry                                   DEBUG    2020-06-16 18:52:22,638   (10.1.1.100,224.12.12.12)                    R6     Tree transitions to Active
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:22,642   (10.1.1.100,224.12.12.12)           2  eth2  R2     BEST UPSTREAM NEIGHBOR IS NONE AND TREE IS ACTIVE
+hpim.KernelEntry.RootInterface                     DEBUG    2020-06-16 18:52:22,646   (10.1.1.100,224.12.12.12)           0  eth0  R6     interfaces_roles_dont_change_and_best_upstream_neighbor_reelected
+hpim.KernelEntry.RootInterface                     DEBUG    2020-06-16 18:52:22,643   (10.1.1.100,224.12.12.12)           0  eth0  R2     interfaces_roles_dont_change_and_best_upstream_neighbor_reelected
+hpim.KernelEntry                                   DEBUG    2020-06-16 18:52:22,637   (10.1.1.100,224.12.12.12)                    R5     Tree transitions to Active
+hpim.KernelEntry.RootInterface                     DEBUG    2020-06-16 18:52:23,174   (10.1.1.100,224.12.12.12)           0  eth0  R5     Created RootInterface
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:23,176   (10.1.1.100,224.12.12.12)           1  eth1  R5     TREE IS ACTIVE AND LOST ASSERT
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:23,176   (10.1.1.100,224.12.12.12)           1  eth1  R5     BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 30; IP: 10.6.6.7
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:23,176   (10.1.1.100,224.12.12.12)           1  eth1  R5     MY METRIC_PREFERENCE: 11; METRIC: 30; IP: 10.6.6.5
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:23,177   (10.1.1.100,224.12.12.12)           1  eth1  R5     Assert state transitions to AssertLoser
+hpim.KernelEntry.RootInterface                     DEBUG    2020-06-16 18:52:23,178   (10.1.1.100,224.12.12.12)           0  eth0  R5     interfaces_roles_dont_change_and_router_transition_to_it_or_ot
+hpim.KernelEntry.RootInterface                     DEBUG    2020-06-16 18:52:23,179   (10.1.1.100,224.12.12.12)           0  eth0  R5     interfaces_roles_dont_change_and_best_upstream_neighbor_reelected
+hpim.KernelEntry.RootInterface                     DEBUG    2020-06-16 18:52:23,186   (10.1.1.100,224.12.12.12)           0  eth0  R4     Created RootInterface
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:23,189   (10.1.1.100,224.12.12.12)           1  eth1  R4     TREE IS ACTIVE AND WON ASSERT
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:23,189   (10.1.1.100,224.12.12.12)           1  eth1  R4     BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.3
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:23,189   (10.1.1.100,224.12.12.12)           1  eth1  R4     MY METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.4
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:23,190   (10.1.1.100,224.12.12.12)           1  eth1  R4     TREE IS ACTIVE AND WON ASSERT
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:23,190   (10.1.1.100,224.12.12.12)           1  eth1  R4     BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.3
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:23,191   (10.1.1.100,224.12.12.12)           1  eth1  R4     MY METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.4
+hpim.KernelEntry.RootInterface                     DEBUG    2020-06-16 18:52:23,206   (10.1.1.100,224.12.12.12)           0  eth0  R3     Created RootInterface
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:23,208   (10.1.1.100,224.12.12.12)           1  eth1  R3     TREE IS ACTIVE AND LOST ASSERT
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:23,209   (10.1.1.100,224.12.12.12)           1  eth1  R3     BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.4
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:23,209   (10.1.1.100,224.12.12.12)           1  eth1  R3     MY METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.3
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:23,209   (10.1.1.100,224.12.12.12)           1  eth1  R3     Assert state transitions to AssertLoser
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:23,211   (10.1.1.100,224.12.12.12)           1  eth1  R3     TREE IS ACTIVE AND LOST ASSERT
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:23,211   (10.1.1.100,224.12.12.12)           1  eth1  R3     BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.4
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:23,211   (10.1.1.100,224.12.12.12)           1  eth1  R3     MY METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.3
+hpim.KernelEntry.RootInterface                     DEBUG    2020-06-16 18:52:23,214   (10.1.1.100,224.12.12.12)           0  eth0  R3     interfaces_roles_dont_change_and_router_transition_to_it_or_ot
+hpim.KernelEntry.RootInterface                     DEBUG    2020-06-16 18:52:23,218   (10.1.1.100,224.12.12.12)           0  eth0  R6     Created RootInterface
+hpim.KernelEntry.RootInterface                     DEBUG    2020-06-16 18:52:23,220   (10.1.1.100,224.12.12.12)           0  eth0  R6     interfaces_roles_dont_change_and_best_upstream_neighbor_reelected
+hpim.KernelEntry.RootInterface                     DEBUG    2020-06-16 18:52:23,222   (10.1.1.100,224.12.12.12)           0  eth0  R4     interfaces_roles_dont_change_and_router_transition_to_it_or_ot
+hpim.KernelEntry.RootInterface                     DEBUG    2020-06-16 18:52:23,258   (10.1.1.100,224.12.12.12)           0  eth0  R2     Created RootInterface
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:23,263   (10.1.1.100,224.12.12.12)           1  eth1  R2     TREE IS ACTIVE AND LOST ASSERT
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:23,263   (10.1.1.100,224.12.12.12)           1  eth1  R2     BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.3
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:23,264   (10.1.1.100,224.12.12.12)           1  eth1  R2     MY METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.2
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:23,264   (10.1.1.100,224.12.12.12)           1  eth1  R2     Assert state transitions to AssertLoser
+[1;32;40mTest1 Success[0m
+Test2: Kill Assert AssertWinner
+Expected: New AssertAssertWinner will be R3
+tests                                              DEBUG    2020-06-16 18:52:23,265                                                R4     ifconfig eth1 down
+tests                                              DEBUG    2020-06-16 18:52:23,265                                                R4     ifconfig eth1 down
+tests                                              DEBUG    2020-06-16 18:52:23,265                                                R4     ifconfig eth1 down
+tests                                              DEBUG    2020-06-16 18:52:23,265                                                R4     ifconfig eth1 down
+tests                                              DEBUG    2020-06-16 18:52:23,265                                                R4     ifconfig eth1 down
+tests                                              DEBUG    2020-06-16 18:52:23,265                                                R4     ifconfig eth1 down
+tests                                              DEBUG    2020-06-16 18:52:23,265                                                R4     ifconfig eth1 down
+tests                                              DEBUG    2020-06-16 18:52:23,265                                                R4     ifconfig eth1 down
+tests                                              DEBUG    2020-06-16 18:52:23,265                                                R4     ifconfig eth1 down
+tests                                              DEBUG    2020-06-16 18:52:23,265                                                R4     ifconfig eth1 down
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:23,271   (10.1.1.100,224.12.12.12)           1  eth1  R2     TREE IS ACTIVE AND LOST ASSERT
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:23,271   (10.1.1.100,224.12.12.12)           1  eth1  R2     BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.4
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:23,272   (10.1.1.100,224.12.12.12)           1  eth1  R2     MY METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.2
+tests                                              DEBUG    2020-06-16 18:52:23,280                                                R4     python3 Run.py -ri eth1
+tests                                              DEBUG    2020-06-16 18:52:23,280                                                R4     python3 Run.py -ri eth1
+tests                                              DEBUG    2020-06-16 18:52:23,280                                                R4     python3 Run.py -ri eth1
+tests                                              DEBUG    2020-06-16 18:52:23,280                                                R4     python3 Run.py -ri eth1
+tests                                              DEBUG    2020-06-16 18:52:23,280                                                R4     python3 Run.py -ri eth1
+tests                                              DEBUG    2020-06-16 18:52:23,280                                                R4     python3 Run.py -ri eth1
+tests                                              DEBUG    2020-06-16 18:52:23,280                                                R4     python3 Run.py -ri eth1
+tests                                              DEBUG    2020-06-16 18:52:23,280                                                R4     python3 Run.py -ri eth1
+tests                                              DEBUG    2020-06-16 18:52:23,280                                                R4     python3 Run.py -ri eth1
+tests                                              DEBUG    2020-06-16 18:52:23,280                                                R4     python3 Run.py -ri eth1
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:23,509   (10.1.1.100,224.12.12.12)           1  eth1  R4     BEST UPSTREAM NEIGHBOR IS NONE AND TREE IS ACTIVE
+tests                                              DEBUG    2020-06-16 18:52:23,539                                                R4     python3 Run.py -riigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:23,539                                                R4     python3 Run.py -riigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:23,539                                                R4     python3 Run.py -riigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:23,539                                                R4     python3 Run.py -riigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:23,539                                                R4     python3 Run.py -riigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:23,539                                                R4     python3 Run.py -riigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:23,539                                                R4     python3 Run.py -riigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:23,539                                                R4     python3 Run.py -riigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:23,539                                                R4     python3 Run.py -riigmp eth1
+tests                                              DEBUG    2020-06-16 18:52:23,539                                                R4     python3 Run.py -riigmp eth1
+hpim.KernelEntry.RootInterface                     DEBUG    2020-06-16 18:52:25,265   (10.1.1.100,224.12.12.12)           0  eth0  R2     interfaces_roles_dont_change_and_router_transition_to_it_or_ot
+hpim.KernelEntry.RootInterface                     DEBUG    2020-06-16 18:52:59,648   (10.1.1.100,224.12.12.12)           0  eth0  R5     interfaces_roles_dont_change_and_best_upstream_neighbor_reelected
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:59,650   (10.1.1.100,224.12.12.12)           1  eth1  R3     TREE IS ACTIVE AND WON ASSERT
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:59,652   (10.1.1.100,224.12.12.12)           1  eth1  R3     BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.2
+hpim.KernelEntry.RootInterface                     DEBUG    2020-06-16 18:52:59,649   (10.1.1.100,224.12.12.12)           0  eth0  R6     interfaces_roles_dont_change_and_best_upstream_neighbor_reelected
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:59,653   (10.1.1.100,224.12.12.12)           1  eth1  R3     MY METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.3
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:59,653   (10.1.1.100,224.12.12.12)           1  eth1  R3     Assert state transitions to AssertWinner
+[1;32;40mTest2 Success[0m
+Test3: R3's interface eth1 becomes Root type
+Change interface eth0 cost of router R3 to 100, causing eth1 to be considered Root interface
+Expected: New AssertAssertWinner will be R2
+tests                                              DEBUG    2020-06-16 18:52:59,658                                                R3     vtysh -c "configure terminal" -c "interface eth0" -c "ip ospf cost 100"
+tests                                              DEBUG    2020-06-16 18:52:59,658                                                R3     vtysh -c "configure terminal" -c "interface eth0" -c "ip ospf cost 100"
+tests                                              DEBUG    2020-06-16 18:52:59,658                                                R3     vtysh -c "configure terminal" -c "interface eth0" -c "ip ospf cost 100"
+tests                                              DEBUG    2020-06-16 18:52:59,658                                                R3     vtysh -c "configure terminal" -c "interface eth0" -c "ip ospf cost 100"
+tests                                              DEBUG    2020-06-16 18:52:59,658                                                R3     vtysh -c "configure terminal" -c "interface eth0" -c "ip ospf cost 100"
+tests                                              DEBUG    2020-06-16 18:52:59,658                                                R3     vtysh -c "configure terminal" -c "interface eth0" -c "ip ospf cost 100"
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:59,660   (10.1.1.100,224.12.12.12)           1  eth1  R2     TREE IS ACTIVE AND LOST ASSERT
+tests                                              DEBUG    2020-06-16 18:52:59,658                                                R3     vtysh -c "configure terminal" -c "interface eth0" -c "ip ospf cost 100"
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:59,660   (10.1.1.100,224.12.12.12)           1  eth1  R2     BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.3
+tests                                              DEBUG    2020-06-16 18:52:59,658                                                R3     vtysh -c "configure terminal" -c "interface eth0" -c "ip ospf cost 100"
+tests                                              DEBUG    2020-06-16 18:52:59,658                                                R3     vtysh -c "configure terminal" -c "interface eth0" -c "ip ospf cost 100"
+tests                                              DEBUG    2020-06-16 18:52:59,658                                                R3     vtysh -c "configure terminal" -c "interface eth0" -c "ip ospf cost 100"
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:59,661   (10.1.1.100,224.12.12.12)           1  eth1  R2     MY METRIC_PREFERENCE: 11; METRIC: 20; IP: 10.5.5.2
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:59,918   (10.1.1.100,224.12.12.12)           0  eth0  R3     Assert state transitions to AssertWinner
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:59,919   (10.1.1.100,224.12.12.12)           0  eth0  R3     TREE IS ACTIVE AND LOST ASSERT
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:59,919   (10.1.1.100,224.12.12.12)           0  eth0  R3     BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 2; METRIC: 0; IP: 10.3.3.1
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:59,920   (10.1.1.100,224.12.12.12)           0  eth0  R3     MY METRIC_PREFERENCE: 11; METRIC: 30; IP: 10.3.3.3
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:59,926   (10.1.1.100,224.12.12.12)           0  eth0  R3     Assert state transitions to AssertLoser
+hpim.KernelEntry.RootInterface                     DEBUG    2020-06-16 18:52:59,927   (10.1.1.100,224.12.12.12)           1  eth1  R3     interfaces_roles_change_and_tree_remains_active
+hpim.KernelEntry                                   DEBUG    2020-06-16 18:52:59,928   (10.1.1.100,224.12.12.12)                    R5     Tree transitions to Unsure
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:59,930   (10.1.1.100,224.12.12.12)           1  eth1  R2     BEST UPSTREAM NEIGHBOR IS NONE AND TREE IS ACTIVE
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:59,930   (10.1.1.100,224.12.12.12)           1  eth1  R2     Assert state transitions to AssertWinner
+[1;32;40mTest3 Success[0m
+hpim.KernelEntry.RootInterface                     DEBUG    2020-06-16 18:52:59,931   (10.1.1.100,224.12.12.12)           0  eth0  R2     interfaces_roles_dont_change_and_router_transition_to_it_or_ot
+hpim.KernelEntry.RootInterface                     DEBUG    2020-06-16 18:52:59,934   (10.1.1.100,224.12.12.12)           0  eth0  R6     interfaces_roles_dont_change_and_best_upstream_neighbor_reelected
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:59,935   (10.1.1.100,224.12.12.12)           1  eth1  R5     TREE IS UNSURE AND UPSTREAM NEIGHBOR CONNECTED TO THIS INTERFACE
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:59,935   (10.1.1.100,224.12.12.12)           1  eth1  R5     TREE IS UNSURE AND UPSTREAM NEIGHBOR CONNECTED TO THIS INTERFACE
+hpim.KernelEntry.RootInterface                     DEBUG    2020-06-16 18:52:59,938   (10.1.1.100,224.12.12.12)           0  eth0  R5     interfaces_roles_dont_change_and_best_upstream_neighbor_reelected
+hpim.KernelEntry.RootInterface                     DEBUG    2020-06-16 18:52:59,941   (10.1.1.100,224.12.12.12)           0  eth0  R2     interfaces_roles_dont_change_and_router_transition_to_it_or_ot
+hpim.KernelEntry                                   DEBUG    2020-06-16 18:52:59,941   (10.1.1.100,224.12.12.12)                    R5     Tree transitions to Active
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:59,942   (10.1.1.100,224.12.12.12)           1  eth1  R5     TREE IS ACTIVE AND WON ASSERT
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:59,942   (10.1.1.100,224.12.12.12)           1  eth1  R5     BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 30; IP: 10.6.6.7
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:59,942   (10.1.1.100,224.12.12.12)           1  eth1  R5     MY METRIC_PREFERENCE: 11; METRIC: 1; IP: 10.6.6.5
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:59,942   (10.1.1.100,224.12.12.12)           1  eth1  R5     Assert state transitions to AssertWinner
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:59,944   (10.1.1.100,224.12.12.12)           1  eth1  R5     TREE IS ACTIVE AND LOST ASSERT
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:59,944   (10.1.1.100,224.12.12.12)           1  eth1  R5     BEST UPSTREAM NEIGHBOR METRIC_PREFERENCE: 11; METRIC: 30; IP: 10.6.6.7
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:59,944   (10.1.1.100,224.12.12.12)           1  eth1  R5     MY METRIC_PREFERENCE: 11; METRIC: 30; IP: 10.6.6.5
+hpim.KernelEntry.NonRootInterface.Assert           DEBUG    2020-06-16 18:52:59,945   (10.1.1.100,224.12.12.12)           1  eth1  R5     Assert state transitions to AssertLoser
+hpim.KernelEntry.RootInterface                     DEBUG    2020-06-16 18:53:00,467   (10.1.1.100,224.12.12.12)           1  eth1  R3     Created RootInterface
