@@ -5,6 +5,7 @@ import os
 import time
 import atexit
 import signal
+from hpimdm.tree import hpim_globals
 
 
 class Daemon:
@@ -48,8 +49,8 @@ class Daemon:
         sys.stdout.flush()
         sys.stderr.flush()
         si = open(os.devnull, 'r')
-        so = open('stdout', 'a+')
-        se = open('stderror', 'a+')
+        so = open('stdout' + str(hpim_globals.MULTICAST_TABLE_ID), 'a+')
+        se = open('stderror' + str(hpim_globals.MULTICAST_TABLE_ID), 'a+')
 
         os.dup2(si.fileno(), sys.stdin.fileno())
         os.dup2(so.fileno(), sys.stdout.fileno())

@@ -11,7 +11,7 @@ from hpimdm.tree import hpim_globals
 from hpimdm.daemon.Daemon import Daemon
 from hpimdm import Main
 
-VERSION = "1.3.3.1"
+VERSION = "1.3.3.2"
 
 
 def client_socket(data_to_send):
@@ -22,7 +22,7 @@ def client_socket(data_to_send):
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 
     # Connect the socket to the port where the server is listening
-    server_address = '/tmp/hpim_uds_socket'
+    server_address = '/tmp/hpim_uds_socket' + str(hpim_globals.MULTICAST_TABLE_ID)
     #print('connecting to %s' % server_address)
     try:
         sock.connect(server_address)
@@ -43,7 +43,7 @@ class MyDaemon(Daemon):
         Daemon process will run this method until the daemon process explicitly is stopped
         """
         Main.main()
-        server_address = '/tmp/hpim_uds_socket'
+        server_address = '/tmp/hpim_uds_socket' + str(hpim_globals.MULTICAST_TABLE_ID)
 
         # Make sure the socket does not already exist
         try:
@@ -204,7 +204,7 @@ def main():
     if os.geteuid() != 0:
         sys.exit('HPIM-DM must be run as root!')
 
-    daemon = MyDaemon('/tmp/Daemon-hpim.pid')
+    daemon = MyDaemon('/tmp/Daemon-hpim' + str(hpim_globals.MULTICAST_TABLE_ID) + '.pid')
     if args.start:
         print("start")
         daemon.start()
@@ -217,7 +217,7 @@ def main():
         daemon.restart()
         sys.exit(0)
     elif args.verbose:
-        os.system("tail -f /var/log/hpimdm/stdout")
+        os.system("tail -f /var/log/hpimdm/stdout" + str(hpim_globals.MULTICAST_TABLE_ID))
         sys.exit(0)
     elif args.multicast_routes:
         if args.ipv4 or not args.ipv6:
