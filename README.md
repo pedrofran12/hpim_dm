@@ -51,10 +51,16 @@ IPv4 and IPv6 multicast is supported. By default all commands will be executed o
 
 In order to start the protocol you first need to explicitly start it. This will start a daemon process, which will be running in the background. The command is the following:
 
+We support multiple tables. Each daemon process will be bind to a given multicast and unicast table id, with can be defined at startup with `-mvrf` and `-uvrf`.
+
+If `-mvrf` is not defined, the default multicast table id will be used (table id 0).
+
+If `-uvrf` is not defined, the default unicast table id will be used (table id 254).
    ```
-   sudo hpim-dm -start
+   sudo hpim-dm -start [-mvrf MULTICAST_TABLE_ID] [-uvrf UNICAST_TABLE_ID]
    ```
 
+After starting the protocol process, if the default multicast table is not used, the following commands (for adding interfaces and listing state) need to have the argument `-mvrf` defined to specify the corresponding daemon process.
 
 #### Add interface
 
@@ -62,19 +68,19 @@ After starting the protocol process you can enable the protocol in specific inte
 * To have a given interface being monitored by HPIM-DM (to exchange control packets with it), you need to run the following command:
 
   ```
-  sudo hpim-dm -ai INTERFACE_NAME [-4 | -6]
+  sudo hpim-dm -ai INTERFACE_NAME [-4 | -6] [-mvrf MULTICAST_TABLE_ID]
   ```
 
 * To have a given interface being monitored by IGMPv2 (to monitor the IPv4 multicast interest of directly connected hosts), you need to run the following command:
 
   ```
-  sudo hpim-dm -aiigmp INTERFACE_NAME
+  sudo hpim-dm -aiigmp INTERFACE_NAME [-mvrf MULTICAST_TABLE_ID]
   ```
 
 * To have a given interface being monitored by MLDv1 (to monitor the IPv6 multicast interest of directly connected hosts), you need to run the following command:
 
 	```
-  sudo hpim-dm -aimld INTERFACE_NAME
+  sudo hpim-dm -aimld INTERFACE_NAME [-mvrf MULTICAST_TABLE_ID]
   ```
 
 
@@ -85,19 +91,19 @@ To remove a previously added interface, you need to run the following commands:
 * To remove a previously added HPIM-DM interface:
 
   ```
-  sudo hpim-dm -ri INTERFACE_NAME [-4 | -6]
+  sudo hpim-dm -ri INTERFACE_NAME [-4 | -6] [-mvrf MULTICAST_TABLE_ID]
   ```
 
 * To remove a previously added IGMP interface:
 
   ```
-  sudo hpim-dm -riigmp INTERFACE_NAME
+  sudo hpim-dm -riigmp INTERFACE_NAME [-mvrf MULTICAST_TABLE_ID]
   ```
 
 * To remove a previously added MLD interface:
 
   ```
-  sudo hpim-dm -rimld INTERFACE_NAME
+  sudo hpim-dm -rimld INTERFACE_NAME [-mvrf MULTICAST_TABLE_ID]
   ```
 
 
@@ -105,8 +111,10 @@ To remove a previously added interface, you need to run the following commands:
 
 If you want to stop the protocol process, and stop the daemon process, you need to explicitly run this command:
 
+If a specific multicast table id was defined on startup, you need to define the daemon by its multicast table id.
+
    ```
-   sudo hpim-dm -stop
+   sudo hpim-dm -stop [-mvrf MULTICAST_TABLE_ID]
    ```
 
 
@@ -121,7 +129,7 @@ All control messages carry a Security Identifier, which is a number that identif
    List all available hash algorithms that can be used to create the HMAC.
 
    ```
-   sudo hpim-dm -lsec
+   sudo hpim-dm -lsec [-mvrf MULTICAST_TABLE_ID]
    ```
 
  - #### Add security on interface:
@@ -129,7 +137,7 @@ All control messages carry a Security Identifier, which is a number that identif
    Enable security on HPIM-DM interface named INTERFACE_NAME. The SECURITY_IDENTIFIER is a number and identifies the algorithm and key of the HMAC. To check the available algorithms run -lsec.
 
    ```
-   sudo hpim-dm -aisec INTERFACE_NAME SECURITY_IDENTIFIER SECURITY_ALGORITHM SECURITY_KEY [-4 | -6]
+   sudo hpim-dm -aisec INTERFACE_NAME SECURITY_IDENTIFIER SECURITY_ALGORITHM SECURITY_KEY [-4 | -6] [-mvrf MULTICAST_TABLE_ID]
    ```
 
  - #### Remove security from interface:
@@ -137,7 +145,7 @@ All control messages carry a Security Identifier, which is a number that identif
    Disable security identified by SECURITY_IDENTIFIER from HPIM-DM interface named INTERFACE_NAME.
 
    ```
-   sudo hpim-dm -risec INTERFACE_NAME SECURITY_IDENTIFIER [-4 | -6]
+   sudo hpim-dm -risec INTERFACE_NAME SECURITY_IDENTIFIER [-4 | -6] [-mvrf MULTICAST_TABLE_ID]
    ```
 
 
@@ -150,7 +158,7 @@ We have built some list commands that can be used to check the "internals" of th
 	 Show all router interfaces and which ones have HPIM-DM and IGMP/MLD enabled. For IGMP/MLD enabled interfaces outputs the Querier state. For HPIM enabled interfaces outputs security settings.
 
    ```
-   sudo hpim-dm -li [-4 | -6]
+   sudo hpim-dm -li [-4 | -6] [-mvrf MULTICAST_TABLE_ID]
    ```
 
  - #### List neighbors:
@@ -158,7 +166,7 @@ We have built some list commands that can be used to check the "internals" of th
 	 Verify neighbors that have established a neighborhood relationship.
 
    ```
-   sudo hpim-dm -ln [-4 | -6]
+   sudo hpim-dm -ln [-4 | -6] [-mvrf MULTICAST_TABLE_ID]
    ```
 
  - #### List sequence numbers:
@@ -166,7 +174,7 @@ We have built some list commands that can be used to check the "internals" of th
     Verify all stored sequence numbers.
 
    ```
-   sudo hpim-dm -lsn [-4 | -6]
+   sudo hpim-dm -lsn [-4 | -6] [-mvrf MULTICAST_TABLE_ID]
    ```
 
  - #### List neighbor state:
@@ -174,7 +182,7 @@ We have built some list commands that can be used to check the "internals" of th
     Verify all state regarding each neighbor, whether they are UPSTREAM or NOT UPSTREAM and in the latter whether they are INTERESTED or NOT INTERESTED in receiving data packets.
 
    ```
-   sudo hpim-dm -lns [-4 | -6]
+   sudo hpim-dm -lns [-4 | -6] [-mvrf MULTICAST_TABLE_ID]
    ```
 
  - #### List state machines:
@@ -182,7 +190,7 @@ We have built some list commands that can be used to check the "internals" of th
     List all state machines and corresponding state of all trees that are being monitored. Also list IGMP/MLD state for each group being monitored.
 
    ```
-   sudo hpim-dm -ls [-4 | -6]
+   sudo hpim-dm -ls [-4 | -6] [-mvrf MULTICAST_TABLE_ID]
    ```
 
  - #### Multicast Routing Table:
@@ -190,7 +198,7 @@ We have built some list commands that can be used to check the "internals" of th
    List Linux Multicast Routing Table (equivalent to `ip mroute show`)
 
    ```
-   sudo hpim-dm -mr [-4 | -6]
+   sudo hpim-dm -mr [-4 | -6] [-mvrf MULTICAST_TABLE_ID]
    ```
 
 
@@ -201,7 +209,7 @@ We have built some list commands that can be used to check the "internals" of th
    Control flooding behavior (whether to flood or not data packets during the broadcast tree formation)
 
    ```
-   sudo hpim-dm -fid
+   sudo hpim-dm -fid [-mvrf MULTICAST_TABLE_ID]
    ```
 
  - #### Hold Forwarding State:
@@ -209,7 +217,7 @@ We have built some list commands that can be used to check the "internals" of th
    This setting allows during an AW replacement (for example due to RPC changes) for the previous AW to hold its forwarding state for a small amount of time. This way it is possible to prevent loss of data packets during this event, however it may introduce traffic duplication (while the new and the previous AW both forward traffic). By default this setting is enabled with a time period of 2 seconds.
 
    ```
-   sudo hpim-dm -hfs
+   sudo hpim-dm -hfs [-mvrf MULTICAST_TABLE_ID]
    ```
 
 Files tree/hpim_globals.py, igmp/igmp_globals.py and mld/mld_globals.py store all timer values and some configurations regarding HPIM-DM, IGMPv2 and MLDv1. If you want to tune the protocol, you can change the values of these files. These configurations are used by all interfaces, meaning that there is no tuning per interface.
@@ -221,7 +229,7 @@ Files tree/hpim_globals.py, igmp/igmp_globals.py and mld/mld_globals.py store al
 To see the logs run:
 
   ```
-  hpim-dm -v
+  hpim-dm -v [-mvrf MULTICAST_TABLE_ID]
   ```
 
 Currently the logs are not very expressive... Better logging is planned for a future release.

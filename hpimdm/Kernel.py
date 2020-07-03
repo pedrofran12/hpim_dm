@@ -1,3 +1,4 @@
+import os
 import socket
 import struct
 import traceback
@@ -415,6 +416,12 @@ class Kernel4(KernelInterface):
         if type(ip_interface) is str:
             ip_interface = socket.inet_aton(ip_interface)
 
+        os.system("ip mrule del iif {}".format(interface_name))
+        os.system("ip mrule del oif {}".format(interface_name))
+        if hpim_globals.MULTICAST_TABLE_ID != 0:
+            os.system("ip mrule add iif {} lookup {}".format(interface_name, hpim_globals.MULTICAST_TABLE_ID))
+            os.system("ip mrule add oif {} lookup {}".format(interface_name, hpim_globals.MULTICAST_TABLE_ID))
+
         struct_mrt_add_vif = struct.pack("HBBI 4s 4s", index, flags, 1, 0, ip_interface,
                                          socket.inet_aton("0.0.0.0"))
         self.socket.setsockopt(socket.IPPROTO_IP, Kernel4.MRT_ADD_VIF, struct_mrt_add_vif)
@@ -438,6 +445,9 @@ class Kernel4(KernelInterface):
         index = self.vif_name_to_index_dic.pop(interface_name, None)
         struct_vifctl = struct.pack("HBBI 4s 4s", index, 0, 0, 0, socket.inet_aton("0.0.0.0"),
                                     socket.inet_aton("0.0.0.0"))
+
+        os.system("ip mrule del iif {}".format(interface_name))
+        os.system("ip mrule del oif {}".format(interface_name))
 
         try:
             self.socket.setsockopt(socket.IPPROTO_IP, Kernel4.MRT_DEL_VIF, struct_vifctl)
@@ -692,6 +702,13 @@ class Kernel6(KernelInterface):
     '''
     def create_virtual_interface(self, ip_interface, interface_name: str, index, flags=0x0):
         physical_if_index = if_nametoindex(interface_name)
+
+        os.system("ip -6 mrule del iif {}".format(interface_name))
+        os.system("ip -6 mrule del oif {}".format(interface_name))
+        if hpim_globals.MULTICAST_TABLE_ID != 0:
+            os.system("ip -6 mrule add iif {} lookup {}".format(interface_name, hpim_globals.MULTICAST_TABLE_ID))
+            os.system("ip -6 mrule add oif {} lookup {}".format(interface_name, hpim_globals.MULTICAST_TABLE_ID))
+
         struct_mrt_add_vif = struct.pack("HBBHI", index, flags, 1, physical_if_index, 0)
         self.socket.setsockopt(socket.IPPROTO_IPV6, Kernel6.MRT6_ADD_MIF, struct_mrt_add_vif)
         self.vif_index_to_name_dic[index] = interface_name
@@ -716,6 +733,9 @@ class Kernel6(KernelInterface):
 
         physical_if_index = if_nametoindex(interface_name)
         struct_vifctl = struct.pack("HBBHI", mif_index, 0, 0, physical_if_index, 0)
+
+        os.system("ip -6 mrule del iif {}".format(interface_name))
+        os.system("ip -6 mrule del oif {}".format(interface_name))
 
         try:
             self.socket.setsockopt(socket.IPPROTO_IPV6, Kernel6.MRT6_DEL_MIF, struct_vifctl)

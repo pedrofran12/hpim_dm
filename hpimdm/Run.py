@@ -11,7 +11,7 @@ from hpimdm.tree import hpim_globals
 from hpimdm.daemon.Daemon import Daemon
 from hpimdm import Main
 
-VERSION = "1.3.3.2"
+VERSION = "1.3.3.3"
 
 
 def client_socket(data_to_send):
@@ -197,12 +197,26 @@ def main():
     group_ipversion = parser.add_mutually_exclusive_group(required=False)
     group_ipversion.add_argument("-4", "--ipv4", action="store_true", default=False, help="Setting for IPv4")
     group_ipversion.add_argument("-6", "--ipv6", action="store_true", default=False, help="Setting for IPv6")
+    group_vrf = parser.add_mutually_exclusive_group(required=False)
+    group_vrf.add_argument("-mvrf", "--multicast_vrf", nargs=1, default=[hpim_globals.MULTICAST_TABLE_ID],
+                           metavar='MULTICAST_VRF_NUMBER', type=int,
+                           help="Define multicast table id. This can be used on -start to explicitly start the daemon"
+                                " process process on a given vrf. It can also be used with the other commands "
+                                "(for example add, list, ...) for setting/getting information on a given daemon"
+                                " process")
+    group_vrf.add_argument("-uvrf", "--unicast_vrf", nargs=1, default=[hpim_globals.UNICAST_TABLE_ID],
+                           metavar='UNICAST_VRF_NUMBER', type=int,
+                           help="Define unicast table id for getting unicast information (RPF checks, RPC costs, ...). "
+                                "This information can only be defined at startup with -start command")
     args = parser.parse_args()
 
     #print(parser.parse_args())
     # This script must be run as root!
     if os.geteuid() != 0:
         sys.exit('HPIM-DM must be run as root!')
+
+    hpim_globals.MULTICAST_TABLE_ID = args.multicast_vrf[0]
+    hpim_globals.UNICAST_TABLE_ID = args.unicast_vrf[0]
 
     daemon = MyDaemon('/tmp/Daemon-hpim' + str(hpim_globals.MULTICAST_TABLE_ID) + '.pid')
     if args.start:
