@@ -49,13 +49,14 @@ IPv4 and IPv6 multicast is supported. By default all commands will be executed o
 
 #### Start protocol process
 
-In order to start the protocol you first need to explicitly start it. This will start a daemon process, which will be running in the background. The command is the following:
+In order to start the protocol you first need to explicitly start it. This will start a daemon process, which will be running in the background.
 
-We support multiple tables. Each daemon process will be bind to a given multicast and unicast table id, with can be defined at startup with `-mvrf` and `-uvrf`.
+We support multiple tables. Each daemon process will be bind to a given multicast and unicast table id, which can be defined at startup with `-mvrf` and `-uvrf`.
 
 If `-mvrf` is not defined, the default multicast table id will be used (table id 0).
 
 If `-uvrf` is not defined, the default unicast table id will be used (table id 254).
+
    ```
    sudo hpim-dm -start [-mvrf MULTICAST_TABLE_ID] [-uvrf UNICAST_TABLE_ID]
    ```

@@ -2,19 +2,21 @@
 
 import os
 import sys
+import glob
 import socket
 import argparse
 import traceback
 import faulthandler
 import _pickle as pickle
+from prettytable import PrettyTable
 from hpimdm.tree import hpim_globals
 from hpimdm.daemon.Daemon import Daemon
 from hpimdm import Main
 
-VERSION = "1.3.3.3"
+VERSION = "1.3.3.4"
 
 
-def client_socket(data_to_send):
+def client_socket(data_to_send, print_output=True):
     """
     Send command to daemon process through a socket
     """
@@ -29,7 +31,10 @@ def client_socket(data_to_send):
         sock.sendall(pickle.dumps(data_to_send))
         data_rcv = sock.recv(1024 * 256)
         if data_rcv:
-            print(pickle.loads(data_rcv))
+            if print_output:
+                print(pickle.loads(data_rcv))
+            else:
+                return pickle.loads(data_rcv)
     except socket.error:
         pass
     finally:
@@ -81,6 +86,8 @@ class MyDaemon(Daemon):
                     connection.sendall(pickle.dumps(Main.list_neighbors_state(ipv4=args.ipv4, ipv6=args.ipv6)))
                 elif 'list_sequence_numbers' in args and args.list_sequence_numbers:
                     connection.sendall(pickle.dumps(Main.list_sequence_numbers(ipv4=args.ipv4, ipv6=args.ipv6)))
+                elif 'list_instances' in args and args.list_instances:
+                    connection.sendall(pickle.dumps(Main.list_instances()))
                 elif 'add_interface' in args and args.add_interface:
                     Main.add_hpim_interface(args.add_interface[0], ipv4=args.ipv4, ipv6=args.ipv6)
                     connection.shutdown(socket.SHUT_RDWR)
@@ -155,6 +162,8 @@ def main():
                             "Use -4 or -6 to specify IPv4 or IPv6 HPIM neighbor state.")
     group.add_argument("-lsn", "--list_sequence_numbers", action="store_true", default=False,
                        help="List Sequence Numbers. Use -4 or -6 to list stored IPv4 or IPv6 HPIM sequence numbers.")
+    group.add_argument("-instances", "--list_instances", action="store_true", default=False,
+                       help="List running HPIM-DM daemon processes.")
     group.add_argument("-mr", "--multicast_routes", action="store_true", default=False,
                        help="List Multicast Routing table. "
                             "Use -4 or -6 to specify IPv4 or IPv6 multicast routing table.")
@@ -197,11 +206,11 @@ def main():
     group_ipversion = parser.add_mutually_exclusive_group(required=False)
     group_ipversion.add_argument("-4", "--ipv4", action="store_true", default=False, help="Setting for IPv4")
     group_ipversion.add_argument("-6", "--ipv6", action="store_true", default=False, help="Setting for IPv6")
-    group_vrf = parser.add_mutually_exclusive_group(required=False)
+    group_vrf = parser.add_argument_group()
     group_vrf.add_argument("-mvrf", "--multicast_vrf", nargs=1, default=[hpim_globals.MULTICAST_TABLE_ID],
                            metavar='MULTICAST_VRF_NUMBER', type=int,
                            help="Define multicast table id. This can be used on -start to explicitly start the daemon"
-                                " process process on a given vrf. It can also be used with the other commands "
+                                " process on a given vrf. It can also be used with the other commands "
                                 "(for example add, list, ...) for setting/getting information on a given daemon"
                                 " process")
     group_vrf.add_argument("-uvrf", "--unicast_vrf", nargs=1, default=[hpim_globals.UNICAST_TABLE_ID],
@@ -214,6 +223,21 @@ def main():
     # This script must be run as root!
     if os.geteuid() != 0:
         sys.exit('HPIM-DM must be run as root!')
+
+    if args.list_instances:
+        pid_files = glob.glob("/tmp/Daemon-hpim*.pid")
+        t = PrettyTable(['Instance PID', 'Multicast VRF', 'Unicast VRF'])
+
+        for pid_file in pid_files:
+            d = MyDaemon(pid_file)
+            hpim_globals.MULTICAST_TABLE_ID = pid_file[16:-4]
+            if not d.is_running():
+                continue
+
+            t_new = client_socket(args, print_output=False)
+            t.add_row(t_new.replace(" ", "").split("\n")[3].split("|")[1:4])
+        print(t)
+        return
 
     hpim_globals.MULTICAST_TABLE_ID = args.multicast_vrf[0]
     hpim_globals.UNICAST_TABLE_ID = args.unicast_vrf[0]

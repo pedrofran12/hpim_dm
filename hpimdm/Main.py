@@ -312,6 +312,16 @@ def remove_security_key(interface_name, security_identifier, ipv4=False, ipv6=Fa
         kernel_v6.remove_interface_security(interface_name, security_identifier)
 
 
+def list_instances():
+    """
+    List instance information
+    """
+    t = PrettyTable(['Instance PID', 'Multicast VRF', 'Unicast VRF'])
+    import os
+    t.add_row([os.getpid(), hpim_globals.MULTICAST_TABLE_ID, hpim_globals.UNICAST_TABLE_ID])
+    return str(t)
+
+
 def change_initial_flood_setting():
     """
     Change Initial Flood Setting, used to control the implicit interest of all neighbors
