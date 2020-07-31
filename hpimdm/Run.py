@@ -2,9 +2,11 @@
 
 import os
 import sys
+import time
 import glob
 import socket
 import argparse
+import threading
 import traceback
 import faulthandler
 import _pickle as pickle
@@ -13,7 +15,7 @@ from hpimdm.tree import hpim_globals
 from hpimdm.daemon.Daemon import Daemon
 from hpimdm import Main
 
-VERSION = "1.3.3.4"
+VERSION = "1.4"
 
 
 def client_socket(data_to_send, print_output=True):
@@ -24,7 +26,7 @@ def client_socket(data_to_send, print_output=True):
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 
     # Connect the socket to the port where the server is listening
-    server_address = '/tmp/hpim_uds_socket' + str(hpim_globals.MULTICAST_TABLE_ID)
+    server_address = hpim_globals.DAEMON_SOCKET.format(hpim_globals.MULTICAST_TABLE_ID)
     #print('connecting to %s' % server_address)
     try:
         sock.connect(server_address)
@@ -48,7 +50,7 @@ class MyDaemon(Daemon):
         Daemon process will run this method until the daemon process explicitly is stopped
         """
         Main.main()
-        server_address = '/tmp/hpim_uds_socket' + str(hpim_globals.MULTICAST_TABLE_ID)
+        server_address = hpim_globals.DAEMON_SOCKET.format(hpim_globals.MULTICAST_TABLE_ID)
 
         # Make sure the socket does not already exist
         try:
@@ -124,18 +126,27 @@ class MyDaemon(Daemon):
                 elif 'stop' in args and args.stop:
                     Main.stop()
                     connection.shutdown(socket.SHUT_RDWR)
+                    break
                 elif 'test' in args and args.test:
                     Main.test(args.test[0], args.test[1])
                     connection.shutdown(socket.SHUT_RDWR)
                 elif 'traceback' in args and args.traceback:
                     faulthandler.dump_traceback(file=sys.stderr, all_threads=True)
                     connection.shutdown(socket.SHUT_RDWR)
+                elif 'config' in args and args.config:
+                    Main.set_config(args.config[0])
+                    connection.shutdown(socket.SHUT_RDWR)
+                elif 'get_config' in args and args.get_config:
+                    connection.sendall(pickle.dumps(Main.get_config()))
+                elif 'drop' in args and args.drop:
+                    Main.drop(args.drop[0], int(args.drop[1]))
             except Exception:
                 connection.shutdown(socket.SHUT_RDWR)
                 traceback.print_exc()
             finally:
                 # Clean up the connection
                 connection.close()
+        sock.close()
 
 
 def main():
@@ -202,6 +213,11 @@ def main():
                        help="Tester... send log information to SERVER_LOG_IP. Set the router name to ROUTER_NAME")
     group.add_argument("-traceback", "--traceback", action="store_true", default=False,
                        help="Dump the tracebacks of all threads into file")
+    group.add_argument("-config", "--config", nargs=1, metavar='CONFIG_FILE_PATH', type=str,
+                       help="File path for configuration file. This command should only be used with -start")
+    group.add_argument("-get_config", "--get_config", action="store_true", default=False,
+                       help="Get configuration file of live daemon.")
+    #group.add_argument("-drop", "--drop", nargs=2, metavar=('INTERFACE_NAME', 'PACKET_TYPE'), type=str)
     group.add_argument("--version", action='version', version='%(prog)s ' + VERSION)
     group_ipversion = parser.add_mutually_exclusive_group(required=False)
     group_ipversion.add_argument("-4", "--ipv4", action="store_true", default=False, help="Setting for IPv4")
@@ -225,7 +241,7 @@ def main():
         sys.exit('HPIM-DM must be run as root!')
 
     if args.list_instances:
-        pid_files = glob.glob("/tmp/Daemon-hpim*.pid")
+        pid_files = glob.glob(hpim_globals.DAEMON_PROCESS_FILE.format("*"))
         t = PrettyTable(['Instance PID', 'Multicast VRF', 'Unicast VRF'])
 
         for pid_file in pid_files:
@@ -235,14 +251,14 @@ def main():
                 continue
 
             t_new = client_socket(args, print_output=False)
-            t.add_row(t_new.replace(" ", "").split("\n")[3].split("|")[1:4])
+            t.add_row(t_new.split("|"))
         print(t)
         return
 
     hpim_globals.MULTICAST_TABLE_ID = args.multicast_vrf[0]
     hpim_globals.UNICAST_TABLE_ID = args.unicast_vrf[0]
 
-    daemon = MyDaemon('/tmp/Daemon-hpim' + str(hpim_globals.MULTICAST_TABLE_ID) + '.pid')
+    daemon = MyDaemon(hpim_globals.DAEMON_PROCESS_FILE.format(hpim_globals.MULTICAST_TABLE_ID))
     if args.start:
         print("start")
         daemon.start()
@@ -254,8 +270,25 @@ def main():
     elif args.restart:
         daemon.restart()
         sys.exit(0)
+    elif args.config:
+        try:
+            from hpimdm import Config
+            args.config[0] = os.path.abspath(args.config[0])
+            [hpim_globals.MULTICAST_TABLE_ID, hpim_globals.UNICAST_TABLE_ID] = Config.get_vrfs(args.config[0])
+            daemon = MyDaemon(hpim_globals.DAEMON_PROCESS_FILE.format(hpim_globals.MULTICAST_TABLE_ID))
+
+            if not daemon.is_running():
+                x = threading.Thread(target=daemon.start, args=())
+                x.start()
+                x.join()
+
+            while not daemon.is_running():
+                time.sleep(1)
+        except ModuleNotFoundError:
+            print("PYYAML needs to be installed. Execute \"pip3 install pyyaml\"")
+            sys.exit(0)
     elif args.verbose:
-        os.system("tail -f /var/log/hpimdm/stdout" + str(hpim_globals.MULTICAST_TABLE_ID))
+        os.system("tail -f {}".format(hpim_globals.DAEMON_LOG_STDOUT_FILE.format(hpim_globals.MULTICAST_TABLE_ID)))
         sys.exit(0)
     elif args.multicast_routes:
         if args.ipv4 or not args.ipv6:

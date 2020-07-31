@@ -1,0 +1,95 @@
+MulticastVRF: 0
+UnicastVRF: 254
+
+HPIM-DM:
+  DefaultTimers:
+    HELLO_PERIOD: 10
+    INITIAL_FLOOD_TIME: 15
+    MESSAGE_RETRANSMISSION_TIME: 3
+    SOURCE_LIFETIME: 210
+  Interfaces:
+    eth0:
+      ipv4:
+        enabled: true
+        security:
+          algorithm: sha1
+          identifier: 0
+          key: P@$$w0rd-eth0-v4
+      ipv6:
+        enabled: true
+        security:
+          algorithm: sha1
+          identifier: 0
+          key: P@$$w0rd-eth0-v6
+    eth1:
+      ipv4:
+        enabled: true
+        security:
+          algorithm: sha1
+          identifier: 0
+          key: P@$$w0rd-eth1-v4
+      ipv6:
+        enabled: true
+        security:
+          algorithm: sha1
+          identifier: 0
+          key: P@$$w0rd-eth1-v6
+    eth2:
+      ipv4:
+        enabled: true
+        security:
+          algorithm: sha1
+          identifier: 0
+          key: P@$$w0rd-eth2-v4
+      ipv6:
+        enabled: true
+        security:
+          algorithm: sha1
+          identifier: 0
+          key: P@$$w0rd-eth2-v6
+  Settings:
+    INITIAL_FLOOD_ENABLED: true
+    SYNC_FRAGMENTATION_MSG: 0
+
+
+IGMP:
+  Interfaces:
+    eth0:
+      enabled: true
+    eth1:
+      enabled: true
+    eth2:
+      enabled: true
+  Settings:
+    GROUP_MEMBERSHIP_INTERVAL: 260
+    LAST_MEMBER_QUERY_COUNT: 2
+    LAST_MEMBER_QUERY_INTERVAL: 1
+    MAX_RESPONSE_TIME_LAST_MEMBER_QUERY_INTERVAL: 10
+    MAX_RESPONSE_TIME_QUERY_RESPONSE_INTERVAL: 100
+    OTHER_QUERIER_PRESENT_INTERVAL: 255.0
+    QUERY_INTERVAL: 125
+    QUERY_RESPONSE_INTERVAL: 10
+    ROBUSTNESS_VARIABLE: 2
+    STARTUP_QUERY_COUNT: 2
+    STARTUP_QUERY_INTERVAL: 31.25
+    UNSOLICITED_REPORT_INTERVAL: 10
+    VERSION_1_ROUTER_PRESENT_TIMEOUT: 400
+MLD:
+  Interfaces:
+    eth0:
+      enabled: true
+    eth1:
+      enabled: true
+    eth2:
+      enabled: true
+  Settings:
+    LAST_LISTENER_QUERY_COUNT: 2
+    LAST_LISTENER_QUERY_INTERVAL: 1
+    MULTICAST_LISTENER_INTERVAL: 260
+    OTHER_QUERIER_PRESENT_INTERVAL: 255.0
+    QUERY_INTERVAL: 125
+    QUERY_RESPONSE_INTERVAL: 10
+    ROBUSTNESS_VARIABLE: 2
+    STARTUP_QUERY_COUNT: 2
+    STARTUP_QUERY_INTERVAL: 31.25
+    UNSOLICITED_REPORT_INTERVAL: 10

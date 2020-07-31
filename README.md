@@ -63,6 +63,22 @@ If `-uvrf` is not defined, the default unicast table id will be used (table id 2
 
 After starting the protocol process, if the default multicast table is not used, the following commands (for adding interfaces and listing state) need to have the argument `-mvrf` defined to specify the corresponding daemon process.
 
+
+
+#### Multi daemon support
+
+Multiple daemons are supported, each bind to a given multicast routing table id.
+
+To perform configurations on one of these daemons use `-mvrf` command and define the daemon by its multicast table id.
+
+
+To see all daemons that are currently running:
+
+   ```
+   sudo hpim-dm -instances
+   ```
+
+
 #### Add interface
 
 After starting the protocol process you can enable the protocol in specific interfaces. You need to specify which interfaces will have IGMP/MLD enabled and which interfaces will have HPIM-DM enabled.
@@ -235,6 +251,26 @@ To see the logs run:
 
 Currently the logs are not very expressive... Better logging is planned for a future release.
 -->
+
+## Config File
+
+It is possible to configure the protocol using a YAML file. This configuration file can be used to set all interfaces that will have HPIM-DM/IGMP/MLD enabled, as well to fine tune these protocols by setting their timers. Currently the settings are shared by all interfaces. In a future release it will be possible to set timers per interface.
+
+To use this feature you need to manually install PyYaml. PyYaml is not automatically installed with `hpim-dm` to support older Python versions (as of now PyYaml requires at least Python v3.5).
+
+[This YAML file](https://github.com/pedrofran12/hpim_dm/tree/master/config/config_example.yml) is a configuration file example.
+
+It it also possible to get an YAML configuration file from the current settings of the daemon. This will output an YAML template that can be used later for enabling the daemon with the same settings (enabled interfaces and timers). The command for this matter is the following:
+
+   ```
+   sudo hpim-dm -get_config [-mvrf MULTICAST_TABLE_ID]
+   ```
+
+To input an YAML configuration file to the daemon:
+
+   ```
+   sudo hpim-dm -config CONFIGURATION_FILE_PATH
+   ```
 
 ## Help command
 In order to determine which commands and corresponding arguments are available you can call the help command:

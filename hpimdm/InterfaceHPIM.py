@@ -104,6 +104,8 @@ class InterfaceHPIM(Interface):
         s.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_LOOP, 0)
 
         super().__init__(interface_name, s, s, vif_index)
+
+        #self.drop_packet_type = None
         self.force_send_hello()
 
     @staticmethod
@@ -153,8 +155,8 @@ class InterfaceHPIM(Interface):
 
                 packet.payload.security_value = b''
                 calculated_security_value = hmac.new(self.get_security_key(),
-                                                     socket.inet_aton(received_ip_header.ip_src) +
-                                                     socket.inet_aton(received_ip_header.ip_dst) +
+                                                     socket.inet_pton(self._get_address_family(), received_ip_header.ip_src) +
+                                                     socket.inet_pton(self._get_address_family(), received_ip_header.ip_dst) +
                                                      packet.bytes(), digestmod=self.hash_function).digest()
                 if received_security_value != calculated_security_value:
                     return
@@ -169,9 +171,14 @@ class InterfaceHPIM(Interface):
             key = self.get_security_key()
             data.payload.security_id = self.security_id
             data.payload.security_length = self.security_len
-            security_value = hmac.new(key, socket.inet_aton(self.get_ip()) + socket.inet_aton(group_ip) +
+            security_value = hmac.new(key, socket.inet_pton(self._get_address_family(), self.get_ip()) +
+                                      socket.inet_pton(self._get_address_family(), group_ip) +
                                       data.bytes(), digestmod=self.hash_function).digest()
             data.payload.security_value = security_value
+
+        #if self.drop_packet_type is not None and data.payload.get_pim_type() == self.drop_packet_type:
+        #    self.drop_packet_type = None
+        #    return
         super().send(data=data.bytes(), group_ip=group_ip)
 
     def is_security_enabled(self):

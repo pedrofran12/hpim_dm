@@ -1,3 +1,9 @@
+# Protocol files
+DAEMON_PROCESS_FILE = '/tmp/Daemon-hpim{}.pid'
+DAEMON_SOCKET = '/tmp/hpim_uds_socket{}'
+DAEMON_LOG_FOLDER = '/var/log/hpimdm/'
+DAEMON_LOG_STDOUT_FILE = DAEMON_LOG_FOLDER + 'stdout{}'
+
 # Allow flood initial data packet even when there is no information regarding
 # Upstream neighbors
 INITIAL_FLOOD_ENABLED = True

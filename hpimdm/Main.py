@@ -1,3 +1,4 @@
+import os
 import sys
 import time
 import hashlib
@@ -316,10 +317,8 @@ def list_instances():
     """
     List instance information
     """
-    t = PrettyTable(['Instance PID', 'Multicast VRF', 'Unicast VRF'])
-    import os
-    t.add_row([os.getpid(), hpim_globals.MULTICAST_TABLE_ID, hpim_globals.UNICAST_TABLE_ID])
-    return str(t)
+    t = "{}|{}|{}"
+    return t.format(os.getpid(), hpim_globals.MULTICAST_TABLE_ID, hpim_globals.UNICAST_TABLE_ID)
 
 
 def change_initial_flood_setting():
@@ -386,6 +385,33 @@ def enable_ipv6_kernel():
     mld_interfaces = kernel_v6.membership_interface
 
 
+def get_config():
+    """
+    Get live configuration of HPIM-DM process
+    """
+    try:
+        from . import Config
+        return Config.get_yaml_file()
+    except ModuleNotFoundError:
+        return "PYYAML needs to be installed. Execute \"pip3 install pyyaml\""
+
+
+def set_config(file_path):
+    """
+    Set configuration of HPIM-DM process
+    """
+    from . import Config
+    try:
+        Config.parse_config_file(file_path)
+    except:
+        import traceback
+        traceback.print_exc()
+
+
+def drop(interface_name, packet_type):
+    interfaces.get(interface_name).drop_packet_type = packet_type
+
+
 def main():
     """
     Start process
@@ -394,7 +420,12 @@ def main():
     global logger
     logger = logging.getLogger('hpim')
     logger.setLevel(logging.DEBUG)
-    logger.addHandler(logging.StreamHandler(sys.stdout))
+    handler = logging.StreamHandler(sys.stdout)
+    handler.addFilter(RootFilter(""))
+    handler.setLevel(logging.DEBUG)
+    handler.setFormatter(logging.Formatter('%(asctime)-20s %(name)-50s %(tree)-35s %(vif)-2s %(interfacename)-5s '
+                                           '%(routername)-2s %(message)s'))
+    logger.addHandler(handler)
 
     global kernel
     from hpimdm.Kernel import Kernel4
