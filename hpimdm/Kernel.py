@@ -12,8 +12,8 @@ from hpimdm.tree import hpim_globals
 from hpimdm.rwlock.RWLock import RWLockWrite
 from hpimdm import UnicastRouting
 
-from hpimdm.InterfaceMLD import InterfaceMLD
-from hpimdm.InterfaceIGMP import InterfaceIGMP
+from mld.InterfaceMLD import InterfaceMLD
+from igmp.InterfaceIGMP import InterfaceIGMP
 from hpimdm.InterfaceHPIM import InterfaceHPIM
 from hpimdm.InterfaceHPIM6 import InterfaceHPIM6
 from .tree.KernelEntryInterface import KernelEntry4Interface, KernelEntry6Interface

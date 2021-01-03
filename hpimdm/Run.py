@@ -15,7 +15,7 @@ from hpimdm.tree import hpim_globals
 from hpimdm.daemon.Daemon import Daemon
 from hpimdm import Main
 
-VERSION = "1.4"
+VERSION = "1.5"
 
 
 def client_socket(data_to_send, print_output=True):
@@ -214,7 +214,7 @@ def main():
     group.add_argument("-traceback", "--traceback", action="store_true", default=False,
                        help="Dump the tracebacks of all threads into file")
     group.add_argument("-config", "--config", nargs=1, metavar='CONFIG_FILE_PATH', type=str,
-                       help="File path for configuration file. This command should only be used with -start")
+                       help="File path for configuration file.")
     group.add_argument("-get_config", "--get_config", action="store_true", default=False,
                        help="Get configuration file of live daemon.")
     #group.add_argument("-drop", "--drop", nargs=2, metavar=('INTERFACE_NAME', 'PACKET_TYPE'), type=str)
@@ -284,7 +284,7 @@ def main():
 
             while not daemon.is_running():
                 time.sleep(1)
-        except ModuleNotFoundError:
+        except ImportError:
             print("PYYAML needs to be installed. Execute \"pip3 install pyyaml\"")
             sys.exit(0)
     elif args.verbose:

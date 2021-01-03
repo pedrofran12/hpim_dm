@@ -1,7 +1,7 @@
 import yaml
 from hpimdm.tree import hpim_globals
-from hpimdm.igmp import igmp_globals
-from hpimdm.mld import mld_globals
+from igmp.igmp2 import igmp_globals
+from mld.mld1 import mld_globals
 from hpimdm import Main
 
 

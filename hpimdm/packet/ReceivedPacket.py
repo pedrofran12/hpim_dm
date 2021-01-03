@@ -1,7 +1,5 @@
 import socket
 from .Packet import Packet
-from .PacketMLDHeader import PacketMLDHeader
-from .PacketIGMPHeader import PacketIGMPHeader
 from .PacketIpHeader import PacketIpv4Header, PacketIpv6Header
 from hpimdm.tree.hpim_globals import MSG_FORMAT
 from hpimdm.utils import TYPE_CHECKING
@@ -18,7 +16,7 @@ else:
 
 class ReceivedPacket(Packet):
     # choose payload protocol class based on ip protocol number
-    payload_protocol = {2: PacketIGMPHeader, 103: PacketHPIMHeader}
+    payload_protocol = {103: PacketHPIMHeader}
 
     def __init__(self, raw_packet: bytes, interface: 'Interface'):
         self.interface = interface
@@ -35,7 +33,7 @@ class ReceivedPacket(Packet):
 
 class ReceivedPacket_v6(Packet):
     # choose payload protocol class based on ip protocol number
-    payload_protocol_v6 = {58: PacketMLDHeader, 103: PacketHPIMHeader_v6}
+    payload_protocol_v6 = {103: PacketHPIMHeader_v6}
 
     def __init__(self, raw_packet: bytes, ancdata: list, src_addr: str, next_header: int, interface: 'Interface'):
         self.interface = interface

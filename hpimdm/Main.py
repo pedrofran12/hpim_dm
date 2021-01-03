@@ -392,7 +392,7 @@ def get_config():
     try:
         from . import Config
         return Config.get_yaml_file()
-    except ModuleNotFoundError:
+    except ImportError:
         return "PYYAML needs to be installed. Execute \"pip3 install pyyaml\""
 
 
@@ -419,13 +419,19 @@ def main():
     # logging
     global logger
     logger = logging.getLogger('hpim')
+    igmp_logger = logging.getLogger('igmp')
+    mld_logger = logging.getLogger('mld')
     logger.setLevel(logging.DEBUG)
+    igmp_logger.setLevel(logging.DEBUG)
+    mld_logger.setLevel(logging.DEBUG)
     handler = logging.StreamHandler(sys.stdout)
     handler.addFilter(RootFilter(""))
     handler.setLevel(logging.DEBUG)
     handler.setFormatter(logging.Formatter('%(asctime)-20s %(name)-50s %(tree)-35s %(vif)-2s %(interfacename)-5s '
                                            '%(routername)-2s %(message)s'))
     logger.addHandler(handler)
+    igmp_logger.addHandler(handler)
+    mld_logger.addHandler(handler)
 
     global kernel
     from hpimdm.Kernel import Kernel4
