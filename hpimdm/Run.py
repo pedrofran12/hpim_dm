@@ -15,7 +15,7 @@ from hpimdm.tree import hpim_globals
 from hpimdm.daemon.Daemon import Daemon
 from hpimdm import Main
 
-VERSION = "1.5"
+VERSION = "1.5.1"
 
 
 def client_socket(data_to_send, print_output=True):
