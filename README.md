@@ -12,6 +12,7 @@ Additionally, IGMPv2 and MLDv1 are implemented alongside with HPIM-DM to detect 
 
 # Documents detailing this work
 
+ - [HPIM-DM: A fast and reliable dense-mode multicast routing protocol - Published Paper](https://doi.org/10.1049/ntw2.12081)
  - [The HPIM-DM Multicast Routing Protocol - Full High Level Description](https://arxiv.org/abs/2002.06635)
  - [HPIM-DM state machines](https://github.com/pedrofran12/hpim_dm/tree/master/docs/HPIMStateMachines.pdf)
  - [Python implementation of IGMPv2, PIM-DM and HPIM-DM](https://github.com/pedrofran12/hpim_dm/tree/master/docs/PythonImplementations.pdf)
